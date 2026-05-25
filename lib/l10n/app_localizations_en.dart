@@ -222,10 +222,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings3D => '3D Settings';
 
   @override
-  String get autoRotate => 'Auto Rotate';
+  String get manualControl => 'Manual Control';
 
   @override
-  String get autoRotateDesc => 'The model rotates on itself';
+  String get manualControlDesc => 'Allows rotating the model manually';
 
   @override
   String get zoomEnabled => 'Zoom Enabled';

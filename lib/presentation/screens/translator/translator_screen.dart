@@ -34,7 +34,6 @@ class TranslatorScreen extends ConsumerStatefulWidget {
 }
 
 class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
-  bool _isSignToText = true;
   final _textController = TextEditingController();
   String _searchQuery = '';
   XFile? _selectedFile;
@@ -54,10 +53,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   }
 
   void _toggleDirection() {
-    setState(() {
-      _isSignToText = !_isSignToText;
-      ref.read(translatorStateProvider.notifier).stop();
-    });
+    ref.read(translationModeStateProvider.notifier).toggleMode();
+    ref.read(translatorStateProvider.notifier).stop();
+    ref.read(speechControllerProvider.notifier).stopListening();
   }
 
   Future<void> _pickFile(bool isVideo) async {
@@ -116,6 +114,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 900;
     final isTranslating = ref.watch(translatorStateProvider);
+    final translationMode = ref.watch(translationModeStateProvider);
+    final isSignToText = translationMode == TranslationMode.signToText;
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
@@ -148,8 +148,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                         Expanded(
                           child: _ToggleButton(
                             label: l10n.signs,
-                            isActive: _isSignToText,
-                            onTap: () => setState(() => _isSignToText = true),
+                            isActive: isSignToText,
+                            onTap: () => ref.read(translationModeStateProvider.notifier).setMode(TranslationMode.signToText),
                           ),
                         ),
                         Padding(
@@ -162,8 +162,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                         Expanded(
                           child: _ToggleButton(
                             label: l10n.textAudio,
-                            isActive: !_isSignToText,
-                            onTap: () => setState(() => _isSignToText = false),
+                            isActive: !isSignToText,
+                            onTap: () => ref.read(translationModeStateProvider.notifier).setMode(TranslationMode.textToSign),
                           ),
                         ),
                       ],
@@ -187,7 +187,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                       ),
                     );
                   },
-                  child: _isSignToText
+                  child: isSignToText
                       ? _SignToTextTab(
                           key: const ValueKey('sign_to_text'),
                           isTranslating: isTranslating,
@@ -534,6 +534,14 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to global STT results (triggered by FAB in MainShell)
+    ref.listen<String>(sttResultProvider, (previous, next) {
+      if (next.isNotEmpty && mounted) {
+        widget.controller.text = next;
+        widget.onSearch(next);
+      }
+    });
+
     final threeDSettingsAsync = ref.watch(threeDSettingsProvider);
     final viewModeAsync = ref.watch(signViewModeProvider);
     final profileAsync = ref.watch(userProfileProvider);
@@ -619,12 +627,13 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
                                 if (character == null) return const Center(child: Text('Personnage non trouvé'));
                                 
                                 return ModelViewer(
-                                  key: ValueKey('model_viewer_${settings['autoRotate']}_${settings['zoomEnabled']}_${character.id}'),
+                                  key: ValueKey('model_viewer_${settings['cameraControlsEnabled']}_${settings['zoomEnabled']}_${character.id}'),
                                   src: character.modelPath,
                                   alt: 'Un modèle 3D traducteur de langue des signes',
                                   ar: true,
-                                  autoRotate: false, // User requested no auto-rotation
-                                  cameraControls: true,
+                                  autoRotate: false,
+                                  cameraControls: settings['cameraControlsEnabled'] ?? true,
+                                  interactionPrompt: InteractionPrompt.none,
                                   backgroundColor: Colors.transparent,
                                   disableZoom: !(settings['zoomEnabled'] ?? true),
                                   cameraOrbit: '0deg 75deg 2.5m',

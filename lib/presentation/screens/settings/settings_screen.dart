@@ -126,12 +126,12 @@ class SettingsScreen extends ConsumerWidget {
                     data: (settings) => Column(
                       children: [
                         SwitchListTile(
-                          secondary: const Icon(Icons.rotate_right, color: AppColors.primary),
-                          title: Text(l10n.autoRotate),
-                          subtitle: Text(l10n.autoRotateDesc),
-                          value: settings['autoRotate'] ?? false,
+                          secondary: const Icon(Icons.touch_app_outlined, color: AppColors.primary),
+                          title: Text(l10n.manualControl),
+                          subtitle: Text(l10n.manualControlDesc),
+                          value: settings['cameraControlsEnabled'] ?? true,
                           onChanged: (val) {
-                            ref.read(threeDSettingsProvider.notifier).setAutoRotate(val);
+                            ref.read(threeDSettingsProvider.notifier).setCameraControlsEnabled(val);
                           },
                         ),
                         SwitchListTile(

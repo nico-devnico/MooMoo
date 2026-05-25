@@ -11,3 +11,18 @@ class TranslatorState extends _$TranslatorState {
   void start() => state = true;
   void stop() => state = false;
 }
+
+enum TranslationMode { signToText, textToSign }
+
+@riverpod
+class TranslationModeState extends _$TranslationModeState {
+  @override
+  TranslationMode build() => TranslationMode.signToText;
+
+  void setMode(TranslationMode mode) => state = mode;
+  void toggleMode() {
+    state = state == TranslationMode.signToText 
+        ? TranslationMode.textToSign 
+        : TranslationMode.signToText;
+  }
+}

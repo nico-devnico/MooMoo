@@ -60,3 +60,56 @@ abstract class _$TranslatorState extends $Notifier<bool> {
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(TranslationModeState)
+final translationModeStateProvider = TranslationModeStateProvider._();
+
+final class TranslationModeStateProvider
+    extends $NotifierProvider<TranslationModeState, TranslationMode> {
+  TranslationModeStateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'translationModeStateProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$translationModeStateHash();
+
+  @$internal
+  @override
+  TranslationModeState create() => TranslationModeState();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TranslationMode value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TranslationMode>(value),
+    );
+  }
+}
+
+String _$translationModeStateHash() =>
+    r'9cef90b7ac205dc7520867605fb419d54da6cfbc';
+
+abstract class _$TranslationModeState extends $Notifier<TranslationMode> {
+  TranslationMode build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<TranslationMode, TranslationMode>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<TranslationMode, TranslationMode>,
+              TranslationMode,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

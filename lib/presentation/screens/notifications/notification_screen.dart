@@ -117,35 +117,78 @@ class _NotificationTile extends ConsumerWidget {
           ref.read(notificationRepositoryProvider).markAsRead(notification.id);
         }
         
-        // Navigation logique basée sur le type de notification
-        if (notification.payload != null && notification.payload!['route'] != null) {
-          final route = notification.payload!['route'] as String;
-          final params = notification.payload!['params'] as Map<String, dynamic>?;
-          
-          if (params != null) {
-            context.pushNamed(route, pathParameters: params.map((k, v) => MapEntry(k, v.toString())));
-          } else {
-            context.pushNamed(route);
-          }
+        // Afficher d'abord le détail de la notification si elle a un corps
+        if (notification.body != null && notification.body!.isNotEmpty) {
+          _showNotificationDetail(context, notification);
         } else {
-          // Actions par défaut selon le type
-          switch (notification.type) {
-            case 'lesson':
-              context.pushNamed(AppRoutes.learningName);
-              break;
-            case 'contribution':
-              context.pushNamed(AppRoutes.contributeName);
-              break;
-            case 'welcome':
-              context.pushNamed(AppRoutes.profileName);
-              break;
-            default:
-              // Pas d'action de navigation spécifique
-              break;
-          }
+          _navigateBasedOnNotification(context, notification);
         }
       },
     );
+  }
+
+  void _showNotificationDetail(BuildContext context, model.Notification notification) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(_getNotificationIcon(notification.type), color: _getNotificationColor(notification.type)),
+            const SizedBox(width: AppSpacing.s),
+            Expanded(child: Text(notification.title)),
+          ],
+        ),
+        content: Text(notification.body ?? ''),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+          if (notification.payload != null || _hasDefaultAction(notification.type))
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _navigateBasedOnNotification(context, notification);
+              },
+              child: const Text('Voir plus'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasDefaultAction(String type) {
+    return ['lesson', 'contribution', 'welcome'].contains(type);
+  }
+
+  void _navigateBasedOnNotification(BuildContext context, model.Notification notification) {
+    // Navigation logique basée sur le type de notification
+    if (notification.payload != null && notification.payload!['route'] != null) {
+      final route = notification.payload!['route'] as String;
+      final params = notification.payload!['params'] as Map<String, dynamic>?;
+      
+      if (params != null) {
+        context.pushNamed(route, pathParameters: params.map((k, v) => MapEntry(k, v.toString())));
+      } else {
+        context.pushNamed(route);
+      }
+    } else {
+      // Actions par défaut selon le type
+      switch (notification.type) {
+        case 'lesson':
+          context.pushNamed(AppRoutes.learningName);
+          break;
+        case 'contribution':
+          context.pushNamed(AppRoutes.contributeName);
+          break;
+        case 'welcome':
+          context.pushNamed(AppRoutes.profileName);
+          break;
+        default:
+          // Pas d'action de navigation spécifique
+          break;
+      }
+    }
   }
 
   IconData _getNotificationIcon(String type) {

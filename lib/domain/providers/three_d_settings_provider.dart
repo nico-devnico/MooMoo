@@ -15,7 +15,7 @@ class ThreeDSettings extends _$ThreeDSettings {
     final data = await _storage.read(key: _key);
     if (data == null) {
       return {
-        'autoRotate': false,
+        'cameraControlsEnabled': true,
         'zoomEnabled': true,
         'selectedCharacterId': CharacterConstants.defaultCharacterId,
       };
@@ -23,9 +23,9 @@ class ThreeDSettings extends _$ThreeDSettings {
     return Map<String, dynamic>.from(json.decode(data));
   }
 
-  Future<void> setAutoRotate(bool value) async {
+  Future<void> setCameraControlsEnabled(bool value) async {
     final current = await future;
-    final updated = {...current, 'autoRotate': value};
+    final updated = {...current, 'cameraControlsEnabled': value};
     state = AsyncData(updated);
     await _storage.write(key: _key, value: json.encode(updated));
   }

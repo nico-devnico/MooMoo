@@ -518,17 +518,17 @@ abstract class AppLocalizations {
   /// **'Paramètres 3D'**
   String get settings3D;
 
-  /// No description provided for @autoRotate.
+  /// No description provided for @manualControl.
   ///
   /// In fr, this message translates to:
-  /// **'Rotation automatique'**
-  String get autoRotate;
+  /// **'Contrôle manuel'**
+  String get manualControl;
 
-  /// No description provided for @autoRotateDesc.
+  /// No description provided for @manualControlDesc.
   ///
   /// In fr, this message translates to:
-  /// **'Le modèle tourne sur lui-même'**
-  String get autoRotateDesc;
+  /// **'Permet de faire tourner le modèle'**
+  String get manualControlDesc;
 
   /// No description provided for @zoomEnabled.
   ///

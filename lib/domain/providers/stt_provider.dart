@@ -42,6 +42,8 @@ class SpeechController extends _$SpeechController {
       await _speech.listen(
         onResult: (result) {
           onResult(result.recognizedWords);
+          // Also update a global provider for the result
+          ref.read(sttResultProvider.notifier).state = result.recognizedWords;
         },
         cancelOnError: true,
         partialResults: true,
@@ -54,4 +56,12 @@ class SpeechController extends _$SpeechController {
     await _speech.stop();
     state = false;
   }
+}
+
+@riverpod
+class SttResult extends _$SttResult {
+  @override
+  String build() => '';
+
+  set state(String value) => super.state = value;
 }

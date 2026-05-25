@@ -56,14 +56,34 @@ class MainShell extends ConsumerWidget {
         height: 70,
         child: FloatingActionButton(
           onPressed: () {
-            if (navigationShell.currentIndex != 1) {
+            final isOnTranslator = navigationShell.currentIndex == 1;
+            
+            if (!isOnTranslator) {
+              // First click: navigate to translator
               navigationShell.goBranch(1);
+              return;
             }
+            
+            // Second click (already on translator): toggle translation
+            final mode = ref.read(translationModeStateProvider);
+            
             if (isActive) {
               ref.read(translatorStateProvider.notifier).stop();
               ref.read(speechControllerProvider.notifier).stopListening();
             } else {
-              ref.read(translatorStateProvider.notifier).start();
+              if (mode == TranslationMode.signToText) {
+                ref.read(translatorStateProvider.notifier).start();
+              } else {
+                // For Text-to-Sign mode, the FAB triggers speech recognition
+                // The result handling will be synchronized via a shared state if needed,
+                // but for now let's just trigger the start.
+                // We'll use a specific method in TranslatorScreen or a shared provider.
+                ref.read(speechControllerProvider.notifier).startListening(
+                  onResult: (text) {
+                    // This will be handled by listening to the speech result if we implement it.
+                  },
+                );
+              }
             }
           },
           backgroundColor: isActive ? AppColors.error : AppColors.primary,

@@ -41,7 +41,7 @@ final class SpeechControllerProvider
   }
 }
 
-String _$speechControllerHash() => r'b6c69e509bd39756cd375b66bfb1e2872a4fca57';
+String _$speechControllerHash() => r'1e475c261f8b59dc2d6612494a520f3e811fa92c';
 
 abstract class _$SpeechController extends $Notifier<bool> {
   bool build();
@@ -54,6 +54,57 @@ abstract class _$SpeechController extends $Notifier<bool> {
             as $ClassProviderElement<
               AnyNotifier<bool, bool>,
               bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(SttResult)
+final sttResultProvider = SttResultProvider._();
+
+final class SttResultProvider extends $NotifierProvider<SttResult, String> {
+  SttResultProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'sttResultProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$sttResultHash();
+
+  @$internal
+  @override
+  SttResult create() => SttResult();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$sttResultHash() => r'65050d0295a5c051d68b1d4c4ae5f4c35dd725a1';
+
+abstract class _$SttResult extends $Notifier<String> {
+  String build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<String, String>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String, String>,
+              String,
               Object?,
               Object?
             >;

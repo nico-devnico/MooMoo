@@ -33,7 +33,7 @@ final class ThreeDSettingsProvider
   ThreeDSettings create() => ThreeDSettings();
 }
 
-String _$threeDSettingsHash() => r'4008931bd63c6579d4ee314f1ddecfc2e6093212';
+String _$threeDSettingsHash() => r'c2cbc27afa7e09a553677febe564e24065b750c8';
 
 abstract class _$ThreeDSettings extends $AsyncNotifier<Map<String, dynamic>> {
   FutureOr<Map<String, dynamic>> build();
