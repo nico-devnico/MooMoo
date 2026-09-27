@@ -20,6 +20,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/providers/error_text.dart';
 
 const double _editorMaxWidth = 820;
 const List<int> _xpChoices = [5, 10, 15, 20, 30, 50];
@@ -53,7 +54,7 @@ class _LearningEditorViewState extends ConsumerState<LearningEditorView> {
       _refresh();
       if (mounted) AppSnackbar.showSuccess(context, l10n.adminSaved);
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric} : $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     }
   }
 
@@ -148,7 +149,7 @@ class _LearningEditorViewState extends ConsumerState<LearningEditorView> {
       error: (e, _) => AppEmptyState(
         icon: AppIcons.error,
         title: l10n.errorGeneric,
-        message: e.toString(),
+        message: ref.userErrorText(e, l10n),
       ),
       data: (languages) {
         if (languages.isEmpty) {
@@ -188,7 +189,7 @@ class _LearningEditorViewState extends ConsumerState<LearningEditorView> {
                       error: (e, _) => AppEmptyState(
                         icon: AppIcons.error,
                         title: l10n.errorGeneric,
-                        message: e.toString(),
+                        message: ref.userErrorText(e, l10n),
                         actionLabel: l10n.retry,
                         onAction: _refresh,
                       ),
@@ -943,7 +944,7 @@ class _SignPickerDialogState extends ConsumerState<_SignPickerDialog> {
                   Expanded(
                     child: results.when(
                       loading: () => const SkeletonList(itemCount: 5, avatarSize: 24),
-                      error: (e, _) => Center(child: Text(e.toString())),
+                      error: (e, _) => Center(child: Text(ref.userErrorText(e, l10n))),
                       data: (signs) {
                         if (signs.isEmpty) {
                           return Center(

@@ -21,6 +21,7 @@ import '../../widgets/app_snackbar.dart';
 import '../../widgets/sign_media.dart';
 import '../../widgets/skeletons.dart';
 import 'dictionary_screen.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Largeur à partir de laquelle la vidéo et le texte passent côte à côte.
 const double _splitBreakpoint = 840;
@@ -64,7 +65,7 @@ class SignDetailScreen extends ConsumerWidget {
           error: (error, _) => AppEmptyState(
             icon: AppIcons.error,
             title: l10n.errorGeneric,
-            message: '$error',
+            message: ref.userErrorText(error, l10n),
             actionLabel: l10n.retry,
             onAction: () => ref.invalidate(signDetailProvider(id)),
           ),
@@ -176,7 +177,7 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
             box == null ? null : box.localToGlobal(Offset.zero) & box.size,
       ));
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     }
   }
 

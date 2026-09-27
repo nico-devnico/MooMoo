@@ -10,11 +10,13 @@ import { healthRouter } from './routes/health.js';
 import { dictionaryRouter } from './routes/dictionary.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { maintenanceGuard } from './lib/settings.js';
+import { errorHandler, genericMessage } from './lib/errors.js';
 
 const PORT = Number(process.env.PORT || 3001);
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+app.disable('x-powered-by');
 app.use(express.json({ limit: '15mb' }));
 
 app.use('/health', healthRouter);
@@ -27,16 +29,10 @@ app.use('/api/dictionary', requireAuth, maintenanceGuard, dictionaryRouter);
 app.use('/api/models', optionalAuth, maintenanceGuard, modelsRouter);
 app.use('/api/infer', optionalAuth, maintenanceGuard, inferRouter);
 
-app.use((err, _req, res, _next) => {
-  const status = err.status || 500;
-  console.error('[api]', err.message);
-  res.status(status).json({
-    ok: false,
-    error: err.code || 'internal_error',
-    message: err.message,
-    details: err.details || undefined,
-  });
+app.use((_req, res) => {
+  res.status(404).json({ ok: false, error: 'not_found', message: genericMessage(404) });
 });
+app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
   console.log(`MooMoo API listening on http://127.0.0.1:${PORT}`);

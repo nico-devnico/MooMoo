@@ -1,15 +1,21 @@
 import { Router } from 'express';
 import { supabaseAnon, dbForUser, getServiceDb, supabaseAdmin } from '../supabase.js';
+import { genericMessage, userError } from '../lib/errors.js';
 
 export const authRouter = Router();
 
+/**
+ * Supabase Auth messages ("Invalid login credentials", "User already
+ * registered"â€¦) are user-level and the app maps them to translated text, so
+ * they are passed through. The raw error object is not.
+ */
 function mapAuthError(error) {
-  const msg = error?.message || String(error);
-  const err = new Error(msg);
-  err.status = 400;
-  err.code = error?.code || 'auth_error';
-  err.details = error;
-  return err;
+  const status = Number(error?.status);
+  return userError(
+    status >= 400 && status < 500 ? status : 400,
+    error?.message || 'Authentification impossible.',
+    error?.code || 'auth_error',
+  );
 }
 
 /** POST /api/auth/signup { email, password, displayName, isDeaf? } */
@@ -20,7 +26,7 @@ authRouter.post('/signup', async (req, res, next) => {
       return res.status(400).json({
         ok: false,
         error: 'validation',
-        message: 'email et password requis',
+        message: 'Adresse e-mail et mot de passe requis.',
       });
     }
 
@@ -62,10 +68,10 @@ authRouter.post('/signup', async (req, res, next) => {
 
       if (profileError) {
         console.warn('[signup] profile upsert:', profileError.message);
-        // Auth succeeded — surface profile warning but still return tokens
+        // Auth succeeded; the client completes the profile on first sign-in.
         return res.status(201).json({
           ok: true,
-          warning: profileError.message,
+          warning: 'profile_incomplete',
           user,
           session,
         });
@@ -77,8 +83,8 @@ authRouter.post('/signup', async (req, res, next) => {
       user,
       session,
       message: session
-        ? 'Compte créé et session active'
-        : 'Compte créé — confirmez votre e-mail si requis',
+        ? 'Compte crÃ©Ã© et session active'
+        : 'Compte crÃ©Ã© â€” confirmez votre e-mail si requis',
     });
   } catch (e) {
     next(e);
@@ -93,7 +99,7 @@ authRouter.post('/login', async (req, res, next) => {
       return res.status(400).json({
         ok: false,
         error: 'validation',
-        message: 'email et password requis',
+        message: 'Adresse e-mail et mot de passe requis.',
       });
     }
 
@@ -126,18 +132,18 @@ authRouter.post('/login', async (req, res, next) => {
   }
 });
 
-/** POST /api/auth/ensure-profile — Bearer JWT */
+/** POST /api/auth/ensure-profile â€” Bearer JWT */
 authRouter.post('/ensure-profile', async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) {
-      return res.status(401).json({ ok: false, error: 'unauthorized' });
+      return res.status(401).json({ ok: false, error: 'unauthorized', message: genericMessage(401) });
     }
 
     const { data: userData, error } = await supabaseAnon.auth.getUser(token);
     if (error || !userData.user) {
-      return res.status(401).json({ ok: false, error: 'unauthorized', message: error?.message });
+      return res.status(401).json({ ok: false, error: 'unauthorized', message: genericMessage(401) });
     }
 
     const body = req.body || {};
@@ -160,13 +166,11 @@ authRouter.post('/ensure-profile', async (req, res, next) => {
       .maybeSingle();
 
     if (pe) {
+      console.error('[ensure-profile]', pe.message);
       return res.status(400).json({
         ok: false,
         error: 'profile_upsert_failed',
-        message: pe.message,
-        hint: pe.message.includes('is_admin')
-          ? 'Appliquer la migration profiles (colonne is_admin)'
-          : undefined,
+        message: 'Votre profil n\'a pas pu Ãªtre enregistrÃ©. RÃ©essayez plus tard.',
       });
     }
 
@@ -176,17 +180,17 @@ authRouter.post('/ensure-profile', async (req, res, next) => {
   }
 });
 
-/** GET /api/auth/me — Bearer JWT */
+/** GET /api/auth/me â€” Bearer JWT */
 authRouter.get('/me', async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) {
-      return res.status(401).json({ ok: false, error: 'unauthorized' });
+      return res.status(401).json({ ok: false, error: 'unauthorized', message: genericMessage(401) });
     }
     const { data: userData, error } = await supabaseAnon.auth.getUser(token);
     if (error || !userData.user) {
-      return res.status(401).json({ ok: false, message: error?.message });
+      return res.status(401).json({ ok: false, error: 'unauthorized', message: genericMessage(401) });
     }
     const db = dbForUser(token);
     const { data: profile, error: pe } = await db
@@ -195,7 +199,8 @@ authRouter.get('/me', async (req, res, next) => {
       .eq('id', userData.user.id)
       .maybeSingle();
     if (pe) {
-      return res.status(400).json({ ok: false, message: pe.message });
+      console.error('[me]', pe.message);
+      return res.status(400).json({ ok: false, error: 'profile_unavailable', message: genericMessage(400) });
     }
     res.json({
       ok: true,

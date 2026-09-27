@@ -6276,6 +6276,408 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les contributions sont momentanément fermées. Vous pouvez toujours consulter vos propositions ci-dessous.'**
   String get contributionsClosed;
+
+  /// No description provided for @errNetwork.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion impossible. Vérifiez votre accès à Internet puis réessayez.'**
+  String get errNetwork;
+
+  /// No description provided for @errServiceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le service est momentanément indisponible. Réessayez dans quelques instants.'**
+  String get errServiceUnavailable;
+
+  /// No description provided for @errMaintenance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application est en maintenance. Merci de réessayer un peu plus tard.'**
+  String get errMaintenance;
+
+  /// No description provided for @errSessionExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session a expiré. Reconnectez-vous pour continuer.'**
+  String get errSessionExpired;
+
+  /// No description provided for @errPermission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas les droits nécessaires pour cette action.'**
+  String get errPermission;
+
+  /// No description provided for @errNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'élément demandé est introuvable ou n\'existe plus.'**
+  String get errNotFound;
+
+  /// No description provided for @errConflict.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet élément existe déjà.'**
+  String get errConflict;
+
+  /// No description provided for @errTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier est trop volumineux.'**
+  String get errTooLarge;
+
+  /// No description provided for @errUnsupportedFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce format de fichier n\'est pas pris en charge.'**
+  String get errUnsupportedFormat;
+
+  /// No description provided for @errInvalidData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines informations sont invalides. Vérifiez-les puis réessayez.'**
+  String get errInvalidData;
+
+  /// No description provided for @errUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur inattendue est survenue. Réessayez plus tard.'**
+  String get errUnknown;
+
+  /// No description provided for @errTechnicalDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail technique (admin) : {detail}'**
+  String errTechnicalDetail(String detail);
+
+  /// No description provided for @errCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'La caméra n\'est pas accessible. Autorisez son accès dans les réglages de votre appareil ou de votre navigateur.'**
+  String get errCamera;
+
+  /// No description provided for @authUnknownError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vous connecter pour l\'instant. Réessayez plus tard.'**
+  String get authUnknownError;
+
+  /// No description provided for @accountAddPhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une photo'**
+  String get accountAddPhoto;
+
+  /// No description provided for @accountPhotoRules.
+  ///
+  /// In fr, this message translates to:
+  /// **'JPG, PNG ou WebP, 2 Mo maximum.'**
+  String get accountPhotoRules;
+
+  /// No description provided for @accountPhotoSending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoi de la photo…'**
+  String get accountPhotoSending;
+
+  /// No description provided for @accountPhotoPickError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir l\'image. Essayez avec un autre fichier.'**
+  String get accountPhotoPickError;
+
+  /// No description provided for @accountPhotoTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette image dépasse 2 Mo. Choisissez une image plus légère.'**
+  String get accountPhotoTooLarge;
+
+  /// No description provided for @accountPhotoBadFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format non pris en charge. Utilisez une image JPG, PNG ou WebP.'**
+  String get accountPhotoBadFormat;
+
+  /// No description provided for @accountPhotoUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo de profil mise à jour.'**
+  String get accountPhotoUpdated;
+
+  /// No description provided for @accountPhotoUploadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'La photo n\'a pas pu être envoyée. Réessayez.'**
+  String get accountPhotoUploadError;
+
+  /// No description provided for @accountRemovePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la photo'**
+  String get accountRemovePhoto;
+
+  /// No description provided for @accountRemovePhotoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la photo de profil ?'**
+  String get accountRemovePhotoTitle;
+
+  /// No description provided for @accountRemovePhotoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos initiales seront affichées à la place.'**
+  String get accountRemovePhotoMessage;
+
+  /// No description provided for @accountPhotoRemoved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo de profil supprimée.'**
+  String get accountPhotoRemoved;
+
+  /// No description provided for @accountPhotoRemoveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'La photo n\'a pas pu être supprimée. Réessayez.'**
+  String get accountPhotoRemoveError;
+
+  /// No description provided for @userGuide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Guide utilisateur'**
+  String get userGuide;
+
+  /// No description provided for @guideHeroTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue dans MooMoo'**
+  String get guideHeroTitle;
+
+  /// No description provided for @guideHeroBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce guide présente, étape par étape, tout ce que vous pouvez faire dans l\'application : traduire, explorer le dictionnaire, apprendre la langue des signes et gérer votre compte.'**
+  String get guideHeroBody;
+
+  /// No description provided for @guideContents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommaire'**
+  String get guideContents;
+
+  /// No description provided for @guideOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir : {section}'**
+  String guideOpen(String section);
+
+  /// No description provided for @guideMoreHelpTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Besoin d\'aide supplémentaire ?'**
+  String get guideMoreHelpTitle;
+
+  /// No description provided for @guideMoreHelpBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consultez les questions fréquentes ou écrivez à l\'équipe depuis le centre d\'aide.'**
+  String get guideMoreHelpBody;
+
+  /// No description provided for @guideAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un compte'**
+  String get guideAccountTitle;
+
+  /// No description provided for @guideAccountIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un compte permet de sauvegarder vos favoris, votre progression et votre historique.'**
+  String get guideAccountIntro;
+
+  /// No description provided for @guideAccountSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sur l\'écran d\'accueil, choisissez « Créer un compte ».\nRenseignez votre nom, votre adresse e-mail et un mot de passe.\nSi un e-mail de confirmation vous est envoyé, ouvrez le lien qu\'il contient.\nVous pouvez ensuite compléter votre profil à tout moment.'**
+  String get guideAccountSteps;
+
+  /// No description provided for @guideLoginTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get guideLoginTitle;
+
+  /// No description provided for @guideLoginIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retrouvez vos données sur tous vos appareils.'**
+  String get guideLoginIntro;
+
+  /// No description provided for @guideLoginSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre adresse e-mail et votre mot de passe, puis validez.\nMot de passe oublié ? Touchez « Mot de passe oublié » pour recevoir un lien de réinitialisation par e-mail.\nPour vous déconnecter, ouvrez votre profil puis « Se déconnecter ».'**
+  String get guideLoginSteps;
+
+  /// No description provided for @guideNavigationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se repérer dans l\'application'**
+  String get guideNavigationTitle;
+
+  /// No description provided for @guideNavigationIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'La barre de navigation donne accès aux quatre espaces principaux.'**
+  String get guideNavigationIntro;
+
+  /// No description provided for @guideNavigationSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nVotre photo de profil, en haut de l\'écran, ouvre votre profil et vos paramètres.'**
+  String get guideNavigationSteps;
+
+  /// No description provided for @guideTranslateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traduire'**
+  String get guideTranslateTitle;
+
+  /// No description provided for @guideTranslateIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traduisez des signes en texte, ou du texte en signes.'**
+  String get guideTranslateIntro;
+
+  /// No description provided for @guideTranslateSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez l\'onglet Traduire et choisissez le sens de traduction.\nSignes vers texte : autorisez l\'accès à la caméra, placez-vous bien éclairé et cadré, puis signez.\nTexte vers signes : saisissez ou dictez une phrase pour voir les signes correspondants.\nSi la reconnaissance est momentanément indisponible, un message vous l\'indique : réessayez un peu plus tard.'**
+  String get guideTranslateSteps;
+
+  /// No description provided for @guideDictionaryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dictionnaire'**
+  String get guideDictionaryTitle;
+
+  /// No description provided for @guideDictionaryIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorez les signes par recherche ou par catégorie.'**
+  String get guideDictionaryIntro;
+
+  /// No description provided for @guideDictionarySteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tapez un mot dans la barre de recherche ou parcourez les catégories.\nTouchez un signe pour voir sa vidéo et sa description.\nAjoutez-le à vos favoris pour le retrouver facilement depuis votre profil.'**
+  String get guideDictionarySteps;
+
+  /// No description provided for @guideLearningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apprendre'**
+  String get guideLearningTitle;
+
+  /// No description provided for @guideLearningIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Progressez à votre rythme grâce à des leçons courtes.'**
+  String get guideLearningIntro;
+
+  /// No description provided for @guideLearningSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez l\'onglet Apprendre pour voir votre parcours.\nChoisissez la leçon disponible et suivez les exercices jusqu\'au bout.\nVotre progression est enregistrée automatiquement.\nConsultez vos statistiques depuis l\'écran de progression.'**
+  String get guideLearningSteps;
+
+  /// No description provided for @guideProfileTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil et photo'**
+  String get guideProfileTitle;
+
+  /// No description provided for @guideProfileIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnalisez les informations visibles sur votre compte.'**
+  String get guideProfileIntro;
+
+  /// No description provided for @guideProfileSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image JPG, PNG ou WebP de 2 Mo maximum.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.'**
+  String get guideProfileSteps;
+
+  /// No description provided for @guideHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique'**
+  String get guideHistoryTitle;
+
+  /// No description provided for @guideHistoryIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retrouvez vos traductions précédentes.'**
+  String get guideHistoryIntro;
+
+  /// No description provided for @guideHistorySteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez votre profil puis « Historique des traductions ».\nParcourez vos traductions récentes, de la plus récente à la plus ancienne.\nL\'historique est lié à votre compte : connectez-vous pour le retrouver.'**
+  String get guideHistorySteps;
+
+  /// No description provided for @guideSettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres'**
+  String get guideSettingsTitle;
+
+  /// No description provided for @guideSettingsIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adaptez l\'application à vos préférences.'**
+  String get guideSettingsIntro;
+
+  /// No description provided for @guideSettingsSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Thème clair ou sombre et langue de l\'application.\nLangue des signes utilisée pour la traduction et le dictionnaire.\nVue par défaut et réglages du personnage 3D.\nOptions d\'accessibilité et sécurité du compte (changement de mot de passe).'**
+  String get guideSettingsSteps;
+
+  /// No description provided for @guideRolesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rôles'**
+  String get guideRolesTitle;
+
+  /// No description provided for @guideRolesIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines fonctions dépendent du rôle attribué à votre compte.'**
+  String get guideRolesIntro;
+
+  /// No description provided for @guideRolesSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur : traduire, consulter le dictionnaire, apprendre et proposer des signes.\nEnseignant : gérer les contenus d\'apprentissage depuis son espace.\nExpert : vérifier les signes et les contributions proposées.\nAdministrateur : gérer les utilisateurs, le dictionnaire et les réglages de l\'application.\nVos espaces disponibles apparaissent dans votre profil.'**
+  String get guideRolesSteps;
+
+  /// No description provided for @guideErrorsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreurs courantes'**
+  String get guideErrorsTitle;
+
+  /// No description provided for @guideErrorsIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que faire si quelque chose ne fonctionne pas ?'**
+  String get guideErrorsIntro;
+
+  /// No description provided for @guideErrorsSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'« Connexion impossible » : vérifiez votre accès à Internet puis réessayez.\n« Session expirée » : reconnectez-vous.\n« Caméra non accessible » : autorisez la caméra dans les réglages de l\'appareil ou du navigateur.\n« Image trop volumineuse ou format non pris en charge » : choisissez une image JPG, PNG ou WebP de moins de 2 Mo.\n« Maintenance en cours » : l\'application revient bientôt, réessayez plus tard.\nLe problème persiste ? Contactez-nous depuis le centre d\'aide.'**
+  String get guideErrorsSteps;
 }
 
 class _AppLocalizationsDelegate

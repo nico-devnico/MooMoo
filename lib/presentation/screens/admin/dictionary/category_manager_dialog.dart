@@ -13,6 +13,7 @@ import '../../../../domain/providers/workspace_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../widgets/app_snackbar.dart';
 import '../../../widgets/confirm_dialog.dart';
+import '../../../../domain/providers/error_text.dart';
 
 /// Create, rename and delete the categories of one sign language.
 class CategoryManagerDialog extends ConsumerStatefulWidget {
@@ -76,7 +77,7 @@ class _CategoryManagerDialogState extends ConsumerState<CategoryManagerDialog> {
       ref.invalidate(manageableCategoriesProvider(_languageId!));
       if (mounted) AppSnackbar.show(context, message: success, type: AppSnackbarType.success);
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -122,7 +123,7 @@ class _CategoryManagerDialogState extends ConsumerState<CategoryManagerDialog> {
     try {
       count = await repository.countSignsInCategory(category.id);
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
       return;
     }
     if (!mounted) return;
@@ -177,7 +178,7 @@ class _CategoryManagerDialogState extends ConsumerState<CategoryManagerDialog> {
                     padding: EdgeInsets.all(AppSpacing.l),
                     child: Center(child: CircularProgressIndicator()),
                   ),
-                  error: (e, _) => Text('${l10n.errorGeneric}: $e',
+                  error: (e, _) => Text(ref.userErrorText(e, l10n),
                       style: const TextStyle(color: AppColors.error)),
                   data: (categories) => Column(
                     mainAxisSize: MainAxisSize.min,

@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
+import 'widgets/auth_error_message.dart';
 import 'widgets/auth_form_error.dart';
 import 'widgets/auth_layout.dart';
 
@@ -52,7 +53,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         _close();
       }
     } catch (e) {
-      if (mounted) setState(() => _formError = '${l10n.errorGeneric} : $e');
+      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

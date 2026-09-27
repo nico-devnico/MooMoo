@@ -18,6 +18,7 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String settings = '/settings';
   static const String helpCenter = '/help-center';
+  static const String userGuide = '/guide';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
   static const String about = '/about';
@@ -57,6 +58,7 @@ class AppRoutes {
   static const String editProfileName = 'editProfile';
   static const String settingsName = 'settings';
   static const String helpCenterName = 'helpCenter';
+  static const String userGuideName = 'userGuide';
   static const String privacyPolicyName = 'privacyPolicy';
   static const String termsOfServiceName = 'termsOfService';
   static const String aboutName = 'about';

@@ -3544,4 +3544,241 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get contributionsClosed =>
       'Contributions are temporarily closed. You can still see your submissions below.';
+
+  @override
+  String get errNetwork =>
+      'Unable to connect. Check your internet connection and try again.';
+
+  @override
+  String get errServiceUnavailable =>
+      'The service is temporarily unavailable. Please try again shortly.';
+
+  @override
+  String get errMaintenance =>
+      'The app is under maintenance. Please try again later.';
+
+  @override
+  String get errSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get errPermission => 'You don\'t have permission to do this.';
+
+  @override
+  String get errNotFound => 'The requested item could not be found.';
+
+  @override
+  String get errConflict => 'This item already exists.';
+
+  @override
+  String get errTooLarge => 'The file is too large.';
+
+  @override
+  String get errUnsupportedFormat => 'This file format is not supported.';
+
+  @override
+  String get errInvalidData =>
+      'Some information is invalid. Please check it and try again.';
+
+  @override
+  String get errUnknown => 'Something went wrong. Please try again later.';
+
+  @override
+  String errTechnicalDetail(String detail) {
+    return 'Technical detail (admin): $detail';
+  }
+
+  @override
+  String get errCamera =>
+      'The camera is not available. Allow camera access in your device or browser settings.';
+
+  @override
+  String get authUnknownError =>
+      'Unable to sign you in right now. Please try again later.';
+
+  @override
+  String get accountAddPhoto => 'Add a photo';
+
+  @override
+  String get accountPhotoRules => 'JPG, PNG or WebP, 2 MB max.';
+
+  @override
+  String get accountPhotoSending => 'Uploading photo…';
+
+  @override
+  String get accountPhotoPickError =>
+      'Couldn\'t open the image. Try another file.';
+
+  @override
+  String get accountPhotoTooLarge =>
+      'This image is larger than 2 MB. Choose a smaller one.';
+
+  @override
+  String get accountPhotoBadFormat =>
+      'Unsupported format. Use a JPG, PNG or WebP image.';
+
+  @override
+  String get accountPhotoUpdated => 'Profile photo updated.';
+
+  @override
+  String get accountPhotoUploadError =>
+      'The photo couldn\'t be uploaded. Please try again.';
+
+  @override
+  String get accountRemovePhoto => 'Remove photo';
+
+  @override
+  String get accountRemovePhotoTitle => 'Remove profile photo?';
+
+  @override
+  String get accountRemovePhotoMessage =>
+      'Your initials will be shown instead.';
+
+  @override
+  String get accountPhotoRemoved => 'Profile photo removed.';
+
+  @override
+  String get accountPhotoRemoveError =>
+      'The photo couldn\'t be removed. Please try again.';
+
+  @override
+  String get userGuide => 'User guide';
+
+  @override
+  String get guideHeroTitle => 'Welcome to MooMoo';
+
+  @override
+  String get guideHeroBody =>
+      'This guide walks you step by step through everything you can do in the app: translate, explore the dictionary, learn sign language and manage your account.';
+
+  @override
+  String get guideContents => 'Contents';
+
+  @override
+  String guideOpen(String section) {
+    return 'Open: $section';
+  }
+
+  @override
+  String get guideMoreHelpTitle => 'Need more help?';
+
+  @override
+  String get guideMoreHelpBody =>
+      'Browse the FAQ or contact the team from the help center.';
+
+  @override
+  String get guideAccountTitle => 'Create an account';
+
+  @override
+  String get guideAccountIntro =>
+      'An account saves your favorites, progress and history.';
+
+  @override
+  String get guideAccountSteps =>
+      'On the welcome screen, choose \"Create an account\".\nEnter your name, email address and a password.\nIf you receive a confirmation email, open the link inside.\nYou can complete your profile at any time afterwards.';
+
+  @override
+  String get guideLoginTitle => 'Sign in';
+
+  @override
+  String get guideLoginIntro => 'Find your data on all your devices.';
+
+  @override
+  String get guideLoginSteps =>
+      'Enter your email address and password, then confirm.\nForgot your password? Tap \"Forgot password\" to receive a reset link by email.\nTo sign out, open your profile and choose \"Sign out\".';
+
+  @override
+  String get guideNavigationTitle => 'Getting around';
+
+  @override
+  String get guideNavigationIntro =>
+      'The navigation bar gives access to the four main areas.';
+
+  @override
+  String get guideNavigationSteps =>
+      'Home: shortcuts and daily suggestions.\nDictionary: the sign dictionary.\nLearn: your lesson path.\nTranslate: translation between signs and text.\nYour profile picture, at the top of the screen, opens your profile and settings.';
+
+  @override
+  String get guideTranslateTitle => 'Translate';
+
+  @override
+  String get guideTranslateIntro =>
+      'Translate signs into text, or text into signs.';
+
+  @override
+  String get guideTranslateSteps =>
+      'Open the Translate tab and choose the direction.\nSigns to text: allow camera access, make sure you are well lit and framed, then sign.\nText to signs: type or dictate a sentence to see the matching signs.\nIf recognition is temporarily unavailable, a message tells you so: try again a little later.';
+
+  @override
+  String get guideDictionaryTitle => 'Dictionary';
+
+  @override
+  String get guideDictionaryIntro => 'Explore signs by search or by category.';
+
+  @override
+  String get guideDictionarySteps =>
+      'Type a word in the search bar or browse categories.\nTap a sign to see its video and description.\nAdd it to your favorites to find it easily from your profile.';
+
+  @override
+  String get guideLearningTitle => 'Learn';
+
+  @override
+  String get guideLearningIntro =>
+      'Progress at your own pace with short lessons.';
+
+  @override
+  String get guideLearningSteps =>
+      'Open the Learn tab to see your path.\nPick the available lesson and complete the exercises.\nYour progress is saved automatically.\nCheck your statistics on the progress screen.';
+
+  @override
+  String get guideProfileTitle => 'Profile and photo';
+
+  @override
+  String get guideProfileIntro =>
+      'Personalize the information shown on your account.';
+
+  @override
+  String get guideProfileSteps =>
+      'Open your profile, then \"Edit profile\".\nTap \"Add a photo\" or \"Change photo\" and pick a JPG, PNG or WebP image of up to 2 MB.\nThe photo is saved and shown right away.\nTo remove it, tap \"Remove photo\" and confirm.\nRemember to save your other changes.';
+
+  @override
+  String get guideHistoryTitle => 'History';
+
+  @override
+  String get guideHistoryIntro => 'Find your previous translations.';
+
+  @override
+  String get guideHistorySteps =>
+      'Open your profile, then \"Translation history\".\nBrowse your recent translations, newest first.\nHistory is tied to your account: sign in to see it.';
+
+  @override
+  String get guideSettingsTitle => 'Settings';
+
+  @override
+  String get guideSettingsIntro => 'Adapt the app to your preferences.';
+
+  @override
+  String get guideSettingsSteps =>
+      'Light or dark theme and app language.\nSign language used for translation and the dictionary.\nDefault view and 3D character settings.\nAccessibility options and account security (password change).';
+
+  @override
+  String get guideRolesTitle => 'Roles';
+
+  @override
+  String get guideRolesIntro =>
+      'Some features depend on the role assigned to your account.';
+
+  @override
+  String get guideRolesSteps =>
+      'User: translate, browse the dictionary, learn and suggest signs.\nTeacher: manage learning content from their space.\nExpert: review signs and submitted contributions.\nAdministrator: manage users, the dictionary and app settings.\nYour available spaces appear in your profile.';
+
+  @override
+  String get guideErrorsTitle => 'Common issues';
+
+  @override
+  String get guideErrorsIntro => 'What to do if something does not work?';
+
+  @override
+  String get guideErrorsSteps =>
+      '\"Unable to connect\": check your internet connection and try again.\n\"Session expired\": sign in again.\n\"Camera not available\": allow the camera in your device or browser settings.\n\"Image too large or unsupported format\": pick a JPG, PNG or WebP image under 2 MB.\n\"Maintenance\": the app will be back soon, try again later.\nStill stuck? Contact us from the help center.';
 }

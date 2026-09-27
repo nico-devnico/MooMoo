@@ -18,6 +18,7 @@ import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
+import '../../../domain/providers/error_text.dart';
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
@@ -175,7 +176,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
               ),
               error: (e, _) => AppEmptyState(
                 title: l10n.errorGeneric,
-                message: e.toString(),
+                message: ref.userErrorText(e, l10n),
                 imagePath: null,
                 actionLabel: l10n.retry,
                 onAction: () => ref.invalidate(adminUsersProvider(_filter)),
@@ -203,7 +204,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
       if (mounted) {
         AppSnackbar.show(
           context,
-          message: '${l10n.errorGeneric}: $e',
+          message: ref.userErrorText(e, l10n),
           type: AppSnackbarType.error,
         );
       }

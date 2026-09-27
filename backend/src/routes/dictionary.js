@@ -6,6 +6,7 @@ import {
   parseContent, suggestMapping, validateRecords, signPayload, slugify, TARGET_FIELDS, MAX_ROWS,
 } from '../lib/dictionary_import.js';
 import { fetchMedia } from '../lib/media_fetch.js';
+import { userError } from '../lib/errors.js';
 
 export const dictionaryRouter = Router();
 
@@ -13,7 +14,7 @@ const MAX_CONTENT = 10 * 1024 * 1024;
 const PAGE = 1000;
 
 function badRequest(message, code = 'bad_request') {
-  return Object.assign(new Error(message), { status: 400, code });
+  return userError(400, message, code);
 }
 
 function readBody(body) {

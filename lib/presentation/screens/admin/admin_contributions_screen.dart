@@ -21,6 +21,7 @@ import '../../widgets/app_snackbar.dart';
 import '../../widgets/sign_media.dart';
 import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
+import '../../../domain/providers/error_text.dart';
 
 const double _listMaxWidth = 820;
 const double _thumbSize = 88;
@@ -174,7 +175,7 @@ class _AdminContributionsScreenState
                     AppEmptyState(
                       icon: AppIcons.error,
                       title: l10n.errorGeneric,
-                      message: e.toString(),
+                      message: ref.userErrorText(e, l10n),
                       actionLabel: l10n.retry,
                       onAction: () => ref.invalidate(
                         adminContributionsProvider(_statusFilter),
@@ -237,7 +238,7 @@ class _AdminContributionsScreenState
       if (mounted) {
         AppSnackbar.show(
           context,
-          message: '${l10n.errorGeneric}: $e',
+          message: ref.userErrorText(e, l10n),
           type: AppSnackbarType.error,
         );
       }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { dbForUser, dbPreferService, supabaseAdmin } from '../supabase.js';
 import { createAuthUser, deleteAuthUser, hasDirectDb } from '../pgdb.js';
+import { userError } from '../lib/errors.js';
 
 export const adminRouter = Router();
 
@@ -13,7 +14,7 @@ const USER_COLUMNS =
   'suspended_at,suspended_reason,suspended_by,preferred_sign_language,created_at';
 
 function badRequest(message, code = 'validation') {
-  return Object.assign(new Error(message), { status: 400, code });
+  return userError(400, message, code);
 }
 
 function serverAccessRequired(action) {
@@ -105,11 +106,9 @@ async function assertAdmin(req) {
     req.user.app_metadata?.role === 'admin' ||
     req.user.user_metadata?.role === 'admin';
   if (!data?.is_admin && !metaAdmin) {
-    const err = new Error('Accès admin refusé');
-    err.status = 403;
-    err.code = 'forbidden';
-    throw err;
+    throw userError(403, 'Accès réservé aux administrateurs.', 'forbidden');
   }
+  req.isAdmin = true;
   return true;
 }
 

@@ -15,6 +15,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/skeletons.dart';
 import 'widgets/learning_widgets.dart';
+import '../../../domain/providers/error_text.dart';
 
 const List<int> _goalOptions = [10, 20, 30, 50];
 
@@ -40,7 +41,7 @@ class ProgressScreen extends ConsumerWidget {
               error: (error, _) => AppEmptyState(
                 icon: AppIcons.error,
                 title: l10n.errorGeneric,
-                message: error.toString(),
+                message: ref.userErrorText(error, l10n),
                 actionLabel: l10n.retry,
                 onAction: () => ref.invalidate(learnerSummaryProvider),
               ),

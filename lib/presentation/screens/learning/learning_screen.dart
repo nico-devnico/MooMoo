@@ -22,6 +22,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/skeletons.dart';
 import 'widgets/learning_widgets.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Width of the lesson path column. Wide enough for the zig-zag to read as a
 /// path, narrow enough that the eye follows it without scanning sideways.
@@ -51,7 +52,7 @@ class LearningScreen extends ConsumerWidget {
           error: (error, _) => AppEmptyState(
             icon: AppIcons.error,
             title: l10n.errorGeneric,
-            message: error.toString(),
+            message: ref.userErrorText(error, l10n),
             actionLabel: l10n.retry,
             onAction: () => ref.invalidate(learningLanguageProvider),
           ),
@@ -353,7 +354,7 @@ class _LessonPath extends ConsumerWidget {
       return AppEmptyState(
         icon: AppIcons.error,
         title: l10n.errorGeneric,
-        message: pathAsync.error.toString(),
+        message: ref.userErrorText(pathAsync.error!, l10n),
         actionLabel: l10n.retry,
         onAction: () => ref.invalidate(learningPathProvider(language.id)),
       );

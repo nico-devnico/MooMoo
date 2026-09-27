@@ -499,6 +499,11 @@ class _SupportGroup extends StatelessWidget {
       title: l10n.supportLegal,
       children: [
         SettingsTile(
+          icon: PhosphorIconsRegular.bookOpen,
+          title: l10n.userGuide,
+          onTap: () => context.pushNamed(AppRoutes.userGuideName),
+        ),
+        SettingsTile(
           icon: PhosphorIconsRegular.lifebuoy,
           title: l10n.helpCenter,
           onTap: () => context.pushNamed(AppRoutes.helpCenterName),

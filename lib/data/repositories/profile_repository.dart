@@ -5,6 +5,9 @@ import '../services/api_client.dart';
 abstract class ProfileRepository {
   Future<UserProfile?> getProfile(String id);
   Future<void> updateProfile(UserProfile profile);
+
+  /// Sets or clears (null) the photo; throws if the row was not updated.
+  Future<void> updateAvatarUrl(String id, String? url);
   Stream<UserProfile?> watchProfile(String id);
   Future<UserProfile?> ensureProfileViaApi({
     required String accessToken,
@@ -67,6 +70,19 @@ class ProfileRepositoryImpl implements ProfileRepository {
     json['updated_at'] = DateTime.now().toIso8601String();
 
     await _supabase.from('profiles').update(json).eq('id', profile.id);
+  }
+
+  @override
+  Future<void> updateAvatarUrl(String id, String? url) async {
+    final rows = await _supabase
+        .from('profiles')
+        .update({'avatar_url': url, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', id)
+        .select('id');
+    // RLS (or maintenance) filters the row out instead of raising.
+    if (rows.isEmpty) {
+      throw const PostgrestException(message: 'profile update refused', code: '42501');
+    }
   }
 
   @override

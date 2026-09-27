@@ -21,7 +21,7 @@ export async function requireAuth(req, res, next) {
       return res.status(401).json({
         ok: false,
         error: 'unauthorized',
-        message: 'JWT Supabase requis (Authorization: Bearer <access_token>)',
+        message: 'Connectez-vous pour continuer.',
       });
     }
     next();

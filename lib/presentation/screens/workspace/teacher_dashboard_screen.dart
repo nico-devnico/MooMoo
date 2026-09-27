@@ -18,6 +18,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/skeletons.dart';
 import '../admin/admin_shell.dart';
 import 'workspace_widgets.dart';
+import '../../../domain/providers/error_text.dart';
 
 class TeacherDashboardScreen extends ConsumerWidget {
   const TeacherDashboardScreen({super.key});
@@ -48,7 +49,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
               error: (e, _) => AppEmptyState(
                 icon: AppIcons.error,
                 title: l10n.errorGeneric,
-                message: e.toString(),
+                message: ref.userErrorText(e, l10n),
                 actionLabel: l10n.retry,
                 onAction: () => ref.invalidate(teacherOverviewProvider),
               ),

@@ -3567,4 +3567,247 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get contributionsClosed =>
       'Les contributions sont momentanément fermées. Vous pouvez toujours consulter vos propositions ci-dessous.';
+
+  @override
+  String get errNetwork =>
+      'Connexion impossible. Vérifiez votre accès à Internet puis réessayez.';
+
+  @override
+  String get errServiceUnavailable =>
+      'Le service est momentanément indisponible. Réessayez dans quelques instants.';
+
+  @override
+  String get errMaintenance =>
+      'L\'application est en maintenance. Merci de réessayer un peu plus tard.';
+
+  @override
+  String get errSessionExpired =>
+      'Votre session a expiré. Reconnectez-vous pour continuer.';
+
+  @override
+  String get errPermission =>
+      'Vous n\'avez pas les droits nécessaires pour cette action.';
+
+  @override
+  String get errNotFound =>
+      'L\'élément demandé est introuvable ou n\'existe plus.';
+
+  @override
+  String get errConflict => 'Cet élément existe déjà.';
+
+  @override
+  String get errTooLarge => 'Le fichier est trop volumineux.';
+
+  @override
+  String get errUnsupportedFormat =>
+      'Ce format de fichier n\'est pas pris en charge.';
+
+  @override
+  String get errInvalidData =>
+      'Certaines informations sont invalides. Vérifiez-les puis réessayez.';
+
+  @override
+  String get errUnknown =>
+      'Une erreur inattendue est survenue. Réessayez plus tard.';
+
+  @override
+  String errTechnicalDetail(String detail) {
+    return 'Détail technique (admin) : $detail';
+  }
+
+  @override
+  String get errCamera =>
+      'La caméra n\'est pas accessible. Autorisez son accès dans les réglages de votre appareil ou de votre navigateur.';
+
+  @override
+  String get authUnknownError =>
+      'Impossible de vous connecter pour l\'instant. Réessayez plus tard.';
+
+  @override
+  String get accountAddPhoto => 'Ajouter une photo';
+
+  @override
+  String get accountPhotoRules => 'JPG, PNG ou WebP, 2 Mo maximum.';
+
+  @override
+  String get accountPhotoSending => 'Envoi de la photo…';
+
+  @override
+  String get accountPhotoPickError =>
+      'Impossible d\'ouvrir l\'image. Essayez avec un autre fichier.';
+
+  @override
+  String get accountPhotoTooLarge =>
+      'Cette image dépasse 2 Mo. Choisissez une image plus légère.';
+
+  @override
+  String get accountPhotoBadFormat =>
+      'Format non pris en charge. Utilisez une image JPG, PNG ou WebP.';
+
+  @override
+  String get accountPhotoUpdated => 'Photo de profil mise à jour.';
+
+  @override
+  String get accountPhotoUploadError =>
+      'La photo n\'a pas pu être envoyée. Réessayez.';
+
+  @override
+  String get accountRemovePhoto => 'Supprimer la photo';
+
+  @override
+  String get accountRemovePhotoTitle => 'Supprimer la photo de profil ?';
+
+  @override
+  String get accountRemovePhotoMessage =>
+      'Vos initiales seront affichées à la place.';
+
+  @override
+  String get accountPhotoRemoved => 'Photo de profil supprimée.';
+
+  @override
+  String get accountPhotoRemoveError =>
+      'La photo n\'a pas pu être supprimée. Réessayez.';
+
+  @override
+  String get userGuide => 'Guide utilisateur';
+
+  @override
+  String get guideHeroTitle => 'Bienvenue dans MooMoo';
+
+  @override
+  String get guideHeroBody =>
+      'Ce guide présente, étape par étape, tout ce que vous pouvez faire dans l\'application : traduire, explorer le dictionnaire, apprendre la langue des signes et gérer votre compte.';
+
+  @override
+  String get guideContents => 'Sommaire';
+
+  @override
+  String guideOpen(String section) {
+    return 'Ouvrir : $section';
+  }
+
+  @override
+  String get guideMoreHelpTitle => 'Besoin d\'aide supplémentaire ?';
+
+  @override
+  String get guideMoreHelpBody =>
+      'Consultez les questions fréquentes ou écrivez à l\'équipe depuis le centre d\'aide.';
+
+  @override
+  String get guideAccountTitle => 'Créer un compte';
+
+  @override
+  String get guideAccountIntro =>
+      'Un compte permet de sauvegarder vos favoris, votre progression et votre historique.';
+
+  @override
+  String get guideAccountSteps =>
+      'Sur l\'écran d\'accueil, choisissez « Créer un compte ».\nRenseignez votre nom, votre adresse e-mail et un mot de passe.\nSi un e-mail de confirmation vous est envoyé, ouvrez le lien qu\'il contient.\nVous pouvez ensuite compléter votre profil à tout moment.';
+
+  @override
+  String get guideLoginTitle => 'Se connecter';
+
+  @override
+  String get guideLoginIntro => 'Retrouvez vos données sur tous vos appareils.';
+
+  @override
+  String get guideLoginSteps =>
+      'Saisissez votre adresse e-mail et votre mot de passe, puis validez.\nMot de passe oublié ? Touchez « Mot de passe oublié » pour recevoir un lien de réinitialisation par e-mail.\nPour vous déconnecter, ouvrez votre profil puis « Se déconnecter ».';
+
+  @override
+  String get guideNavigationTitle => 'Se repérer dans l\'application';
+
+  @override
+  String get guideNavigationIntro =>
+      'La barre de navigation donne accès aux quatre espaces principaux.';
+
+  @override
+  String get guideNavigationSteps =>
+      'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nVotre photo de profil, en haut de l\'écran, ouvre votre profil et vos paramètres.';
+
+  @override
+  String get guideTranslateTitle => 'Traduire';
+
+  @override
+  String get guideTranslateIntro =>
+      'Traduisez des signes en texte, ou du texte en signes.';
+
+  @override
+  String get guideTranslateSteps =>
+      'Ouvrez l\'onglet Traduire et choisissez le sens de traduction.\nSignes vers texte : autorisez l\'accès à la caméra, placez-vous bien éclairé et cadré, puis signez.\nTexte vers signes : saisissez ou dictez une phrase pour voir les signes correspondants.\nSi la reconnaissance est momentanément indisponible, un message vous l\'indique : réessayez un peu plus tard.';
+
+  @override
+  String get guideDictionaryTitle => 'Dictionnaire';
+
+  @override
+  String get guideDictionaryIntro =>
+      'Explorez les signes par recherche ou par catégorie.';
+
+  @override
+  String get guideDictionarySteps =>
+      'Tapez un mot dans la barre de recherche ou parcourez les catégories.\nTouchez un signe pour voir sa vidéo et sa description.\nAjoutez-le à vos favoris pour le retrouver facilement depuis votre profil.';
+
+  @override
+  String get guideLearningTitle => 'Apprendre';
+
+  @override
+  String get guideLearningIntro =>
+      'Progressez à votre rythme grâce à des leçons courtes.';
+
+  @override
+  String get guideLearningSteps =>
+      'Ouvrez l\'onglet Apprendre pour voir votre parcours.\nChoisissez la leçon disponible et suivez les exercices jusqu\'au bout.\nVotre progression est enregistrée automatiquement.\nConsultez vos statistiques depuis l\'écran de progression.';
+
+  @override
+  String get guideProfileTitle => 'Profil et photo';
+
+  @override
+  String get guideProfileIntro =>
+      'Personnalisez les informations visibles sur votre compte.';
+
+  @override
+  String get guideProfileSteps =>
+      'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image JPG, PNG ou WebP de 2 Mo maximum.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.';
+
+  @override
+  String get guideHistoryTitle => 'Historique';
+
+  @override
+  String get guideHistoryIntro => 'Retrouvez vos traductions précédentes.';
+
+  @override
+  String get guideHistorySteps =>
+      'Ouvrez votre profil puis « Historique des traductions ».\nParcourez vos traductions récentes, de la plus récente à la plus ancienne.\nL\'historique est lié à votre compte : connectez-vous pour le retrouver.';
+
+  @override
+  String get guideSettingsTitle => 'Paramètres';
+
+  @override
+  String get guideSettingsIntro => 'Adaptez l\'application à vos préférences.';
+
+  @override
+  String get guideSettingsSteps =>
+      'Thème clair ou sombre et langue de l\'application.\nLangue des signes utilisée pour la traduction et le dictionnaire.\nVue par défaut et réglages du personnage 3D.\nOptions d\'accessibilité et sécurité du compte (changement de mot de passe).';
+
+  @override
+  String get guideRolesTitle => 'Rôles';
+
+  @override
+  String get guideRolesIntro =>
+      'Certaines fonctions dépendent du rôle attribué à votre compte.';
+
+  @override
+  String get guideRolesSteps =>
+      'Utilisateur : traduire, consulter le dictionnaire, apprendre et proposer des signes.\nEnseignant : gérer les contenus d\'apprentissage depuis son espace.\nExpert : vérifier les signes et les contributions proposées.\nAdministrateur : gérer les utilisateurs, le dictionnaire et les réglages de l\'application.\nVos espaces disponibles apparaissent dans votre profil.';
+
+  @override
+  String get guideErrorsTitle => 'Erreurs courantes';
+
+  @override
+  String get guideErrorsIntro =>
+      'Que faire si quelque chose ne fonctionne pas ?';
+
+  @override
+  String get guideErrorsSteps =>
+      '« Connexion impossible » : vérifiez votre accès à Internet puis réessayez.\n« Session expirée » : reconnectez-vous.\n« Caméra non accessible » : autorisez la caméra dans les réglages de l\'appareil ou du navigateur.\n« Image trop volumineuse ou format non pris en charge » : choisissez une image JPG, PNG ou WebP de moins de 2 Mo.\n« Maintenance en cours » : l\'application revient bientôt, réessayez plus tard.\nLe problème persiste ? Contactez-nous depuis le centre d\'aide.';
 }

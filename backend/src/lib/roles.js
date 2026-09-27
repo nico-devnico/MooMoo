@@ -21,11 +21,12 @@ export function requireRole(...allowed) {
     try {
       const roles = await getRoles(req.accessToken);
       req.roles = roles;
-      if (roles.includes('admin') || roles.some((r) => allowed.includes(r))) return next();
+      req.isAdmin = roles.includes('admin');
+      if (req.isAdmin || roles.some((r) => allowed.includes(r))) return next();
       return res.status(403).json({
         ok: false,
         error: 'forbidden',
-        message: `Rôle requis : ${['admin', ...allowed].join(' ou ')}`,
+        message: "Vous n'avez pas les droits nécessaires pour cette action.",
       });
     } catch (e) {
       next(e);

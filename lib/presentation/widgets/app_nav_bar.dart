@@ -35,8 +35,11 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onDestinationSelected,
     this.actions = const [],
     this.semanticLabel,
+    this.centerDestinations = false,
   });
 
+  /// Centres the links on the bar rather than packing them after the brand.
+  final bool centerDestinations;
   final Widget brand;
   final List<NavBarDestination> destinations;
   final int selectedIndex;
@@ -80,47 +83,77 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
                 desktop: AppSpacing.xl,
               ),
             ),
-            child: Row(
-              children: [
-                brand,
-                const SizedBox(width: AppSpacing.xl),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < destinations.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.xs),
-                            child: _NavLink(
-                              destination: destinations[i],
-                              isSelected: i == selectedIndex,
-                              showIcon: showIcons,
-                              onTap: () => onDestinationSelected(i),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (actions.isNotEmpty) ...[
-                  const SizedBox(width: AppSpacing.m),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+            child: centerDestinations
+                ? _centeredLayout(showIcons)
+                : Row(
                     children: [
-                      for (final action in actions)
-                        Padding(
-                          padding: const EdgeInsets.only(left: AppSpacing.s),
-                          child: action,
-                        ),
+                      brand,
+                      const SizedBox(width: AppSpacing.xl),
+                      Expanded(child: _links(showIcons)),
+                      if (actions.isNotEmpty) ...[
+                        const SizedBox(width: AppSpacing.m),
+                        _actionsRow(),
+                      ],
                     ],
                   ),
-                ],
-              ],
-            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _links(bool showIcons) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < destinations.length; i++)
+            Padding(
+              padding: centerDestinations
+                  ? const EdgeInsets.symmetric(horizontal: AppSpacing.xs / 2)
+                  : const EdgeInsets.only(right: AppSpacing.xs),
+              child: _NavLink(
+                destination: destinations[i],
+                isSelected: i == selectedIndex,
+                showIcon: showIcons,
+                onTap: () => onDestinationSelected(i),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionsRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final action in actions)
+          Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.s),
+            child: action,
+          ),
+      ],
+    );
+  }
+
+  /// Brand and actions take equal flexible sides so the links sit at the true
+  /// centre of the bar; the links scroll if the window is too narrow.
+  Widget _centeredLayout(bool showIcons) {
+    return Row(
+      children: [
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(fit: BoxFit.scaleDown, child: brand),
+          ),
+        ),
+        Flexible(flex: 3, fit: FlexFit.loose, child: _links(showIcons)),
+        Expanded(
+          child: Align(alignment: Alignment.centerRight, child: _actionsRow()),
+        ),
+      ],
     );
   }
 }

@@ -205,9 +205,12 @@ export function parseContent(filename, content) {
       records = recordsFromTree(parser.parse(content));
     }
   } catch (e) {
-    const err = new Error(`Fichier ${format.toUpperCase()} invalide : ${e.message}`);
+    // The parser's own message stays out of the user-facing text.
+    const err = new Error(`Fichier ${format.toUpperCase()} illisible : vérifiez qu'il est bien formé.`);
     err.status = 400;
     err.code = 'parse_error';
+    err.expose = true;
+    err.details = e.message;
     throw err;
   }
   fields = fields || fieldsOf(records);

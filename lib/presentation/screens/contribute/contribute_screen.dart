@@ -22,6 +22,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/providers/error_text.dart';
 
 class ContributeScreen extends ConsumerStatefulWidget {
   const ContributeScreen({super.key});
@@ -77,7 +78,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
       AppSnackbar.show(context, message: l10n.contributionSubmitted, type: AppSnackbarType.success);
     } catch (e) {
       if (mounted) {
-        AppSnackbar.show(context, message: '${l10n.errorGeneric}: $e', type: AppSnackbarType.error);
+        AppSnackbar.show(context, message: ref.userErrorText(e, l10n), type: AppSnackbarType.error);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -271,7 +272,7 @@ class _SubmissionList extends ConsumerWidget {
       error: (e, _) => AppEmptyState(
         icon: AppIcons.error,
         title: l10n.errorGeneric,
-        message: '$e',
+        message: ref.userErrorText(e, l10n),
         actionLabel: l10n.retry,
         onAction: () => ref.invalidate(myContributionsProvider),
       ),

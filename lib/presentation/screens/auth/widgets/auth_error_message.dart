@@ -1,3 +1,4 @@
+import '../../../../core/errors/user_error.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// Turns an auth failure into something a user can act on.
@@ -37,5 +38,5 @@ String authErrorMessage(Object error, AppLocalizations l10n) {
     return l10n.authNetworkError;
   }
 
-  return '${l10n.errorGeneric} : $error';
+  return userErrorMessage(error, l10n, fallback: l10n.authUnknownError);
 }

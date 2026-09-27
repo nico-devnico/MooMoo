@@ -27,6 +27,7 @@ import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
 import 'dictionary/category_manager_dialog.dart';
 import 'dictionary/import_dialog.dart';
+import '../../../domain/providers/error_text.dart';
 
 const double _listMaxWidth = 820;
 const double _thumbSize = 64;
@@ -305,7 +306,7 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
                     AppEmptyState(
                       icon: AppIcons.error,
                       title: l10n.errorGeneric,
-                      message: e.toString(),
+                      message: ref.userErrorText(e, l10n),
                       actionLabel: l10n.retry,
                       onAction: () =>
                           ref.invalidate(adminSignsProvider(_filter)),
@@ -375,7 +376,7 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
       if (mounted) {
         AppSnackbar.show(
           context,
-          message: '${l10n.errorGeneric}: $e',
+          message: ref.userErrorText(e, l10n),
           type: AppSnackbarType.error,
         );
       }
@@ -445,7 +446,7 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
       if (mounted) {
         AppSnackbar.show(
           context,
-          message: '${l10n.errorGeneric}: $e',
+          message: ref.userErrorText(e, l10n),
           type: AppSnackbarType.error,
         );
       }
@@ -536,7 +537,7 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
           .uploadSignMedia(file.bytes!, file.name, video: video);
       (video ? _videoUrl : _thumbnailUrl).text = url;
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     } finally {
       if (mounted) setState(() => _uploading = null);
     }

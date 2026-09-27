@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/skeletons.dart';
 import 'learning_editor.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Course editor for teachers and sign language experts, who have no access
 /// to the admin area.
@@ -35,7 +36,7 @@ class LearningManageScreen extends ConsumerWidget {
           error: (e, _) => AppEmptyState(
             icon: AppIcons.error,
             title: l10n.errorGeneric,
-            message: e.toString(),
+            message: ref.userErrorText(e, l10n),
           ),
         ),
       ),

@@ -27,6 +27,7 @@ import '../../presentation/screens/profile/edit_profile_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/notifications/notification_screen.dart';
 import '../../presentation/screens/about/about_screen.dart';
+import '../../presentation/screens/help/user_guide_screen.dart';
 import '../../presentation/screens/legal/help_center_screen.dart';
 import '../../presentation/screens/legal/privacy_policy_screen.dart';
 import '../../presentation/screens/legal/terms_of_service_screen.dart';
@@ -223,6 +224,11 @@ GoRouter appRouter(Ref ref) {
                     path: 'help-center',
                     name: AppRoutes.helpCenterName,
                     builder: (context, state) => const HelpCenterScreen(),
+                  ),
+                  GoRoute(
+                    path: 'guide',
+                    name: AppRoutes.userGuideName,
+                    builder: (context, state) => const UserGuideScreen(),
                   ),
                   GoRoute(
                     path: 'privacy-policy',

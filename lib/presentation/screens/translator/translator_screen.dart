@@ -20,6 +20,7 @@ import '../../../data/models/sign.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/character_provider.dart';
+import '../../../domain/providers/error_text.dart';
 import '../../../domain/providers/ml_model_provider.dart';
 import '../../../domain/providers/session_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
@@ -1459,7 +1460,7 @@ class _AvatarView extends ConsumerWidget {
     Widget failure(Object e) => _StagePlaceholder(
       icon: AppIcons.error,
       title: l10n.translLoadError,
-      message: '$e',
+      message: ref.userErrorText(e, l10n),
     );
 
     return ref

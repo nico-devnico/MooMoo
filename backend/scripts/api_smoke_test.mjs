@@ -34,7 +34,7 @@ async function run() {
     const r = await fetch(`${API}/health`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const j = await r.json();
-    return `serviceRole=${j.serviceRole}`;
+    return `database=${j.database ?? 'n/a'}`;
   }))) fails++; else results++;
 
   if (!(await check('api.signup', async () => {

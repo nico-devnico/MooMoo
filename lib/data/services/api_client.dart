@@ -7,7 +7,10 @@ class ApiException implements Exception {
   final String message;
   final String? code;
 
-  ApiException(this.status, this.message, {this.code});
+  /// Technical cause, only sent by the API to administrators.
+  final String? detail;
+
+  ApiException(this.status, this.message, {this.code, this.detail});
 
   @override
   String toString() => message;
@@ -157,15 +160,15 @@ class ApiClient {
           ? decoded
           : <String, dynamic>{'data': decoded};
     } catch (_) {
-      json = {'message': res.body};
+      // A non-JSON body (proxy page, crash output) is never shown as is.
+      json = const {};
     }
     if (res.statusCode >= 400) {
       throw ApiException(
         res.statusCode,
-        json['message']?.toString() ??
-            json['error']?.toString() ??
-            'HTTP ${res.statusCode}',
+        json['message']?.toString() ?? 'HTTP ${res.statusCode}',
         code: json['error']?.toString(),
+        detail: json['detail']?.toString(),
       );
     }
     return json;

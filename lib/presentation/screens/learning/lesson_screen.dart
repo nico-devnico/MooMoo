@@ -20,6 +20,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/sign_media.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Caps the media so the question and the answers stay on screen together.
 const double _mediaMaxHeight = 320;
@@ -49,7 +50,7 @@ class LessonScreen extends ConsumerWidget {
           error: (error, _) => AppEmptyState(
             icon: AppIcons.error,
             title: l10n.errorGeneric,
-            message: error.toString(),
+            message: ref.userErrorText(error, l10n),
             actionLabel: l10n.retry,
             onAction: () => ref.invalidate(lessonContentProvider(id)),
           ),

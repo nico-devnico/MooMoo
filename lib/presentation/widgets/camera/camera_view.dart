@@ -7,6 +7,7 @@ import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../l10n/app_localizations.dart';
 import 'camera_overlay.dart';
 import 'camera_controls_bar.dart';
 
@@ -194,7 +195,15 @@ class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProvid
           );
         }
         return Scaffold(
-          body: Center(child: Text('Erreur caméra: $error')),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.l),
+              child: Text(
+                AppLocalizations.of(context)!.errCamera,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         );
       },
     );

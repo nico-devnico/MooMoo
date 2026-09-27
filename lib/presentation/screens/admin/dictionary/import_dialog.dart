@@ -9,6 +9,7 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../data/services/api_client.dart';
+import '../../../../domain/providers/error_text.dart';
 import '../../../../domain/providers/sign_provider.dart';
 import '../../../../domain/providers/workspace_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -91,7 +92,7 @@ class _DictionaryImportDialogState extends ConsumerState<DictionaryImportDialog>
   String _message(Object e) {
     final l10n = AppLocalizations.of(context)!;
     if (e is ApiUnreachableException) return l10n.dmApiRequired;
-    return '$e';
+    return ref.userErrorText(e, l10n);
   }
 
   Future<void> _analyse({bool withMapping = false}) async {

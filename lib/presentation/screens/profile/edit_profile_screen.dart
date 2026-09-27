@@ -12,6 +12,8 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/user_profile.dart';
+import '../../../data/repositories/storage_repository.dart';
+import '../../../domain/providers/error_text.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/storage_provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -21,6 +23,7 @@ import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/skeletons.dart';
 import '../settings/settings_screen.dart';
 
@@ -40,8 +43,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isSaving = false;
   bool _isInitialized = false;
   bool _isDeaf = false;
-  Uint8List? _imageBytes;
-  String? _imagePath;
+  bool _photoBusy = false;
+
+  /// Shown while the chosen photo is being sent.
+  Uint8List? _previewBytes;
 
   @override
   void dispose() {
@@ -58,20 +63,102 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _isInitialized = true;
   }
 
-  Future<void> _pickImage() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 75,
-    );
-    if (image == null) return;
-    final bytes = await image.readAsBytes();
+  /// The photo is saved as soon as it is chosen, independently of the form,
+  /// so it shows everywhere right away.
+  Future<void> _pickAndUploadPhoto(UserProfile profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    XFile? image;
+    try {
+      image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+    } catch (_) {
+      if (mounted) AppSnackbar.showError(context, l10n.accountPhotoPickError);
+      return;
+    }
+    if (image == null || !mounted) return;
+
+    Uint8List bytes;
+    try {
+      bytes = await image.readAsBytes();
+    } catch (_) {
+      if (mounted) AppSnackbar.showError(context, l10n.accountPhotoPickError);
+      return;
+    }
     if (!mounted) return;
+    // Checked before sending so the user gets the precise reason at once.
+    if (bytes.length > kMaxAvatarBytes) {
+      AppSnackbar.showError(context, l10n.accountPhotoTooLarge);
+      return;
+    }
+    if (StorageRepositoryImpl.detectImageType(bytes) == null) {
+      AppSnackbar.showError(context, l10n.accountPhotoBadFormat);
+      return;
+    }
+
     setState(() {
-      _imageBytes = bytes;
-      _imagePath = kIsWeb ? null : image.path;
+      _previewBytes = bytes;
+      _photoBusy = true;
     });
+    try {
+      final url = await ref
+          .read(storageRepositoryProvider)
+          .uploadAvatar(bytes: bytes, userId: profile.id);
+      await ref.read(profileRepositoryProvider).updateAvatarUrl(profile.id, url);
+      ref.invalidate(userProfileProvider);
+      if (mounted) AppSnackbar.showSuccess(context, l10n.accountPhotoUpdated);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _previewBytes = null);
+        AppSnackbar.showError(
+          context,
+          ref.userErrorText(e, l10n, fallback: l10n.accountPhotoUploadError),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Future<void> _removePhoto(UserProfile profile) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: l10n.accountRemovePhotoTitle,
+      message: l10n.accountRemovePhotoMessage,
+      confirmLabel: l10n.accountRemovePhoto,
+      cancelLabel: l10n.cancel,
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _photoBusy = true);
+    try {
+      // Profile first: it must never point at a file that no longer exists.
+      await ref.read(profileRepositoryProvider).updateAvatarUrl(profile.id, null);
+      ref.invalidate(userProfileProvider);
+      try {
+        await ref.read(storageRepositoryProvider).deleteAvatar(profile.id);
+      } catch (e) {
+        debugPrint('[avatar] stored file not removed: $e');
+      }
+      if (mounted) {
+        setState(() => _previewBytes = null);
+        AppSnackbar.showSuccess(context, l10n.accountPhotoRemoved);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(
+          context,
+          ref.userErrorText(e, l10n, fallback: l10n.accountPhotoRemoveError),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
   }
 
   Future<void> _save(UserProfile profile) async {
@@ -80,24 +167,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _isSaving = true);
     try {
-      var avatarUrl = profile.avatarUrl;
-      if (_imageBytes != null) {
-        final url = await ref.read(storageRepositoryProvider).uploadAvatar(
-              bytes: _imageBytes,
-              path: _imagePath,
-              userId: profile.id,
-            );
-        // Le chemin de stockage est fixe par utilisateur : sans ce paramètre,
-        // l'ancienne image resterait servie depuis le cache.
-        avatarUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
-      }
-
       final bio = _bioController.text.trim();
+      final current = ref.read(userProfileProvider).value ?? profile;
       await ref.read(profileRepositoryProvider).updateProfile(
-            profile.copyWith(
+            current.copyWith(
               displayName: _nameController.text.trim(),
               bio: bio.isEmpty ? null : bio,
-              avatarUrl: avatarUrl,
               isDeaf: _isDeaf,
             ),
           );
@@ -110,8 +185,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       } else {
         context.goNamed(AppRoutes.profileName);
       }
-    } catch (_) {
-      if (mounted) AppSnackbar.showError(context, l10n.accountSaveError);
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(
+          context,
+          ref.userErrorText(e, l10n, fallback: l10n.accountSaveError),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -172,29 +252,56 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           AppPanel(
             child: Row(
               children: [
-                _imageBytes != null
-                    ? ClipOval(
-                        child: Image.memory(
-                          _imageBytes!,
-                          width: _avatarRadius * 2,
-                          height: _avatarRadius * 2,
-                          fit: BoxFit.cover,
-                          semanticLabel: l10n.accountPhotoTitle,
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _photoBusy && _previewBytes != null
+                        ? ClipOval(
+                            child: Image.memory(
+                              _previewBytes!,
+                              width: _avatarRadius * 2,
+                              height: _avatarRadius * 2,
+                              fit: BoxFit.cover,
+                              semanticLabel: l10n.accountPhotoTitle,
+                            ),
+                          )
+                        : Semantics(
+                            image: true,
+                            label: l10n.accountPhotoTitle,
+                            child: ExcludeSemantics(
+                              child: AppAvatar(
+                                imageUrl: profile.avatarUrl,
+                                name: _nameController.text.isEmpty
+                                    ? profile.displayName
+                                    : _nameController.text,
+                                radius: _avatarRadius,
+                              ),
+                            ),
+                          ),
+                    if (_photoBusy)
+                      Container(
+                        width: _avatarRadius * 2,
+                        height: _avatarRadius * 2,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black38,
                         ),
-                      )
-                    : Semantics(
-                        image: true,
-                        label: l10n.accountPhotoTitle,
-                        child: ExcludeSemantics(
-                          child: AppAvatar(
-                            imageUrl: profile.avatarUrl,
-                            name: _nameController.text.isEmpty
-                                ? profile.displayName
-                                : _nameController.text,
-                            radius: _avatarRadius,
+                        child: Center(
+                          child: Semantics(
+                            label: l10n.accountPhotoSending,
+                            child: const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                  ],
+                ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
                   child: Column(
@@ -206,18 +313,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        l10n.accountPhotoHint,
+                        '${l10n.accountPhotoHint} ${l10n.accountPhotoRules}',
                         style: AppTextStyles.bodySmall.copyWith(color: secondary),
                       ),
                       const SizedBox(height: AppSpacing.s),
-                      OutlinedButton.icon(
-                        onPressed: _isSaving ? null : _pickImage,
-                        icon: const Icon(AppIcons.camera, size: 18),
-                        label: Text(l10n.accountChangePhoto),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, kMinTouchTarget),
-                          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusM),
-                        ),
+                      Wrap(
+                        spacing: AppSpacing.s,
+                        runSpacing: AppSpacing.s,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _isSaving || _photoBusy
+                                ? null
+                                : () => _pickAndUploadPhoto(profile),
+                            icon: const Icon(AppIcons.camera, size: 18),
+                            label: Text(
+                              profile.avatarUrl == null
+                                  ? l10n.accountAddPhoto
+                                  : l10n.accountChangePhoto,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, kMinTouchTarget),
+                              shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusM),
+                            ),
+                          ),
+                          if (profile.avatarUrl != null)
+                            TextButton.icon(
+                              onPressed: _isSaving || _photoBusy
+                                  ? null
+                                  : () => _removePhoto(profile),
+                              icon: const Icon(AppIcons.delete, size: 18),
+                              label: Text(l10n.accountRemovePhoto),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                minimumSize: const Size(0, kMinTouchTarget),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),

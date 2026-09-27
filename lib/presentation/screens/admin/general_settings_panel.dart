@@ -17,6 +17,7 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/providers/error_text.dart';
 
 const int _maxLogoBytes = 2 * 1024 * 1024;
 
@@ -49,7 +50,7 @@ class GeneralSettingsPanel extends ConsumerWidget {
           children: [
             const Icon(AppIcons.error, color: AppColors.error),
             const SizedBox(width: AppSpacing.m),
-            Expanded(child: Text('${l10n.cfgLoadError}\n$e')),
+            Expanded(child: Text(ref.userErrorText(e, l10n, fallback: l10n.cfgLoadError))),
             TextButton(
               onPressed: () => ref.invalidate(appSettingsProvider),
               child: Text(l10n.retry),
@@ -152,7 +153,7 @@ class _GeneralSettingsFormState extends ConsumerState<_GeneralSettingsForm> {
           .uploadLogo(file.bytes!, file.extension ?? '');
       if (mounted) setState(() => _logoUrl = url);
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -182,7 +183,7 @@ class _GeneralSettingsFormState extends ConsumerState<_GeneralSettingsForm> {
       ref.invalidate(appSettingsProvider);
       if (mounted) AppSnackbar.showSuccess(context, l10n.cfgSaved);
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, '${l10n.cfgSaveError}: $e');
+      if (mounted) AppSnackbar.showError(context, ref.userErrorText(e, l10n, fallback: l10n.cfgSaveError));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

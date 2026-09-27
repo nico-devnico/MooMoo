@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import '../../../core/layout/responsive.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -43,6 +45,13 @@ class HelpCenterScreen extends StatelessWidget {
                   l10n.accountHelpIntro,
                   style: AppTextStyles.bodyMedium.copyWith(color: secondary),
                 ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+              AppButton(
+                label: l10n.userGuide,
+                icon: PhosphorIconsRegular.bookOpen,
+                variant: AppButtonVariant.outline,
+                onPressed: () => context.pushNamed(AppRoutes.userGuideName),
               ),
               const SizedBox(height: AppSpacing.m),
               AppPanel(

@@ -58,21 +58,23 @@ inferRouter.post('/', upload.single('file'), async (req, res, next) => {
         body: form,
       });
     } catch (e) {
+      console.error(`[infer] ML service unreachable (${ML_SERVICE_URL}):`, e.message);
       return res.status(503).json({
         ok: false,
         error: 'ml_unavailable',
-        message: `Service Python injoignable (${ML_SERVICE_URL}): ${e.message}`,
-        model,
+        message: 'La reconnaissance des signes est momentanément indisponible. Réessayez plus tard.',
       });
     }
 
     const payload = await mlRes.json().catch(() => ({}));
     if (!mlRes.ok) {
-      return res.status(mlRes.status).json({
+      console.error('[infer] ML service error', mlRes.status, payload.detail || payload.message);
+      return res.status(mlRes.status >= 500 ? 502 : mlRes.status).json({
         ok: false,
-        error: payload.error || 'ml_error',
-        message: payload.detail || payload.message || 'Inference failed',
-        model,
+        error: 'ml_error',
+        message: mlRes.status >= 500
+          ? 'La reconnaissance des signes est momentanément indisponible. Réessayez plus tard.'
+          : "Cette vidéo n'a pas pu être analysée. Vérifiez qu'elle montre bien les mains et réessayez.",
       });
     }
 

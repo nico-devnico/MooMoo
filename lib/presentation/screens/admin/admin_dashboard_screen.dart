@@ -17,6 +17,7 @@ import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Au-delà de cette largeur, l'aperçu et les actions rapides passent côte à côte.
 const double _splitBreakpoint = 880;
@@ -92,7 +93,7 @@ class AdminDashboardScreen extends ConsumerWidget {
               error: (e, _) => AppEmptyState(
                 icon: AppIcons.error,
                 title: l10n.errorGeneric,
-                message: e.toString(),
+                message: ref.userErrorText(e, l10n),
                 actionLabel: l10n.retry,
                 onAction: () => ref.invalidate(adminStatsProvider),
               ),

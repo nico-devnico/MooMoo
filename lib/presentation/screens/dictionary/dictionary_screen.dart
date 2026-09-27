@@ -24,6 +24,7 @@ import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/sign_card.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/providers/error_text.dart';
 
 /// Marges horizontales d'un sliver pour centrer son contenu sur [width] tout
 /// en laissant la zone de défilement couvrir toute la fenêtre (molette active
@@ -68,7 +69,7 @@ Future<void> toggleSignFavorite(
     );
   } catch (e) {
     if (context.mounted) {
-      AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+      AppSnackbar.showError(context, ref.userErrorText(e, l10n));
     }
   }
 }
@@ -609,7 +610,7 @@ class _SignSearchResultsSliverState extends ConsumerState<SignSearchResultsSlive
       await ref.read(provider.notifier).loadMore();
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, '${AppLocalizations.of(context)!.errorGeneric}: $e');
+        AppSnackbar.showError(context, ref.userErrorText(e, AppLocalizations.of(context)!));
       }
     } finally {
       if (mounted) setState(() => _loadingMore = false);
@@ -738,7 +739,7 @@ class SignResultsSliver extends ConsumerWidget {
         child: AppEmptyState(
           icon: AppIcons.error,
           title: l10n.errorGeneric,
-          message: '$error',
+          message: ref.userErrorText(error, l10n),
           actionLabel: l10n.retry,
           onAction: onRetry,
         ),
