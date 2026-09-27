@@ -1,219 +1,450 @@
-import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
+import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../../core/layout/responsive.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/models/sign.dart';
+import '../../../domain/providers/favorite_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
-import '../../../data/models/landmark_point.dart';
-import '../../widgets/landmark_viewer/landmark_viewer.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_panel.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/sign_media.dart';
+import '../../widgets/skeletons.dart';
+import 'dictionary_screen.dart';
 
-class SignDetailScreen extends ConsumerStatefulWidget {
+/// Largeur à partir de laquelle la vidéo et le texte passent côte à côte.
+const double _splitBreakpoint = 840;
+
+class SignDetailScreen extends ConsumerWidget {
   final String id;
   const SignDetailScreen({super.key, required this.id});
 
   @override
-  ConsumerState<SignDetailScreen> createState() => _SignDetailScreenState();
-}
-
-class _SignDetailScreenState extends ConsumerState<SignDetailScreen> {
-  VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    _chewieController?.dispose();
-    super.dispose();
-  }
-
-  void _initVideo(String url) {
-    if (_videoController != null) return;
-    
-    _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
-    _chewieController = ChewieController(
-      videoPlayerController: _videoController!,
-      autoPlay: false,
-      looping: true,
-      aspectRatio: 16 / 9,
-      placeholder: Container(color: Colors.black),
-      materialProgressColors: ChewieProgressColors(
-        playedColor: AppColors.primary,
-        handleColor: AppColors.primary,
-        backgroundColor: Colors.white24,
-        bufferedColor: Colors.white10,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final signAsync = ref.watch(signDetailProvider(widget.id));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final signAsync = ref.watch(signDetailProvider(id));
 
     return Scaffold(
-      body: PageContainer(
-        width: ContentWidth.detail,
-        padding: 0,
+      appBar: AppBar(
+        title: Text(signAsync.value?.word ?? ''),
+        leading: IconButton(
+          icon: const Icon(AppIcons.back),
+          tooltip: l10n.back,
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.goNamed(AppRoutes.dictionaryName),
+        ),
+      ),
+      body: SafeArea(
+        top: false,
         child: signAsync.when(
-            data: (sign) {
-              if (sign == null) return const Center(child: Text('Signe non trouvé'));
-              
-              if (sign.videoUrl != null) _initVideo(sign.videoUrl!);
-
-              return CustomScrollView(
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 400,
-                    pinned: true,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: _chewieController != null
-                          ? Chewie(controller: _chewieController!)
-                          : Container(color: Colors.black),
-                    ),
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.all(AppSpacing.l),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(sign.word, style: AppTextStyles.h1),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      _Badge(label: 'LSF', color: AppColors.primary),
-                                      const SizedBox(width: 8),
-                                      _Badge(
-                                        label: sign.difficultyLevel == 1 ? 'Facile' : sign.difficultyLevel == 2 ? 'Moyen' : sign.difficultyLevel == 3 ? 'Difficile' : 'Inconnu',
-                                        color: sign.difficultyLevel == 1 ? AppColors.secondary : sign.difficultyLevel == 2 ? AppColors.warning : AppColors.error,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.favorite_border, color: AppColors.primary, size: 28),
-                              onPressed: () {},
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        
-                        Text('Visualisation Landmarks', style: AppTextStyles.h3),
-                        const SizedBox(height: AppSpacing.m),
-                        SizedBox(
-                          height: 400,
-                          child: LandmarkViewer(
-                            points: _parseLandmarks(sign.landmarkData),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: AppSpacing.xl),
-                        Text('Description', style: AppTextStyles.h3),
-                        const SizedBox(height: AppSpacing.s),
-                        Text(
-                          sign.description ?? 'Aucune description disponible.',
-                          style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondaryLight),
-                        ),
-                        
-                        if (sign.exampleSentence != null) ...[
-                          const SizedBox(height: AppSpacing.xl),
-                          Text('Exemple de phrase', style: AppTextStyles.h3),
-                          const SizedBox(height: AppSpacing.s),
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.m),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-                            ),
-                            child: Text(
-                              sign.exampleSentence!,
-                              style: AppTextStyles.bodyMedium.copyWith(fontStyle: FontStyle.italic),
-                            ),
-                          ),
-                        ],
-                        
-                        if (sign.tags != null && sign.tags!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xl),
-                          Wrap(
-                            spacing: 8,
-                            children: sign.tags!.map((tag) => Chip(
-                              label: Text(tag, style: const TextStyle(fontSize: 12)),
-                              backgroundColor: AppColors.neutralLight,
-                            )).toList(),
-                          ),
-                        ],
-                        
-                        const SizedBox(height: AppSpacing.xxxl),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.share_outlined),
-                                label: const Text('Partager'),
-                                onPressed: () {},
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.m),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                icon: const Icon(Icons.school_outlined),
-                                label: const Text('Pratiquer'),
-                                onPressed: () {},
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xxl),
-                      ]),
-                    ),
-                  ),
-                ],
+          data: (sign) {
+            if (sign == null) {
+              return AppEmptyState(
+                icon: AppIcons.search,
+                title: l10n.dictSignNotFound,
+                message: l10n.dictSignNotFoundMessage,
+                actionLabel: l10n.dictBrowseDictionary,
+                onAction: () => context.goNamed(AppRoutes.dictionaryName),
               );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('Erreur: $err')),
+            }
+            return _SignDetailBody(sign: sign);
+          },
+          loading: () => const _Scroll(child: _DetailSkeleton()),
+          error: (error, _) => AppEmptyState(
+            icon: AppIcons.error,
+            title: l10n.errorGeneric,
+            message: '$error',
+            actionLabel: l10n.retry,
+            onAction: () => ref.invalidate(signDetailProvider(id)),
+          ),
         ),
       ),
     );
   }
-
-  List<LandmarkPoint> _parseLandmarks(Map<String, dynamic>? data) {
-    if (data == null || data['points'] == null) return [];
-    return (data['points'] as List).map((p) => LandmarkPoint.fromJson(p)).toList();
-  }
 }
 
-class _Badge extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _Badge({required this.label, required this.color});
+class _Scroll extends StatelessWidget {
+  const _Scroll({required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: AppSpacing.l, bottom: AppSpacing.xxxl),
+      child: PageContainer(width: ContentWidth.detail, child: child),
+    );
+  }
+}
+
+class _SignDetailBody extends StatelessWidget {
+  const _SignDetailBody({required this.sign});
+
+  final Sign sign;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Scroll(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final split = constraints.maxWidth >= _splitBreakpoint;
+          final media = AspectRatio(
+            aspectRatio: split ? 0.95 : 1,
+            child: Semantics(
+              label: sign.word,
+              image: true,
+              child: SignMedia(sign: sign),
+            ),
+          );
+          final info = _SignInfo(sign: sign);
+
+          if (!split) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [media, const SizedBox(height: AppSpacing.xl), info],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 11, child: media),
+              const SizedBox(width: AppSpacing.xxl),
+              Expanded(flex: 10, child: info),
+            ],
+          );
+        },
       ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+    );
+  }
+}
+
+class _SignInfo extends ConsumerStatefulWidget {
+  const _SignInfo({required this.sign});
+
+  final Sign sign;
+
+  @override
+  ConsumerState<_SignInfo> createState() => _SignInfoState();
+}
+
+class _SignInfoState extends ConsumerState<_SignInfo> {
+  final _shareKey = GlobalKey();
+  bool _togglingFavorite = false;
+
+  Future<void> _toggleFavorite(bool isFavorite) async {
+    setState(() => _togglingFavorite = true);
+    await toggleSignFavorite(context, ref, widget.sign, isFavorite: isFavorite);
+    if (mounted) setState(() => _togglingFavorite = false);
+  }
+
+  Future<void> _share() async {
+    final l10n = AppLocalizations.of(context)!;
+    final sign = widget.sign;
+    final description = sign.description?.trim();
+    final text = [
+      l10n.dictShareText(sign.word),
+      if (description != null && description.isNotEmpty) description,
+    ].join('\n\n');
+
+    // Requis sur iPad / macOS pour ancrer la feuille de partage au bouton.
+    final box = _shareKey.currentContext?.findRenderObject() as RenderBox?;
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: text,
+        subject: sign.word,
+        sharePositionOrigin:
+            box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      ));
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final sign = widget.sign;
+    final secondary = AppColors.textSecondary(context);
+
+    final language = ref
+        .watch(signLanguagesProvider)
+        .value
+        ?.where((l) => l.id == sign.signLanguageId)
+        .firstOrNull;
+    final category = sign.signLanguageId == null || sign.categoryId == null
+        ? null
+        : ref
+            .watch(signCategoriesProvider(sign.signLanguageId!))
+            .value
+            ?.where((c) => c.id == sign.categoryId)
+            .firstOrNull;
+    final isFavorite = ref.watch(isSignFavoriteProvider(sign.id)).value ?? false;
+
+    final (difficultyLabel, difficultyColor, difficultyBackground) = switch (sign.difficultyLevel) {
+      2 => (l10n.difficultyMedium, AppColors.warningLedge, AppColors.warningSoft),
+      3 => (l10n.difficultyHard, AppColors.error, AppColors.errorSoft),
+      _ => (l10n.difficultyEasy, AppColors.successLedge, AppColors.successSoft),
+    };
+
+    final description = sign.description?.trim();
+    final example = sign.exampleSentence?.trim();
+    final tags = sign.tags ?? const <String>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(sign.word, style: AppTextStyles.h1),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        Wrap(
+          spacing: AppSpacing.s,
+          runSpacing: AppSpacing.s,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (language != null)
+              Tooltip(
+                message: language.name,
+                child: _Pill(
+                  label: language.code.toUpperCase(),
+                  semanticLabel: l10n.dictLanguage(language.name),
+                  icon: AppIcons.language,
+                  color: AppColors.primary,
+                  background: AppColors.primarySoft,
+                ),
+              ),
+            _Pill(
+              label: difficultyLabel,
+              semanticLabel: l10n.dictDifficulty(difficultyLabel),
+              color: difficultyColor,
+              background: difficultyBackground,
+            ),
+            if (category != null)
+              ActionChip(
+                avatar: Icon(
+                  AppIcons.fromName(category.iconName),
+                  size: 16,
+                  color: AppColors.fromHex(category.colorHex) ?? AppColors.primary,
+                ),
+                label: Text(category.name),
+                tooltip: category.name,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+                backgroundColor: AppColors.surface(context),
+                side: BorderSide(color: AppColors.border(context)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusCircular),
+                onPressed: () => context.pushNamed(
+                  AppRoutes.categoryName,
+                  pathParameters: {'id': category.id.toString()},
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Wrap(
+          spacing: AppSpacing.m,
+          runSpacing: AppSpacing.m,
+          children: [
+            AppButton(
+              label: l10n.dictPractice,
+              icon: AppIcons.learning,
+              fullWidth: false,
+              onPressed: () => context.goNamed(AppRoutes.learningName),
+            ),
+            AppButton(
+              label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
+              icon: isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
+              variant: AppButtonVariant.outline,
+              fullWidth: false,
+              onPressed: _togglingFavorite ? null : () => _toggleFavorite(isFavorite),
+            ),
+            KeyedSubtree(
+              key: _shareKey,
+              child: AppButton(
+                label: l10n.dictShare,
+                icon: AppIcons.share,
+                variant: AppButtonVariant.ghost,
+                fullWidth: false,
+                onPressed: _share,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        _SectionTitle(l10n.signDescription),
+        const SizedBox(height: AppSpacing.s),
+        Text(
+          description == null || description.isEmpty ? l10n.dictNoDescription : description,
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: secondary,
+            fontWeight: FontWeight.w400,
+            height: 1.6,
+          ),
+        ),
+        if (example != null && example.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _SectionTitle(l10n.dictExampleSentence),
+          const SizedBox(height: AppSpacing.m),
+          AppPanel(
+            color: AppColors.primarySoft,
+            borderColor: AppColors.primarySoft,
+            child: Text(
+              example,
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontStyle: FontStyle.italic,
+                color: AppColors.primaryDeep,
+              ),
+            ),
+          ),
+        ],
+        if (tags.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _SectionTitle(l10n.dictTags),
+          const SizedBox(height: AppSpacing.m),
+          Wrap(
+            spacing: AppSpacing.s,
+            runSpacing: AppSpacing.s,
+            children: [
+              for (final tag in tags)
+                _Pill(
+                  label: tag,
+                  color: AppColors.textSecondary(context),
+                  background: AppColors.neutral(context),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(header: true, child: Text(title, style: AppTextStyles.h3));
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.color,
+    required this.background,
+    this.icon,
+    this.semanticLabel,
+  });
+
+  final String label;
+  final Color color;
+  final Color background;
+  final IconData? icon;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel ?? label,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: AppRadius.radiusCircular,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton(
+      label: AppLocalizations.of(context)!.loading,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final split = constraints.maxWidth >= _splitBreakpoint;
+          final media = AspectRatio(
+            aspectRatio: split ? 0.95 : 1,
+            child: const SkeletonBlock(height: double.infinity, radius: AppRadius.l),
+          );
+          const info = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBlock(width: 220, height: 36),
+              SizedBox(height: AppSpacing.m),
+              Row(
+                children: [
+                  SkeletonBlock(width: 64, height: 28, radius: AppRadius.circular),
+                  SizedBox(width: AppSpacing.s),
+                  SkeletonBlock(width: 72, height: 28, radius: AppRadius.circular),
+                ],
+              ),
+              SizedBox(height: AppSpacing.xl),
+              Wrap(
+                spacing: AppSpacing.m,
+                runSpacing: AppSpacing.m,
+                children: [
+                  SkeletonBlock(width: 160, height: AppButton.height, radius: AppRadius.l),
+                  SkeletonBlock(width: 200, height: AppButton.height, radius: AppRadius.l),
+                ],
+              ),
+              SizedBox(height: AppSpacing.xxl),
+              SkeletonBlock(width: 140, height: 22),
+              SizedBox(height: AppSpacing.m),
+              SkeletonParagraph(lines: 3, lineHeight: 14),
+            ],
+          );
+
+          if (!split) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [media, const SizedBox(height: AppSpacing.xl), info],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 11, child: media),
+              const SizedBox(width: AppSpacing.xxl),
+              const Expanded(flex: 10, child: info),
+            ],
+          );
+        },
       ),
     );
   }

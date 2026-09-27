@@ -130,7 +130,7 @@ class SignCard extends StatelessWidget {
                     Text(
                       sign.description!,
                       style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.textSecondaryLight),
+                          .copyWith(color: _secondaryText(context)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -146,24 +146,38 @@ class SignCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail() {
-    if (sign.thumbnailUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: sign.thumbnailUrl!,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(color: AppColors.neutralLight),
-        errorWidget: (context, url, error) => _buildPlaceholder(),
-      );
-    }
-    return _buildPlaceholder();
+    return ExcludeSemantics(
+      child: Builder(
+        builder: (context) {
+          if (sign.thumbnailUrl != null) {
+            return CachedNetworkImage(
+              imageUrl: sign.thumbnailUrl!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              placeholder: (context, url) =>
+                  Container(color: AppColors.neutral(context)),
+              errorWidget: (context, url, error) => _buildPlaceholder(context),
+            );
+          }
+          return _buildPlaceholder(context);
+        },
+      ),
+    );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Container(
-      color: AppColors.neutralLight,
-      child: const Icon(AppIcons.image, color: AppColors.textSecondaryLight),
+      width: double.infinity,
+      color: AppColors.neutral(context),
+      child: Icon(AppIcons.signLanguage, color: _secondaryText(context)),
     );
   }
 }
+
+Color _secondaryText(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
 
 class _FavoriteButton extends StatelessWidget {
   final bool isFavorite;
@@ -178,8 +192,12 @@ class _FavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (onTap == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
     return IconButton(
       onPressed: onTap,
+      tooltip: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
+      isSelected: isFavorite,
       visualDensity: VisualDensity.compact,
       constraints: const BoxConstraints(
         minWidth: kMinTouchTarget,
@@ -188,7 +206,7 @@ class _FavoriteButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       icon: Icon(
         isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
-        color: isFavorite ? AppColors.error : AppColors.textSecondaryLight,
+        color: isFavorite ? AppColors.error : _secondaryText(context),
         size: small ? 18 : 22,
       ),
     );
@@ -209,13 +227,13 @@ class _DifficultyBadge extends StatelessWidget {
 
     switch (level) {
       case 2:
-        color = AppColors.warning;
+        color = AppColors.warningLedge;
         label = l10n.difficultyMedium;
       case 3:
         color = AppColors.error;
         label = l10n.difficultyHard;
       default:
-        color = AppColors.success;
+        color = AppColors.successLedge;
         label = l10n.difficultyEasy;
     }
 

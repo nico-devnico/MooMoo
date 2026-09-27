@@ -58,7 +58,7 @@ inferRouter.post('/', upload.single('file'), async (req, res, next) => {
     if (!mlRes.ok) {
       return res.status(mlRes.status).json({
         ok: false,
-        error: 'ml_error',
+        error: payload.error || 'ml_error',
         message: payload.detail || payload.message || 'Inference failed',
         model,
       });

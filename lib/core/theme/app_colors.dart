@@ -39,6 +39,33 @@ class AppColors {
 
   static const Color overlay = Color(0x330A2540);
 
+  /// Solid darker tones drawn under raised learning-path nodes: a flat ledge
+  /// that makes them look pressable without a gradient or a blur.
+  static const Color primaryLedge = Color(0xFF1240A8);
+  static const Color successLedge = Color(0xFF0A7A55);
+  static const Color warningLedge = Color(0xFFA86306);
+
+  static const Color successSoft = Color(0xFFE7F6F0);
+  static const Color errorSoft = Color(0xFFFDECEA);
+  static const Color warningSoft = Color(0xFFFDF3E4);
+
+  /// Parses a `#RRGGBB` value stored in the database (e.g.
+  /// `sign_categories.color_hex`). Malformed values return null so the caller
+  /// falls back to the brand colour instead of failing.
+  static Color? fromHex(String? hex) {
+    if (hex == null) return null;
+    final cleaned = hex.trim().replaceFirst('#', '');
+    if (cleaned.length != 6) return null;
+    final value = int.tryParse(cleaned, radix: 16);
+    return value == null ? null : Color(0xFF000000 | value);
+  }
+
+  static Color surface(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? surfaceDark : surfaceLight;
+
+  static Color neutral(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? neutralDark : neutralLight;
+
   static Color border(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? borderDark : borderLight;
 

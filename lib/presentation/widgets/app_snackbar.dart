@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_text_styles.dart';
 
@@ -8,20 +9,27 @@ enum AppSnackbarType { success, error, info, warning }
 class AppSnackbar {
   AppSnackbar._();
 
+  /// Past this screen width the snackbar stops spanning the viewport.
+  static const double _wideBreakpoint = 600;
+  static const double _wideWidth = 440;
+
   static void show(
     BuildContext context, {
     required String message,
     AppSnackbarType type = AppSnackbarType.info,
   }) {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
+    final isWide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
+
     scaffoldMessenger.clearSnackBars();
-    
+
     scaffoldMessenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(_getIcon(type), color: Colors.white, size: 24),
+            ExcludeSemantics(
+              child: Icon(_getIcon(type), color: Colors.white, size: 22),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -34,13 +42,10 @@ class AppSnackbar {
         backgroundColor: _getColor(type),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusM),
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height - (MediaQuery.of(context).padding.top + 100),
-          left: 16,
-          right: 16,
-        ),
-        duration: const Duration(seconds: 3),
-        dismissDirection: DismissDirection.up,
+        width: isWide ? _wideWidth : null,
+        margin: isWide ? null : const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        // Errors stay longer so they can be read without hearing an alert sound.
+        duration: Duration(seconds: type == AppSnackbarType.error ? 6 : 4),
       ),
     );
   }
@@ -64,26 +69,26 @@ class AppSnackbar {
   static Color _getColor(AppSnackbarType type) {
     switch (type) {
       case AppSnackbarType.success:
-        return AppColors.success;
+        return AppColors.successLedge;
       case AppSnackbarType.error:
         return AppColors.error;
       case AppSnackbarType.info:
-        return AppColors.info;
+        return AppColors.primaryDeep;
       case AppSnackbarType.warning:
-        return AppColors.warning;
+        return AppColors.warningLedge;
     }
   }
 
   static IconData _getIcon(AppSnackbarType type) {
     switch (type) {
       case AppSnackbarType.success:
-        return Icons.check_circle_outline;
+        return AppIcons.success;
       case AppSnackbarType.error:
-        return Icons.error_outline;
+        return AppIcons.error;
       case AppSnackbarType.info:
-        return Icons.info_outline;
+        return AppIcons.info;
       case AppSnackbarType.warning:
-        return Icons.warning_amber_outlined;
+        return AppIcons.warning;
     }
   }
 }

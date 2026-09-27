@@ -51,7 +51,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     final currentUser = ref.watch(currentUserProvider);
 
     return AdminShell(
-      selectedIndex: 3,
+      selectedIndex: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

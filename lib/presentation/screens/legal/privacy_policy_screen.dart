@@ -1,56 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/layout/responsive.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../l10n/app_localizations.dart';
+import '../settings/settings_screen.dart';
+
+final DateTime _lastUpdated = DateTime(2026, 5, 21);
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toString();
+
+    final sections = [
+      (l10n.accountPrivacyDataTitle, l10n.accountPrivacyDataBody),
+      (l10n.accountPrivacyCameraTitle, l10n.accountPrivacyCameraBody),
+      (l10n.accountPrivacySecurityTitle, l10n.accountPrivacySecurityBody),
+      (l10n.accountPrivacyRightsTitle, l10n.accountPrivacyRightsBody),
+    ];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Politique de confidentialité')),
-      body: PageContainer.reading(
-        verticalPadding: AppSpacing.l,
-        child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Politique de Confidentialité', style: AppTextStyles.h2),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              'Dernière mise à jour : 21 Mai 2026',
-              style: AppTextStyles.bodySmall,
-            ),
-            const SizedBox(height: AppSpacing.l),
-            _buildSection(
-              '1. Collecte des données',
-              'Nous collectons les informations que vous nous fournissez directement, notamment lors de la création de votre compte (nom, email).',
-            ),
-            _buildSection(
-              '2. Utilisation de la caméra',
-              'L\'accès à la caméra est strictement utilisé pour la traduction en temps réel des signes. Aucune image n\'est enregistrée sur nos serveurs sans votre consentement explicite.',
-            ),
-            _buildSection(
-              '3. Sécurité',
-              'Nous mettons en œuvre des mesures de sécurité robustes pour protéger vos informations personnelles.',
-            ),
-          ],
+      appBar: AppBar(title: Text(l10n.privacyPolicy)),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          top: AppSpacing.l,
+          bottom: settingsBottomPadding(context),
         ),
+        child: PageContainer.reading(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                header: true,
+                child: Text(l10n.privacyPolicy, style: AppTextStyles.h2),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Text(
+                l10n.accountLegalUpdated(DateFormat.yMMMMd(locale).format(_lastUpdated)),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary(context)),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              for (final section in sections)
+                _LegalSection(title: section.$1, body: section.$2),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSection(String title, String content) {
+class _LegalSection extends StatelessWidget {
+  const _LegalSection({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.l),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.h3),
+          Semantics(
+            header: true,
+            child: Text(title, style: AppTextStyles.h3),
+          ),
           const SizedBox(height: AppSpacing.s),
-          Text(content, style: AppTextStyles.bodyMedium),
+          Text(body, style: AppTextStyles.bodyMedium.copyWith(height: 1.6)),
         ],
       ),
     );

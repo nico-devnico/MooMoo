@@ -40,39 +40,39 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
+    final foreground = _getTextColor();
+
     Widget buttonContent = Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading)
-          const SizedBox(
+          SizedBox(
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              semanticsLabel: label,
+              valueColor: AlwaysStoppedAnimation<Color>(foreground),
             ),
           )
         else ...[
           if (icon != null) ...[
-            Icon(icon, size: 20),
+            ExcludeSemantics(child: Icon(icon, size: 20)),
             const SizedBox(width: 8),
           ],
-          Text(label, style: AppTextStyles.button.copyWith(
-            color: variant == AppButtonVariant.outline ? AppColors.primary : _getTextColor(theme),
-          )),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.button.copyWith(color: foreground),
+            ),
+          ),
         ],
       ],
     );
 
-    final button = Semantics(
-      button: true,
-      enabled: !isLoading && onPressed != null,
-      label: label,
-      child: _buildButton(context, buttonContent),
-    );
+    final button = _buildButton(context, buttonContent);
 
     if (!fullWidth) {
       return SizedBox(height: height, child: button);
@@ -101,6 +101,7 @@ class AppButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: isLoading ? AppColors.primary : null,
             elevation: 0,
           ),
           child: content,
@@ -111,6 +112,7 @@ class AppButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.secondary,
             foregroundColor: Colors.white,
+            disabledBackgroundColor: isLoading ? AppColors.secondary : null,
             elevation: 0,
           ),
           child: content,
@@ -136,7 +138,7 @@ class AppButton extends StatelessWidget {
     }
   }
 
-  Color _getTextColor(ThemeData theme) {
+  Color _getTextColor() {
     switch (variant) {
       case AppButtonVariant.primary:
       case AppButtonVariant.secondary:

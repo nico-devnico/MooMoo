@@ -302,12 +302,6 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
-  /// No description provided for @deleteAccount.
-  ///
-  /// In fr, this message translates to:
-  /// **'Supprimer le compte'**
-  String get deleteAccount;
-
   /// No description provided for @signs.
   ///
   /// In fr, this message translates to:
@@ -1298,6 +1292,12 @@ abstract class AppLocalizations {
   /// **'Réactiver'**
   String get unsuspendAccount;
 
+  /// No description provided for @deleteAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le compte'**
+  String get deleteAccount;
+
   /// No description provided for @deleteAccountConfirm.
   ///
   /// In fr, this message translates to:
@@ -1981,6 +1981,1620 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Vue cartes'**
   String get adminCardView;
+
+  /// No description provided for @commonEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get commonEdit;
+
+  /// No description provided for @homeHeroTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Communiquez sans barrière, en langue des signes'**
+  String get homeHeroTitle;
+
+  /// No description provided for @homeHeroSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traduisez les signes en texte avec la caméra, transformez un texte en signes et progressez chaque jour à votre rythme.'**
+  String get homeHeroSubtitle;
+
+  /// No description provided for @homeTranslateNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traduire maintenant'**
+  String get homeTranslateNow;
+
+  /// No description provided for @homeContinueLearning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer l\'apprentissage'**
+  String get homeContinueLearning;
+
+  /// No description provided for @homeWaysTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Deux façons de communiquer'**
+  String get homeWaysTitle;
+
+  /// No description provided for @homeSignToTextDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signez devant la caméra, MooMoo affiche le texte correspondant.'**
+  String get homeSignToTextDesc;
+
+  /// No description provided for @homeTextToSignDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez une phrase, MooMoo vous la montre en signes.'**
+  String get homeTextToSignDesc;
+
+  /// No description provided for @homeOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get homeOpen;
+
+  /// No description provided for @homeLearningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre apprentissage'**
+  String get homeLearningTitle;
+
+  /// No description provided for @homeLearningSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelques minutes par jour suffisent pour progresser.'**
+  String get homeLearningSubtitle;
+
+  /// No description provided for @homeForEveryoneTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pensé pour tout le monde'**
+  String get homeForEveryoneTitle;
+
+  /// No description provided for @homeDeafTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sourds et malentendants'**
+  String get homeDeafTitle;
+
+  /// No description provided for @homeDeafBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout est visuel : vidéos, couleurs et icônes. Aucune information ne passe uniquement par le son.'**
+  String get homeDeafBody;
+
+  /// No description provided for @homeHearingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entendants'**
+  String get homeHearingTitle;
+
+  /// No description provided for @homeHearingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apprenez les signes du quotidien avec des leçons courtes et des vidéos en boucle.'**
+  String get homeHearingBody;
+
+  /// No description provided for @homeCommunityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une communauté'**
+  String get homeCommunityTitle;
+
+  /// No description provided for @homeCommunityBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Proposez vos signes : des experts les vérifient avant leur publication.'**
+  String get homeCommunityBody;
+
+  /// No description provided for @homeNotifications.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get homeNotifications;
+
+  /// No description provided for @dictTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dictionnaire'**
+  String get dictTitle;
+
+  /// No description provided for @dictSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherchez un mot pour voir comment il se signe.'**
+  String get dictSubtitle;
+
+  /// No description provided for @dictClearSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer la recherche'**
+  String get dictClearSearch;
+
+  /// No description provided for @dictCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories'**
+  String get dictCategories;
+
+  /// No description provided for @dictGridView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affichage en grille'**
+  String get dictGridView;
+
+  /// No description provided for @dictListView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affichage en liste'**
+  String get dictListView;
+
+  /// No description provided for @dictLoadMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher plus de signes'**
+  String get dictLoadMore;
+
+  /// No description provided for @dictLoadingSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement des signes'**
+  String get dictLoadingSigns;
+
+  /// No description provided for @dictNoSignsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez un autre mot ou une autre catégorie.'**
+  String get dictNoSignsMessage;
+
+  /// No description provided for @dictNoFavoritesMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez le cœur d\'un signe pour le retrouver ici.'**
+  String get dictNoFavoritesMessage;
+
+  /// No description provided for @dictBrowseDictionary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourir le dictionnaire'**
+  String get dictBrowseDictionary;
+
+  /// No description provided for @dictAddFavorite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get dictAddFavorite;
+
+  /// No description provided for @dictRemoveFavorite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer des favoris'**
+  String get dictRemoveFavorite;
+
+  /// No description provided for @dictFavoriteAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouté à vos favoris'**
+  String get dictFavoriteAdded;
+
+  /// No description provided for @dictFavoriteRemoved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retiré de vos favoris'**
+  String get dictFavoriteRemoved;
+
+  /// No description provided for @dictSignNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signe introuvable'**
+  String get dictSignNotFound;
+
+  /// No description provided for @dictSignNotFoundMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce signe n\'existe pas ou a été retiré du dictionnaire.'**
+  String get dictSignNotFoundMessage;
+
+  /// No description provided for @dictHowToSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment le signer'**
+  String get dictHowToSign;
+
+  /// No description provided for @dictNoDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune description disponible.'**
+  String get dictNoDescription;
+
+  /// No description provided for @dictExampleSentence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exemple de phrase'**
+  String get dictExampleSentence;
+
+  /// No description provided for @dictTags.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mots-clés'**
+  String get dictTags;
+
+  /// No description provided for @dictShare.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partager'**
+  String get dictShare;
+
+  /// No description provided for @dictShareText.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {word} » en langue des signes'**
+  String dictShareText(String word);
+
+  /// No description provided for @dictPractice.
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'entraîner'**
+  String get dictPractice;
+
+  /// No description provided for @dictDifficulty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Difficulté : {level}'**
+  String dictDifficulty(String level);
+
+  /// No description provided for @dictLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue des signes : {language}'**
+  String dictLanguage(String language);
+
+  /// No description provided for @dictCategoryNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie introuvable'**
+  String get dictCategoryNotFound;
+
+  /// No description provided for @dictCategorySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les signes de cette catégorie.'**
+  String get dictCategorySubtitle;
+
+  /// No description provided for @dictVideoUrlHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'https://… (lien vers votre vidéo)'**
+  String get dictVideoUrlHint;
+
+  /// No description provided for @dictInvalidUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrez un lien commençant par http:// ou https://'**
+  String get dictInvalidUrl;
+
+  /// No description provided for @dictSubmittedOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyée le {date}'**
+  String dictSubmittedOn(String date);
+
+  /// No description provided for @loading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement en cours'**
+  String get loading;
+
+  /// No description provided for @learnCourseTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcours {language}'**
+  String learnCourseTitle(String language);
+
+  /// No description provided for @learnChangeCourse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de langue'**
+  String get learnChangeCourse;
+
+  /// No description provided for @accountClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get accountClose;
+
+  /// No description provided for @accountSeeMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus'**
+  String get accountSeeMore;
+
+  /// No description provided for @accountLoadErrorMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez votre connexion puis réessayez.'**
+  String get accountLoadErrorMessage;
+
+  /// No description provided for @accountSaveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer. Vérifiez votre connexion puis réessayez.'**
+  String get accountSaveError;
+
+  /// No description provided for @accountLearningSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apprentissage'**
+  String get accountLearningSection;
+
+  /// No description provided for @accountAccessibility.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accessibilité'**
+  String get accountAccessibility;
+
+  /// No description provided for @accountDeafSwitch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je suis sourd ou malentendant'**
+  String get accountDeafSwitch;
+
+  /// No description provided for @accountDeafSwitchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique que vous communiquez surtout en langue des signes. L\'application reste entièrement visuelle, quel que soit votre choix.'**
+  String get accountDeafSwitchHint;
+
+  /// No description provided for @accountHearingUser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entendant'**
+  String get accountHearingUser;
+
+  /// No description provided for @accountAvatarLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo de profil de {name}, modifier le profil'**
+  String accountAvatarLabel(String name);
+
+  /// No description provided for @accountPhotoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo de profil'**
+  String get accountPhotoTitle;
+
+  /// No description provided for @accountPhotoHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une image carrée, idéalement un portrait bien éclairé.'**
+  String get accountPhotoHint;
+
+  /// No description provided for @accountChangePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la photo'**
+  String get accountChangePhoto;
+
+  /// No description provided for @accountSignOutTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se déconnecter ?'**
+  String get accountSignOutTitle;
+
+  /// No description provided for @accountSignOutMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre progression reste enregistrée. Vous pourrez vous reconnecter à tout moment.'**
+  String get accountSignOutMessage;
+
+  /// No description provided for @accountDangerZone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone sensible'**
+  String get accountDangerZone;
+
+  /// No description provided for @accountDeleteRequest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander la suppression du compte'**
+  String get accountDeleteRequest;
+
+  /// No description provided for @accountDeleteRequestHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail prérempli s\'ouvre pour transmettre votre demande à l\'équipe MooMoo.'**
+  String get accountDeleteRequestHint;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer votre compte ?'**
+  String get accountDeleteTitle;
+
+  /// No description provided for @accountDeleteMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'équipe MooMoo supprimera votre compte, votre progression et vos contributions. Cette action est irréversible.'**
+  String get accountDeleteMessage;
+
+  /// No description provided for @accountDeleteConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer la demande'**
+  String get accountDeleteConfirm;
+
+  /// No description provided for @accountDeleteMailSubject.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression de mon compte MooMoo'**
+  String get accountDeleteMailSubject;
+
+  /// No description provided for @accountDeleteMailBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour, je souhaite supprimer mon compte MooMoo associé à l\'adresse {email}.'**
+  String accountDeleteMailBody(String email);
+
+  /// No description provided for @accountMailUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune application e-mail trouvée. Écrivez-nous à {email}.'**
+  String accountMailUnavailable(String email);
+
+  /// No description provided for @accountCharacterUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnage indisponible'**
+  String get accountCharacterUnavailable;
+
+  /// No description provided for @accountToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get accountToday;
+
+  /// No description provided for @accountHistoryEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune traduction pour l\'instant'**
+  String get accountHistoryEmptyTitle;
+
+  /// No description provided for @accountHistoryEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos sessions de traduction apparaîtront ici.'**
+  String get accountHistoryEmptyMessage;
+
+  /// No description provided for @accountHistoryOpenTranslator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le traducteur'**
+  String get accountHistoryOpenTranslator;
+
+  /// No description provided for @accountSignToText.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signes vers texte'**
+  String get accountSignToText;
+
+  /// No description provided for @accountTextToSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte vers signes'**
+  String get accountTextToSign;
+
+  /// No description provided for @accountUntitledSession.
+  ///
+  /// In fr, this message translates to:
+  /// **'Session sans texte'**
+  String get accountUntitledSession;
+
+  /// No description provided for @accountSessionEntries.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune phrase} =1{1 phrase} other{{count} phrases}}'**
+  String accountSessionEntries(int count);
+
+  /// No description provided for @accountSessionEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette session ne contient aucune phrase.'**
+  String get accountSessionEmpty;
+
+  /// No description provided for @accountMarkAllRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout marquer comme lu'**
+  String get accountMarkAllRead;
+
+  /// No description provided for @accountUnread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non lue'**
+  String get accountUnread;
+
+  /// No description provided for @accountNotificationsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les nouvelles leçons et le suivi de vos contributions apparaîtront ici.'**
+  String get accountNotificationsEmptyMessage;
+
+  /// No description provided for @accountVersionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version}'**
+  String accountVersionLabel(String version);
+
+  /// No description provided for @accountAboutTagline.
+  ///
+  /// In fr, this message translates to:
+  /// **'MooMoo est une plateforme de traduction et d\'apprentissage de la langue des signes, conçue pour lever les barrières de communication entre personnes sourdes et entendantes.'**
+  String get accountAboutTagline;
+
+  /// No description provided for @accountAuthor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auteur'**
+  String get accountAuthor;
+
+  /// No description provided for @accountContact.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contact'**
+  String get accountContact;
+
+  /// No description provided for @accountCopyright.
+  ///
+  /// In fr, this message translates to:
+  /// **'© {year} MooMoo. Tous droits réservés.'**
+  String accountCopyright(String year);
+
+  /// No description provided for @accountHelpIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les réponses aux questions les plus fréquentes.'**
+  String get accountHelpIntro;
+
+  /// No description provided for @accountHelpTranslatorQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment utiliser le traducteur ?'**
+  String get accountHelpTranslatorQ;
+
+  /// No description provided for @accountHelpTranslatorA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Placez votre caméra devant vous et commencez à signer : l\'application détecte les signes et affiche le texte correspondant. Dans l\'autre sens, écrivez une phrase pour la voir en signes.'**
+  String get accountHelpTranslatorA;
+
+  /// No description provided for @accountHelpLearningQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment fonctionne l\'apprentissage ?'**
+  String get accountHelpLearningQ;
+
+  /// No description provided for @accountHelpLearningA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le parcours est découpé en unités et en leçons courtes. Chaque leçon terminée rapporte de l\'XP et entretient votre série de jours consécutifs.'**
+  String get accountHelpLearningA;
+
+  /// No description provided for @accountHelpSignLanguageQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment changer de langue des signes ?'**
+  String get accountHelpSignLanguageQ;
+
+  /// No description provided for @accountHelpSignLanguageA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez Paramètres, puis Préférences d\'affichage et Langue des signes. Votre parcours d\'apprentissage suit ce choix.'**
+  String get accountHelpSignLanguageA;
+
+  /// No description provided for @accountHelpFavoritesQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment ajouter des favoris ?'**
+  String get accountHelpFavoritesQ;
+
+  /// No description provided for @accountHelpFavoritesA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans le dictionnaire, touchez l\'icône cœur d\'un signe pour l\'ajouter à vos favoris. Retrouvez-les ensuite depuis votre profil.'**
+  String get accountHelpFavoritesA;
+
+  /// No description provided for @accountHelpProfileQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment modifier mon profil ?'**
+  String get accountHelpProfileQ;
+
+  /// No description provided for @accountHelpProfileA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans l\'onglet Profil, choisissez « Modifier le profil » pour changer votre photo, votre nom, votre bio ou indiquer si vous êtes sourd ou malentendant.'**
+  String get accountHelpProfileA;
+
+  /// No description provided for @accountHelpAccessibilityQ.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application est-elle utilisable sans le son ?'**
+  String get accountHelpAccessibilityQ;
+
+  /// No description provided for @accountHelpAccessibilityA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui. Toutes les informations sont visuelles : vidéos, texte, icônes et couleurs. Aucune information ne passe uniquement par le son.'**
+  String get accountHelpAccessibilityA;
+
+  /// No description provided for @accountHelpContactTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Besoin d\'aide ?'**
+  String get accountHelpContactTitle;
+
+  /// No description provided for @accountHelpContactBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez à l\'équipe MooMoo, nous vous répondrons par e-mail.'**
+  String get accountHelpContactBody;
+
+  /// No description provided for @accountHelpContactAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous écrire'**
+  String get accountHelpContactAction;
+
+  /// No description provided for @accountLegalUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière mise à jour : {date}'**
+  String accountLegalUpdated(String date);
+
+  /// No description provided for @accountPrivacyDataTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'1. Collecte des données'**
+  String get accountPrivacyDataTitle;
+
+  /// No description provided for @accountPrivacyDataBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous collectons les informations que vous nous fournissez directement, notamment lors de la création de votre compte (nom, e-mail), ainsi que les données liées à votre usage : progression d\'apprentissage, favoris et contributions.'**
+  String get accountPrivacyDataBody;
+
+  /// No description provided for @accountPrivacyCameraTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'2. Utilisation de la caméra'**
+  String get accountPrivacyCameraTitle;
+
+  /// No description provided for @accountPrivacyCameraBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accès à la caméra sert uniquement à la traduction des signes en temps réel. Aucune image n\'est enregistrée sur nos serveurs sans votre consentement explicite.'**
+  String get accountPrivacyCameraBody;
+
+  /// No description provided for @accountPrivacySecurityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'3. Sécurité'**
+  String get accountPrivacySecurityTitle;
+
+  /// No description provided for @accountPrivacySecurityBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous mettons en œuvre des mesures de sécurité robustes pour protéger vos informations personnelles.'**
+  String get accountPrivacySecurityBody;
+
+  /// No description provided for @accountPrivacyRightsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'4. Vos droits'**
+  String get accountPrivacyRightsTitle;
+
+  /// No description provided for @accountPrivacyRightsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez modifier vos informations à tout moment depuis votre profil et demander la suppression de votre compte depuis les paramètres.'**
+  String get accountPrivacyRightsBody;
+
+  /// No description provided for @accountTermsAcceptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'1. Acceptation des conditions'**
+  String get accountTermsAcceptTitle;
+
+  /// No description provided for @accountTermsAcceptBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'En utilisant l\'application MooMoo, vous acceptez d\'être lié par les présentes conditions d\'utilisation.'**
+  String get accountTermsAcceptBody;
+
+  /// No description provided for @accountTermsUseTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'2. Utilisation du service'**
+  String get accountTermsUseTitle;
+
+  /// No description provided for @accountTermsUseBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous vous engagez à utiliser l\'application de manière licite et respectueuse des autres utilisateurs.'**
+  String get accountTermsUseBody;
+
+  /// No description provided for @accountTermsIpTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'3. Propriété intellectuelle'**
+  String get accountTermsIpTitle;
+
+  /// No description provided for @accountTermsIpBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le contenu de l\'application, y compris les modèles de traduction, est la propriété exclusive de MooMoo.'**
+  String get accountTermsIpBody;
+
+  /// No description provided for @learnStreakDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Pas de série} =1{1 jour de série} other{{count} jours de série}}'**
+  String learnStreakDays(int count);
+
+  /// No description provided for @learnXpAmount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{xp} XP'**
+  String learnXpAmount(int xp);
+
+  /// No description provided for @learnDailyGoal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif du jour'**
+  String get learnDailyGoal;
+
+  /// No description provided for @learnDailyGoalProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{current} / {goal} XP'**
+  String learnDailyGoalProgress(int current, int goal);
+
+  /// No description provided for @learnDailyGoalReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif atteint, bravo !'**
+  String get learnDailyGoalReached;
+
+  /// No description provided for @learnUnitLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unité {number}'**
+  String learnUnitLabel(int number);
+
+  /// No description provided for @learnStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get learnStart;
+
+  /// No description provided for @learnReview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réviser'**
+  String get learnReview;
+
+  /// No description provided for @learnLessonLocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminez la leçon précédente pour débloquer celle-ci.'**
+  String get learnLessonLocked;
+
+  /// No description provided for @learnLessonEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt disponible'**
+  String get learnLessonEmpty;
+
+  /// No description provided for @learnLessonSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun signe} =1{1 signe} other{{count} signes}}'**
+  String learnLessonSigns(int count);
+
+  /// No description provided for @learnStateCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminée'**
+  String get learnStateCompleted;
+
+  /// No description provided for @learnStatePerfect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans faute'**
+  String get learnStatePerfect;
+
+  /// No description provided for @learnStateCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'À faire'**
+  String get learnStateCurrent;
+
+  /// No description provided for @learnStateLocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Verrouillée'**
+  String get learnStateLocked;
+
+  /// No description provided for @learnNoCourseTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le parcours arrive bientôt'**
+  String get learnNoCourseTitle;
+
+  /// No description provided for @learnNoCourseMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune leçon n\'est encore publiée pour cette langue. En attendant, explorez le dictionnaire.'**
+  String get learnNoCourseMessage;
+
+  /// No description provided for @learnNoCourseEditorMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune unité publiée pour cette langue. Créez la première depuis la gestion du parcours.'**
+  String get learnNoCourseEditorMessage;
+
+  /// No description provided for @learnManagePath.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer le parcours'**
+  String get learnManagePath;
+
+  /// No description provided for @learnOpenDictionary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le dictionnaire'**
+  String get learnOpenDictionary;
+
+  /// No description provided for @learnViewProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma progression'**
+  String get learnViewProgress;
+
+  /// No description provided for @lessonQuit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter la leçon'**
+  String get lessonQuit;
+
+  /// No description provided for @lessonQuitConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter la leçon ?'**
+  String get lessonQuitConfirmTitle;
+
+  /// No description provided for @lessonQuitConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos réponses dans cette leçon ne seront pas enregistrées.'**
+  String get lessonQuitConfirmMessage;
+
+  /// No description provided for @lessonQuitConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter'**
+  String get lessonQuitConfirm;
+
+  /// No description provided for @lessonKeepGoing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer la leçon'**
+  String get lessonKeepGoing;
+
+  /// No description provided for @lessonNewSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau signe'**
+  String get lessonNewSign;
+
+  /// No description provided for @lessonWhatSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que signifie ce signe ?'**
+  String get lessonWhatSign;
+
+  /// No description provided for @lessonFindSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quel signe veut dire « {word} » ?'**
+  String lessonFindSign(String word);
+
+  /// No description provided for @lessonCheck.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifier'**
+  String get lessonCheck;
+
+  /// No description provided for @lessonContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer'**
+  String get lessonContinue;
+
+  /// No description provided for @lessonCorrect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne réponse !'**
+  String get lessonCorrect;
+
+  /// No description provided for @lessonIncorrect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas tout à fait'**
+  String get lessonIncorrect;
+
+  /// No description provided for @lessonCorrectAnswer.
+  ///
+  /// In fr, this message translates to:
+  /// **'La bonne réponse était : {word}'**
+  String lessonCorrectAnswer(String word);
+
+  /// No description provided for @lessonProgressLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question {current} sur {total}'**
+  String lessonProgressLabel(int current, int total);
+
+  /// No description provided for @lessonNoMedia.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore de vidéo pour ce signe'**
+  String get lessonNoMedia;
+
+  /// No description provided for @lessonReplay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revoir le signe'**
+  String get lessonReplay;
+
+  /// No description provided for @lessonOptionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse {index}'**
+  String lessonOptionLabel(int index);
+
+  /// No description provided for @lessonCompleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Leçon terminée !'**
+  String get lessonCompleteTitle;
+
+  /// No description provided for @lessonCompletePerfect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans faute, impressionnant !'**
+  String get lessonCompletePerfect;
+
+  /// No description provided for @lessonXpEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{xp} XP'**
+  String lessonXpEarned(int xp);
+
+  /// No description provided for @lessonAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision'**
+  String get lessonAccuracy;
+
+  /// No description provided for @lessonStreak.
+  ///
+  /// In fr, this message translates to:
+  /// **'Série'**
+  String get lessonStreak;
+
+  /// No description provided for @lessonXp.
+  ///
+  /// In fr, this message translates to:
+  /// **'XP gagnés'**
+  String get lessonXp;
+
+  /// No description provided for @lessonFinish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer'**
+  String get lessonFinish;
+
+  /// No description provided for @lessonRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommencer'**
+  String get lessonRetry;
+
+  /// No description provided for @lessonSaveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer le résultat. Vérifiez votre connexion puis réessayez.'**
+  String get lessonSaveError;
+
+  /// No description provided for @lessonNotEnoughSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette leçon n\'a pas encore de signe à pratiquer.'**
+  String get lessonNotEnoughSigns;
+
+  /// No description provided for @lessonDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 jour} other{{count} jours}}'**
+  String lessonDays(int count);
+
+  /// No description provided for @progressTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma progression'**
+  String get progressTitle;
+
+  /// No description provided for @progressTotalXp.
+  ///
+  /// In fr, this message translates to:
+  /// **'XP total'**
+  String get progressTotalXp;
+
+  /// No description provided for @progressCurrentStreak.
+  ///
+  /// In fr, this message translates to:
+  /// **'Série actuelle'**
+  String get progressCurrentStreak;
+
+  /// No description provided for @progressLongestStreak.
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleure série'**
+  String get progressLongestStreak;
+
+  /// No description provided for @progressLessonsDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Leçons terminées'**
+  String get progressLessonsDone;
+
+  /// No description provided for @progressDailyGoalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif quotidien'**
+  String get progressDailyGoalTitle;
+
+  /// No description provided for @progressDailyGoalHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Combien d\'XP visez-vous chaque jour ?'**
+  String get progressDailyGoalHint;
+
+  /// No description provided for @progressGoalCasual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détente'**
+  String get progressGoalCasual;
+
+  /// No description provided for @progressGoalRegular.
+  ///
+  /// In fr, this message translates to:
+  /// **'Régulier'**
+  String get progressGoalRegular;
+
+  /// No description provided for @progressGoalSerious.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sérieux'**
+  String get progressGoalSerious;
+
+  /// No description provided for @progressGoalIntense.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intense'**
+  String get progressGoalIntense;
+
+  /// No description provided for @progressGoalOption.
+  ///
+  /// In fr, this message translates to:
+  /// **'{xp} XP par jour'**
+  String progressGoalOption(int xp);
+
+  /// No description provided for @progressGoalSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objectif mis à jour'**
+  String get progressGoalSaved;
+
+  /// No description provided for @adminLearning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcours'**
+  String get adminLearning;
+
+  /// No description provided for @adminLearningSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unités, leçons et signes enseignés dans l\'onglet Apprendre'**
+  String get adminLearningSubtitle;
+
+  /// No description provided for @adminAddUnit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une unité'**
+  String get adminAddUnit;
+
+  /// No description provided for @adminEditUnit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'unité'**
+  String get adminEditUnit;
+
+  /// No description provided for @adminAddLesson.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une leçon'**
+  String get adminAddLesson;
+
+  /// No description provided for @adminEditLesson.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la leçon'**
+  String get adminEditLesson;
+
+  /// No description provided for @adminFieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get adminFieldTitle;
+
+  /// No description provided for @adminFieldDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Description (facultatif)'**
+  String get adminFieldDescription;
+
+  /// No description provided for @adminFieldIcon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Icône'**
+  String get adminFieldIcon;
+
+  /// No description provided for @adminXpReward.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récompense (XP)'**
+  String get adminXpReward;
+
+  /// No description provided for @adminPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publiée'**
+  String get adminPublished;
+
+  /// No description provided for @adminDraft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Brouillon'**
+  String get adminDraft;
+
+  /// No description provided for @adminPublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier'**
+  String get adminPublish;
+
+  /// No description provided for @adminUnpublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Repasser en brouillon'**
+  String get adminUnpublish;
+
+  /// No description provided for @adminDeleteUnitConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'unité « {title} » et toutes ses leçons ?'**
+  String adminDeleteUnitConfirm(String title);
+
+  /// No description provided for @adminDeleteLessonConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la leçon « {title} » ?'**
+  String adminDeleteLessonConfirm(String title);
+
+  /// No description provided for @adminLessonPickSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir les signes'**
+  String get adminLessonPickSigns;
+
+  /// No description provided for @adminSearchValidatedSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un signe validé'**
+  String get adminSearchValidatedSigns;
+
+  /// No description provided for @adminSelectedSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun signe choisi} =1{1 signe choisi} other{{count} signes choisis}}'**
+  String adminSelectedSigns(int count);
+
+  /// No description provided for @adminLessonNeedsSigns.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez au moins 2 signes pour générer des exercices.'**
+  String get adminLessonNeedsSigns;
+
+  /// No description provided for @adminNoUnits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune unité'**
+  String get adminNoUnits;
+
+  /// No description provided for @adminNoUnitsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez une première unité, ajoutez-y des leçons puis choisissez les signes enseignés.'**
+  String get adminNoUnitsMessage;
+
+  /// No description provided for @adminNoSignsForLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun signe validé pour cette langue. Ajoutez-en depuis la gestion des signes.'**
+  String get adminNoSignsForLanguage;
+
+  /// No description provided for @adminSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistré'**
+  String get adminSaved;
+
+  /// No description provided for @adminMoveUp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Monter'**
+  String get adminMoveUp;
+
+  /// No description provided for @adminMoveDown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Descendre'**
+  String get adminMoveDown;
+
+  /// No description provided for @adminLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue'**
+  String get adminLanguage;
+
+  /// No description provided for @translCameraUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caméra indisponible : importez une vidéo ou une image pour la traduire.'**
+  String get translCameraUnavailable;
+
+  /// No description provided for @translDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traduction terminée'**
+  String get translDone;
+
+  /// No description provided for @admxSignsValidation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validation du dictionnaire'**
+  String get admxSignsValidation;
+
+  /// No description provided for @admxSignsValidatedOf.
+  ///
+  /// In fr, this message translates to:
+  /// **'{validated} signes validés sur {total}'**
+  String admxSignsValidatedOf(int validated, int total);
+
+  /// No description provided for @admxContributionsTotal.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune contribution} =1{1 contribution au total} other{{count} contributions au total}}'**
+  String admxContributionsTotal(int count);
+
+  /// No description provided for @admxNoModelsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun modèle n\'est enregistré dans Supabase pour le moment. Lancez un réentraînement : le modèle produit apparaîtra ici.'**
+  String get admxNoModelsMessage;
+
+  /// No description provided for @admxNoJobsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les demandes de réentraînement apparaîtront ici avec leur progression.'**
+  String get admxNoJobsMessage;
+
+  /// No description provided for @admxJobQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'En file'**
+  String get admxJobQueued;
+
+  /// No description provided for @admxJobRunning.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get admxJobRunning;
+
+  /// No description provided for @admxJobDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get admxJobDone;
+
+  /// No description provided for @admxJobFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échoué'**
+  String get admxJobFailed;
+
+  /// No description provided for @admxActions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actions'**
+  String get admxActions;
+
+  /// No description provided for @admxViewMedia.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la vidéo'**
+  String get admxViewMedia;
+
+  /// No description provided for @admxCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie'**
+  String get admxCategory;
+
+  /// No description provided for @admxNoCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans catégorie'**
+  String get admxNoCategory;
+
+  /// No description provided for @admxWordRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot est obligatoire'**
+  String get admxWordRequired;
+
+  /// No description provided for @admxClearSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer la recherche'**
+  String get admxClearSearch;
+
+  /// No description provided for @admxDifficultyValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau {level}'**
+  String admxDifficultyValue(int level);
+
+  /// No description provided for @admxViewsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune vue} =1{1 vue} other{{count} vues}}'**
+  String admxViewsCount(int count);
+
+  /// No description provided for @admxApiUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'API backend'**
+  String get admxApiUrl;
+
+  /// No description provided for @admxActiveModel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle actif'**
+  String get admxActiveModel;
+
+  /// No description provided for @admxNoActiveModel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun modèle actif'**
+  String get admxNoActiveModel;
+
+  /// No description provided for @admxCreatedOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créé le {date}'**
+  String admxCreatedOn(String date);
+
+  /// No description provided for @admxRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser'**
+  String get admxRefresh;
+
+  /// No description provided for @translDirectionSignToText.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signes vers texte'**
+  String get translDirectionSignToText;
+
+  /// No description provided for @translDirectionTextToSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte vers signes'**
+  String get translDirectionTextToSign;
+
+  /// No description provided for @translSwapDirection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inverser le sens de traduction'**
+  String get translSwapDirection;
+
+  /// No description provided for @translStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer la traduction'**
+  String get translStart;
+
+  /// No description provided for @translRestart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer'**
+  String get translRestart;
+
+  /// No description provided for @translImportVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer une vidéo'**
+  String get translImportVideo;
+
+  /// No description provided for @translImportImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer une image'**
+  String get translImportImage;
+
+  /// No description provided for @translRemoveFile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer le fichier et revenir à la caméra'**
+  String get translRemoveFile;
+
+  /// No description provided for @translFileSelected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichier sélectionné : {name}'**
+  String translFileSelected(String name);
+
+  /// No description provided for @translResultLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte traduit'**
+  String get translResultLabel;
+
+  /// No description provided for @translResultPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le texte traduit s\'affichera ici.'**
+  String get translResultPlaceholder;
+
+  /// No description provided for @translConfidence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confiance : {percent} %'**
+  String translConfidence(int percent);
+
+  /// No description provided for @translModelUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle : {model}'**
+  String translModelUsed(String model);
+
+  /// No description provided for @translSpeak.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire à voix haute'**
+  String get translSpeak;
+
+  /// No description provided for @translListening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écoute en cours…'**
+  String get translListening;
+
+  /// No description provided for @translStartDictation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dicter au micro'**
+  String get translStartDictation;
+
+  /// No description provided for @translStopDictation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter la dictée'**
+  String get translStopDictation;
+
+  /// No description provided for @translInputLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte à traduire en signes'**
+  String get translInputLabel;
+
+  /// No description provided for @translInputHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez sur Entrée pour traduire'**
+  String get translInputHint;
+
+  /// No description provided for @translSearching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche du signe…'**
+  String get translSearching;
+
+  /// No description provided for @translEmptyPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez un mot ou une phrase pour voir le signe correspondant.'**
+  String get translEmptyPrompt;
+
+  /// No description provided for @translNoMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun signe trouvé pour « {query} »'**
+  String translNoMatch(String query);
+
+  /// No description provided for @translNoMatchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez un autre mot ou vérifiez l\'orthographe.'**
+  String get translNoMatchHint;
+
+  /// No description provided for @translMatches.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signes correspondants'**
+  String get translMatches;
+
+  /// No description provided for @translShownSign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signe affiché : {word}'**
+  String translShownSign(String word);
+
+  /// No description provided for @translCharacterNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnage introuvable'**
+  String get translCharacterNotFound;
+
+  /// No description provided for @translLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger l\'affichage'**
+  String get translLoadError;
+
+  /// No description provided for @translAvatarNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.'**
+  String get translAvatarNote;
+
+  /// No description provided for @translModelAlt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avatar 3D de traduction en langue des signes'**
+  String get translModelAlt;
+
+  /// No description provided for @adminLearningForbidden.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservé aux administrateurs, enseignants et experts en langue des signes.'**
+  String get adminLearningForbidden;
 }
 
 class _AppLocalizationsDelegate

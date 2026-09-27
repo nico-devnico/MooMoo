@@ -113,9 +113,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get deleteAccount => 'Supprimer le compte';
-
-  @override
   String get signs => 'Signes';
 
   @override
@@ -631,6 +628,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get unsuspendAccount => 'Réactiver';
 
   @override
+  String get deleteAccount => 'Supprimer le compte';
+
+  @override
   String deleteAccountConfirm(String name) {
     return 'Supprimer définitivement le compte de $name ? Cette action est irréversible.';
   }
@@ -1005,4 +1005,988 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get adminCardView => 'Vue cartes';
+
+  @override
+  String get commonEdit => 'Modifier';
+
+  @override
+  String get homeHeroTitle => 'Communiquez sans barrière, en langue des signes';
+
+  @override
+  String get homeHeroSubtitle =>
+      'Traduisez les signes en texte avec la caméra, transformez un texte en signes et progressez chaque jour à votre rythme.';
+
+  @override
+  String get homeTranslateNow => 'Traduire maintenant';
+
+  @override
+  String get homeContinueLearning => 'Continuer l\'apprentissage';
+
+  @override
+  String get homeWaysTitle => 'Deux façons de communiquer';
+
+  @override
+  String get homeSignToTextDesc =>
+      'Signez devant la caméra, MooMoo affiche le texte correspondant.';
+
+  @override
+  String get homeTextToSignDesc =>
+      'Écrivez une phrase, MooMoo vous la montre en signes.';
+
+  @override
+  String get homeOpen => 'Ouvrir';
+
+  @override
+  String get homeLearningTitle => 'Votre apprentissage';
+
+  @override
+  String get homeLearningSubtitle =>
+      'Quelques minutes par jour suffisent pour progresser.';
+
+  @override
+  String get homeForEveryoneTitle => 'Pensé pour tout le monde';
+
+  @override
+  String get homeDeafTitle => 'Sourds et malentendants';
+
+  @override
+  String get homeDeafBody =>
+      'Tout est visuel : vidéos, couleurs et icônes. Aucune information ne passe uniquement par le son.';
+
+  @override
+  String get homeHearingTitle => 'Entendants';
+
+  @override
+  String get homeHearingBody =>
+      'Apprenez les signes du quotidien avec des leçons courtes et des vidéos en boucle.';
+
+  @override
+  String get homeCommunityTitle => 'Une communauté';
+
+  @override
+  String get homeCommunityBody =>
+      'Proposez vos signes : des experts les vérifient avant leur publication.';
+
+  @override
+  String get homeNotifications => 'Notifications';
+
+  @override
+  String get dictTitle => 'Dictionnaire';
+
+  @override
+  String get dictSubtitle => 'Recherchez un mot pour voir comment il se signe.';
+
+  @override
+  String get dictClearSearch => 'Effacer la recherche';
+
+  @override
+  String get dictCategories => 'Catégories';
+
+  @override
+  String get dictGridView => 'Affichage en grille';
+
+  @override
+  String get dictListView => 'Affichage en liste';
+
+  @override
+  String get dictLoadMore => 'Afficher plus de signes';
+
+  @override
+  String get dictLoadingSigns => 'Chargement des signes';
+
+  @override
+  String get dictNoSignsMessage =>
+      'Essayez un autre mot ou une autre catégorie.';
+
+  @override
+  String get dictNoFavoritesMessage =>
+      'Touchez le cœur d\'un signe pour le retrouver ici.';
+
+  @override
+  String get dictBrowseDictionary => 'Parcourir le dictionnaire';
+
+  @override
+  String get dictAddFavorite => 'Ajouter aux favoris';
+
+  @override
+  String get dictRemoveFavorite => 'Retirer des favoris';
+
+  @override
+  String get dictFavoriteAdded => 'Ajouté à vos favoris';
+
+  @override
+  String get dictFavoriteRemoved => 'Retiré de vos favoris';
+
+  @override
+  String get dictSignNotFound => 'Signe introuvable';
+
+  @override
+  String get dictSignNotFoundMessage =>
+      'Ce signe n\'existe pas ou a été retiré du dictionnaire.';
+
+  @override
+  String get dictHowToSign => 'Comment le signer';
+
+  @override
+  String get dictNoDescription => 'Aucune description disponible.';
+
+  @override
+  String get dictExampleSentence => 'Exemple de phrase';
+
+  @override
+  String get dictTags => 'Mots-clés';
+
+  @override
+  String get dictShare => 'Partager';
+
+  @override
+  String dictShareText(String word) {
+    return '« $word » en langue des signes';
+  }
+
+  @override
+  String get dictPractice => 'S\'entraîner';
+
+  @override
+  String dictDifficulty(String level) {
+    return 'Difficulté : $level';
+  }
+
+  @override
+  String dictLanguage(String language) {
+    return 'Langue des signes : $language';
+  }
+
+  @override
+  String get dictCategoryNotFound => 'Catégorie introuvable';
+
+  @override
+  String get dictCategorySubtitle => 'Tous les signes de cette catégorie.';
+
+  @override
+  String get dictVideoUrlHint => 'https://… (lien vers votre vidéo)';
+
+  @override
+  String get dictInvalidUrl =>
+      'Entrez un lien commençant par http:// ou https://';
+
+  @override
+  String dictSubmittedOn(String date) {
+    return 'Envoyée le $date';
+  }
+
+  @override
+  String get loading => 'Chargement en cours';
+
+  @override
+  String learnCourseTitle(String language) {
+    return 'Parcours $language';
+  }
+
+  @override
+  String get learnChangeCourse => 'Changer de langue';
+
+  @override
+  String get accountClose => 'Fermer';
+
+  @override
+  String get accountSeeMore => 'Voir plus';
+
+  @override
+  String get accountLoadErrorMessage =>
+      'Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get accountSaveError =>
+      'Impossible d\'enregistrer. Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get accountLearningSection => 'Apprentissage';
+
+  @override
+  String get accountAccessibility => 'Accessibilité';
+
+  @override
+  String get accountDeafSwitch => 'Je suis sourd ou malentendant';
+
+  @override
+  String get accountDeafSwitchHint =>
+      'Indique que vous communiquez surtout en langue des signes. L\'application reste entièrement visuelle, quel que soit votre choix.';
+
+  @override
+  String get accountHearingUser => 'Entendant';
+
+  @override
+  String accountAvatarLabel(String name) {
+    return 'Photo de profil de $name, modifier le profil';
+  }
+
+  @override
+  String get accountPhotoTitle => 'Photo de profil';
+
+  @override
+  String get accountPhotoHint =>
+      'Choisissez une image carrée, idéalement un portrait bien éclairé.';
+
+  @override
+  String get accountChangePhoto => 'Changer la photo';
+
+  @override
+  String get accountSignOutTitle => 'Se déconnecter ?';
+
+  @override
+  String get accountSignOutMessage =>
+      'Votre progression reste enregistrée. Vous pourrez vous reconnecter à tout moment.';
+
+  @override
+  String get accountDangerZone => 'Zone sensible';
+
+  @override
+  String get accountDeleteRequest => 'Demander la suppression du compte';
+
+  @override
+  String get accountDeleteRequestHint =>
+      'Un e-mail prérempli s\'ouvre pour transmettre votre demande à l\'équipe MooMoo.';
+
+  @override
+  String get accountDeleteTitle => 'Supprimer votre compte ?';
+
+  @override
+  String get accountDeleteMessage =>
+      'L\'équipe MooMoo supprimera votre compte, votre progression et vos contributions. Cette action est irréversible.';
+
+  @override
+  String get accountDeleteConfirm => 'Envoyer la demande';
+
+  @override
+  String get accountDeleteMailSubject => 'Suppression de mon compte MooMoo';
+
+  @override
+  String accountDeleteMailBody(String email) {
+    return 'Bonjour, je souhaite supprimer mon compte MooMoo associé à l\'adresse $email.';
+  }
+
+  @override
+  String accountMailUnavailable(String email) {
+    return 'Aucune application e-mail trouvée. Écrivez-nous à $email.';
+  }
+
+  @override
+  String get accountCharacterUnavailable => 'Personnage indisponible';
+
+  @override
+  String get accountToday => 'Aujourd\'hui';
+
+  @override
+  String get accountHistoryEmptyTitle => 'Aucune traduction pour l\'instant';
+
+  @override
+  String get accountHistoryEmptyMessage =>
+      'Vos sessions de traduction apparaîtront ici.';
+
+  @override
+  String get accountHistoryOpenTranslator => 'Ouvrir le traducteur';
+
+  @override
+  String get accountSignToText => 'Signes vers texte';
+
+  @override
+  String get accountTextToSign => 'Texte vers signes';
+
+  @override
+  String get accountUntitledSession => 'Session sans texte';
+
+  @override
+  String accountSessionEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count phrases',
+      one: '1 phrase',
+      zero: 'Aucune phrase',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSessionEmpty => 'Cette session ne contient aucune phrase.';
+
+  @override
+  String get accountMarkAllRead => 'Tout marquer comme lu';
+
+  @override
+  String get accountUnread => 'Non lue';
+
+  @override
+  String get accountNotificationsEmptyMessage =>
+      'Les nouvelles leçons et le suivi de vos contributions apparaîtront ici.';
+
+  @override
+  String accountVersionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get accountAboutTagline =>
+      'MooMoo est une plateforme de traduction et d\'apprentissage de la langue des signes, conçue pour lever les barrières de communication entre personnes sourdes et entendantes.';
+
+  @override
+  String get accountAuthor => 'Auteur';
+
+  @override
+  String get accountContact => 'Contact';
+
+  @override
+  String accountCopyright(String year) {
+    return '© $year MooMoo. Tous droits réservés.';
+  }
+
+  @override
+  String get accountHelpIntro =>
+      'Les réponses aux questions les plus fréquentes.';
+
+  @override
+  String get accountHelpTranslatorQ => 'Comment utiliser le traducteur ?';
+
+  @override
+  String get accountHelpTranslatorA =>
+      'Placez votre caméra devant vous et commencez à signer : l\'application détecte les signes et affiche le texte correspondant. Dans l\'autre sens, écrivez une phrase pour la voir en signes.';
+
+  @override
+  String get accountHelpLearningQ => 'Comment fonctionne l\'apprentissage ?';
+
+  @override
+  String get accountHelpLearningA =>
+      'Le parcours est découpé en unités et en leçons courtes. Chaque leçon terminée rapporte de l\'XP et entretient votre série de jours consécutifs.';
+
+  @override
+  String get accountHelpSignLanguageQ =>
+      'Comment changer de langue des signes ?';
+
+  @override
+  String get accountHelpSignLanguageA =>
+      'Ouvrez Paramètres, puis Préférences d\'affichage et Langue des signes. Votre parcours d\'apprentissage suit ce choix.';
+
+  @override
+  String get accountHelpFavoritesQ => 'Comment ajouter des favoris ?';
+
+  @override
+  String get accountHelpFavoritesA =>
+      'Dans le dictionnaire, touchez l\'icône cœur d\'un signe pour l\'ajouter à vos favoris. Retrouvez-les ensuite depuis votre profil.';
+
+  @override
+  String get accountHelpProfileQ => 'Comment modifier mon profil ?';
+
+  @override
+  String get accountHelpProfileA =>
+      'Dans l\'onglet Profil, choisissez « Modifier le profil » pour changer votre photo, votre nom, votre bio ou indiquer si vous êtes sourd ou malentendant.';
+
+  @override
+  String get accountHelpAccessibilityQ =>
+      'L\'application est-elle utilisable sans le son ?';
+
+  @override
+  String get accountHelpAccessibilityA =>
+      'Oui. Toutes les informations sont visuelles : vidéos, texte, icônes et couleurs. Aucune information ne passe uniquement par le son.';
+
+  @override
+  String get accountHelpContactTitle => 'Besoin d\'aide ?';
+
+  @override
+  String get accountHelpContactBody =>
+      'Écrivez à l\'équipe MooMoo, nous vous répondrons par e-mail.';
+
+  @override
+  String get accountHelpContactAction => 'Nous écrire';
+
+  @override
+  String accountLegalUpdated(String date) {
+    return 'Dernière mise à jour : $date';
+  }
+
+  @override
+  String get accountPrivacyDataTitle => '1. Collecte des données';
+
+  @override
+  String get accountPrivacyDataBody =>
+      'Nous collectons les informations que vous nous fournissez directement, notamment lors de la création de votre compte (nom, e-mail), ainsi que les données liées à votre usage : progression d\'apprentissage, favoris et contributions.';
+
+  @override
+  String get accountPrivacyCameraTitle => '2. Utilisation de la caméra';
+
+  @override
+  String get accountPrivacyCameraBody =>
+      'L\'accès à la caméra sert uniquement à la traduction des signes en temps réel. Aucune image n\'est enregistrée sur nos serveurs sans votre consentement explicite.';
+
+  @override
+  String get accountPrivacySecurityTitle => '3. Sécurité';
+
+  @override
+  String get accountPrivacySecurityBody =>
+      'Nous mettons en œuvre des mesures de sécurité robustes pour protéger vos informations personnelles.';
+
+  @override
+  String get accountPrivacyRightsTitle => '4. Vos droits';
+
+  @override
+  String get accountPrivacyRightsBody =>
+      'Vous pouvez modifier vos informations à tout moment depuis votre profil et demander la suppression de votre compte depuis les paramètres.';
+
+  @override
+  String get accountTermsAcceptTitle => '1. Acceptation des conditions';
+
+  @override
+  String get accountTermsAcceptBody =>
+      'En utilisant l\'application MooMoo, vous acceptez d\'être lié par les présentes conditions d\'utilisation.';
+
+  @override
+  String get accountTermsUseTitle => '2. Utilisation du service';
+
+  @override
+  String get accountTermsUseBody =>
+      'Vous vous engagez à utiliser l\'application de manière licite et respectueuse des autres utilisateurs.';
+
+  @override
+  String get accountTermsIpTitle => '3. Propriété intellectuelle';
+
+  @override
+  String get accountTermsIpBody =>
+      'Le contenu de l\'application, y compris les modèles de traduction, est la propriété exclusive de MooMoo.';
+
+  @override
+  String learnStreakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours de série',
+      one: '1 jour de série',
+      zero: 'Pas de série',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String learnXpAmount(int xp) {
+    return '$xp XP';
+  }
+
+  @override
+  String get learnDailyGoal => 'Objectif du jour';
+
+  @override
+  String learnDailyGoalProgress(int current, int goal) {
+    return '$current / $goal XP';
+  }
+
+  @override
+  String get learnDailyGoalReached => 'Objectif atteint, bravo !';
+
+  @override
+  String learnUnitLabel(int number) {
+    return 'Unité $number';
+  }
+
+  @override
+  String get learnStart => 'Commencer';
+
+  @override
+  String get learnReview => 'Réviser';
+
+  @override
+  String get learnLessonLocked =>
+      'Terminez la leçon précédente pour débloquer celle-ci.';
+
+  @override
+  String get learnLessonEmpty => 'Bientôt disponible';
+
+  @override
+  String learnLessonSigns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signes',
+      one: '1 signe',
+      zero: 'Aucun signe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get learnStateCompleted => 'Terminée';
+
+  @override
+  String get learnStatePerfect => 'Sans faute';
+
+  @override
+  String get learnStateCurrent => 'À faire';
+
+  @override
+  String get learnStateLocked => 'Verrouillée';
+
+  @override
+  String get learnNoCourseTitle => 'Le parcours arrive bientôt';
+
+  @override
+  String get learnNoCourseMessage =>
+      'Aucune leçon n\'est encore publiée pour cette langue. En attendant, explorez le dictionnaire.';
+
+  @override
+  String get learnNoCourseEditorMessage =>
+      'Aucune unité publiée pour cette langue. Créez la première depuis la gestion du parcours.';
+
+  @override
+  String get learnManagePath => 'Gérer le parcours';
+
+  @override
+  String get learnOpenDictionary => 'Ouvrir le dictionnaire';
+
+  @override
+  String get learnViewProgress => 'Ma progression';
+
+  @override
+  String get lessonQuit => 'Quitter la leçon';
+
+  @override
+  String get lessonQuitConfirmTitle => 'Quitter la leçon ?';
+
+  @override
+  String get lessonQuitConfirmMessage =>
+      'Vos réponses dans cette leçon ne seront pas enregistrées.';
+
+  @override
+  String get lessonQuitConfirm => 'Quitter';
+
+  @override
+  String get lessonKeepGoing => 'Continuer la leçon';
+
+  @override
+  String get lessonNewSign => 'Nouveau signe';
+
+  @override
+  String get lessonWhatSign => 'Que signifie ce signe ?';
+
+  @override
+  String lessonFindSign(String word) {
+    return 'Quel signe veut dire « $word » ?';
+  }
+
+  @override
+  String get lessonCheck => 'Vérifier';
+
+  @override
+  String get lessonContinue => 'Continuer';
+
+  @override
+  String get lessonCorrect => 'Bonne réponse !';
+
+  @override
+  String get lessonIncorrect => 'Pas tout à fait';
+
+  @override
+  String lessonCorrectAnswer(String word) {
+    return 'La bonne réponse était : $word';
+  }
+
+  @override
+  String lessonProgressLabel(int current, int total) {
+    return 'Question $current sur $total';
+  }
+
+  @override
+  String get lessonNoMedia => 'Pas encore de vidéo pour ce signe';
+
+  @override
+  String get lessonReplay => 'Revoir le signe';
+
+  @override
+  String lessonOptionLabel(int index) {
+    return 'Réponse $index';
+  }
+
+  @override
+  String get lessonCompleteTitle => 'Leçon terminée !';
+
+  @override
+  String get lessonCompletePerfect => 'Sans faute, impressionnant !';
+
+  @override
+  String lessonXpEarned(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String get lessonAccuracy => 'Précision';
+
+  @override
+  String get lessonStreak => 'Série';
+
+  @override
+  String get lessonXp => 'XP gagnés';
+
+  @override
+  String get lessonFinish => 'Terminer';
+
+  @override
+  String get lessonRetry => 'Recommencer';
+
+  @override
+  String get lessonSaveError =>
+      'Impossible d\'enregistrer le résultat. Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get lessonNotEnoughSigns =>
+      'Cette leçon n\'a pas encore de signe à pratiquer.';
+
+  @override
+  String lessonDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get progressTitle => 'Ma progression';
+
+  @override
+  String get progressTotalXp => 'XP total';
+
+  @override
+  String get progressCurrentStreak => 'Série actuelle';
+
+  @override
+  String get progressLongestStreak => 'Meilleure série';
+
+  @override
+  String get progressLessonsDone => 'Leçons terminées';
+
+  @override
+  String get progressDailyGoalTitle => 'Objectif quotidien';
+
+  @override
+  String get progressDailyGoalHint => 'Combien d\'XP visez-vous chaque jour ?';
+
+  @override
+  String get progressGoalCasual => 'Détente';
+
+  @override
+  String get progressGoalRegular => 'Régulier';
+
+  @override
+  String get progressGoalSerious => 'Sérieux';
+
+  @override
+  String get progressGoalIntense => 'Intense';
+
+  @override
+  String progressGoalOption(int xp) {
+    return '$xp XP par jour';
+  }
+
+  @override
+  String get progressGoalSaved => 'Objectif mis à jour';
+
+  @override
+  String get adminLearning => 'Parcours';
+
+  @override
+  String get adminLearningSubtitle =>
+      'Unités, leçons et signes enseignés dans l\'onglet Apprendre';
+
+  @override
+  String get adminAddUnit => 'Ajouter une unité';
+
+  @override
+  String get adminEditUnit => 'Modifier l\'unité';
+
+  @override
+  String get adminAddLesson => 'Ajouter une leçon';
+
+  @override
+  String get adminEditLesson => 'Modifier la leçon';
+
+  @override
+  String get adminFieldTitle => 'Titre';
+
+  @override
+  String get adminFieldDescription => 'Description (facultatif)';
+
+  @override
+  String get adminFieldIcon => 'Icône';
+
+  @override
+  String get adminXpReward => 'Récompense (XP)';
+
+  @override
+  String get adminPublished => 'Publiée';
+
+  @override
+  String get adminDraft => 'Brouillon';
+
+  @override
+  String get adminPublish => 'Publier';
+
+  @override
+  String get adminUnpublish => 'Repasser en brouillon';
+
+  @override
+  String adminDeleteUnitConfirm(String title) {
+    return 'Supprimer l\'unité « $title » et toutes ses leçons ?';
+  }
+
+  @override
+  String adminDeleteLessonConfirm(String title) {
+    return 'Supprimer la leçon « $title » ?';
+  }
+
+  @override
+  String get adminLessonPickSigns => 'Choisir les signes';
+
+  @override
+  String get adminSearchValidatedSigns => 'Rechercher un signe validé';
+
+  @override
+  String adminSelectedSigns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signes choisis',
+      one: '1 signe choisi',
+      zero: 'Aucun signe choisi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminLessonNeedsSigns =>
+      'Ajoutez au moins 2 signes pour générer des exercices.';
+
+  @override
+  String get adminNoUnits => 'Aucune unité';
+
+  @override
+  String get adminNoUnitsMessage =>
+      'Créez une première unité, ajoutez-y des leçons puis choisissez les signes enseignés.';
+
+  @override
+  String get adminNoSignsForLanguage =>
+      'Aucun signe validé pour cette langue. Ajoutez-en depuis la gestion des signes.';
+
+  @override
+  String get adminSaved => 'Enregistré';
+
+  @override
+  String get adminMoveUp => 'Monter';
+
+  @override
+  String get adminMoveDown => 'Descendre';
+
+  @override
+  String get adminLanguage => 'Langue';
+
+  @override
+  String get translCameraUnavailable =>
+      'Caméra indisponible : importez une vidéo ou une image pour la traduire.';
+
+  @override
+  String get translDone => 'Traduction terminée';
+
+  @override
+  String get admxSignsValidation => 'Validation du dictionnaire';
+
+  @override
+  String admxSignsValidatedOf(int validated, int total) {
+    return '$validated signes validés sur $total';
+  }
+
+  @override
+  String admxContributionsTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count contributions au total',
+      one: '1 contribution au total',
+      zero: 'Aucune contribution',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get admxNoModelsMessage =>
+      'Aucun modèle n\'est enregistré dans Supabase pour le moment. Lancez un réentraînement : le modèle produit apparaîtra ici.';
+
+  @override
+  String get admxNoJobsMessage =>
+      'Les demandes de réentraînement apparaîtront ici avec leur progression.';
+
+  @override
+  String get admxJobQueued => 'En file';
+
+  @override
+  String get admxJobRunning => 'En cours';
+
+  @override
+  String get admxJobDone => 'Terminé';
+
+  @override
+  String get admxJobFailed => 'Échoué';
+
+  @override
+  String get admxActions => 'Actions';
+
+  @override
+  String get admxViewMedia => 'Voir la vidéo';
+
+  @override
+  String get admxCategory => 'Catégorie';
+
+  @override
+  String get admxNoCategory => 'Sans catégorie';
+
+  @override
+  String get admxWordRequired => 'Le mot est obligatoire';
+
+  @override
+  String get admxClearSearch => 'Effacer la recherche';
+
+  @override
+  String admxDifficultyValue(int level) {
+    return 'Niveau $level';
+  }
+
+  @override
+  String admxViewsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vues',
+      one: '1 vue',
+      zero: 'Aucune vue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get admxApiUrl => 'API backend';
+
+  @override
+  String get admxActiveModel => 'Modèle actif';
+
+  @override
+  String get admxNoActiveModel => 'Aucun modèle actif';
+
+  @override
+  String admxCreatedOn(String date) {
+    return 'Créé le $date';
+  }
+
+  @override
+  String get admxRefresh => 'Actualiser';
+
+  @override
+  String get translDirectionSignToText => 'Signes vers texte';
+
+  @override
+  String get translDirectionTextToSign => 'Texte vers signes';
+
+  @override
+  String get translSwapDirection => 'Inverser le sens de traduction';
+
+  @override
+  String get translStart => 'Lancer la traduction';
+
+  @override
+  String get translRestart => 'Relancer';
+
+  @override
+  String get translImportVideo => 'Importer une vidéo';
+
+  @override
+  String get translImportImage => 'Importer une image';
+
+  @override
+  String get translRemoveFile => 'Retirer le fichier et revenir à la caméra';
+
+  @override
+  String translFileSelected(String name) {
+    return 'Fichier sélectionné : $name';
+  }
+
+  @override
+  String get translResultLabel => 'Texte traduit';
+
+  @override
+  String get translResultPlaceholder => 'Le texte traduit s\'affichera ici.';
+
+  @override
+  String translConfidence(int percent) {
+    return 'Confiance : $percent %';
+  }
+
+  @override
+  String translModelUsed(String model) {
+    return 'Modèle : $model';
+  }
+
+  @override
+  String get translSpeak => 'Lire à voix haute';
+
+  @override
+  String get translListening => 'Écoute en cours…';
+
+  @override
+  String get translStartDictation => 'Dicter au micro';
+
+  @override
+  String get translStopDictation => 'Arrêter la dictée';
+
+  @override
+  String get translInputLabel => 'Texte à traduire en signes';
+
+  @override
+  String get translInputHint => 'Appuyez sur Entrée pour traduire';
+
+  @override
+  String get translSearching => 'Recherche du signe…';
+
+  @override
+  String get translEmptyPrompt =>
+      'Écrivez un mot ou une phrase pour voir le signe correspondant.';
+
+  @override
+  String translNoMatch(String query) {
+    return 'Aucun signe trouvé pour « $query »';
+  }
+
+  @override
+  String get translNoMatchHint =>
+      'Essayez un autre mot ou vérifiez l\'orthographe.';
+
+  @override
+  String get translMatches => 'Signes correspondants';
+
+  @override
+  String translShownSign(String word) {
+    return 'Signe affiché : $word';
+  }
+
+  @override
+  String get translCharacterNotFound => 'Personnage introuvable';
+
+  @override
+  String get translLoadError => 'Impossible de charger l\'affichage';
+
+  @override
+  String get translAvatarNote =>
+      'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.';
+
+  @override
+  String get translModelAlt => 'Avatar 3D de traduction en langue des signes';
+
+  @override
+  String get adminLearningForbidden =>
+      'Réservé aux administrateurs, enseignants et experts en langue des signes.';
 }

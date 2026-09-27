@@ -1,157 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_panel.dart';
+import '../settings/settings_screen.dart';
 
-class AboutScreen extends ConsumerWidget {
+class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final secondary = AppColors.textSecondary(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.about),
-        elevation: 0,
-      ),
-      body: PageContainer.reading(
-        verticalPadding: AppSpacing.l,
-        child: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.xl),
-            // App Logo
-            Center(
-              child: Hero(
-                tag: 'app_logo',
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 120,
-                  height: 120,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.l),
-            Text(
-              'MooMoo',
-              style: AppTextStyles.h1.copyWith(color: AppColors.primary),
-            ),
-            Text(
-              'Version 1.5.0',
-              style: AppTextStyles.bodySmall,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            // Author Section
-            _buildInfoCard(
-              context,
-              isDark,
-              title: 'Auteur',
-              content: 'OTILA Nicandre',
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: AppSpacing.m),
-            _buildInfoCard(
-              context,
-              isDark,
-              title: 'Contact',
-              content: 'nicodevnico@gmail.com',
-              icon: Icons.email_outlined,
-              onTap: () => _launchEmail('nicodevnico@gmail.com'),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            
-            // Description
-            Text(
-              'MooMoo est une plateforme de traduction intelligente en langue des signes conçue pour briser les barrières de communication et favoriser l\'inclusion universelle.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            
-            // Footer
-            Text(
-              '© 2026 MooMoo. Tous droits réservés.',
-              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondaryLight),
-            ),
-          ],
+      appBar: AppBar(title: Text(l10n.about)),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          top: AppSpacing.l,
+          bottom: settingsBottomPadding(context),
         ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-    BuildContext context,
-    bool isDark, {
-    required String title,
-    required String content,
-    required IconData icon,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Row(
+        child: PageContainer.reading(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: AppSpacing.m),
-              Expanded(
+              AppPanel(
+                padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 88,
+                      height: 88,
+                      excludeFromSemantics: true,
                     ),
+                    const SizedBox(height: AppSpacing.m),
+                    Semantics(
+                      header: true,
+                      child: Text('MooMoo', style: AppTextStyles.h2),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
-                      content,
-                      style: AppTextStyles.bodyLarge,
+                      l10n.accountVersionLabel(kAppVersion),
+                      style: AppTextStyles.bodySmall.copyWith(color: secondary),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      l10n.accountAboutTagline,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium.copyWith(color: secondary),
                     ),
                   ],
                 ),
               ),
-              if (onTap != null)
-                const Icon(Icons.open_in_new, size: 18, color: AppColors.textSecondaryLight),
+              const SizedBox(height: AppSpacing.xl),
+              SettingsGroup(
+                children: [
+                  SettingsTile(
+                    icon: AppIcons.profile,
+                    title: l10n.accountAuthor,
+                    value: 'OTILA Nicandre',
+                  ),
+                  SettingsTile(
+                    icon: PhosphorIconsRegular.envelopeSimple,
+                    title: l10n.accountContact,
+                    subtitle: kSupportEmail,
+                    trailing: Icon(
+                      PhosphorIconsRegular.arrowSquareOut,
+                      size: 18,
+                      color: secondary,
+                    ),
+                    onTap: () => openSupportEmail(
+                      context,
+                      subject: 'MooMoo · ${l10n.about}',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                l10n.accountCopyright('${DateTime.now().year}'),
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodySmall.copyWith(color: secondary),
+              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _launchEmail(String email) async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      queryParameters: {
-        'subject': 'À propos de MooMoo',
-      },
-    );
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
-    }
   }
 }

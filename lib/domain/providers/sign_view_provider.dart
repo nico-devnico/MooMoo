@@ -13,10 +13,11 @@ class SignViewMode extends _$SignViewMode {
   @override
   Future<SignViewModeEnum> build() async {
     final data = await _storage.read(key: _key);
-    if (data == null) return SignViewModeEnum.model3d;
+    // The 3D avatar cannot perform signs yet, so video is the useful default.
+    if (data == null) return SignViewModeEnum.video;
     return SignViewModeEnum.values.firstWhere(
       (e) => e.name == data,
-      orElse: () => SignViewModeEnum.model3d,
+      orElse: () => SignViewModeEnum.video,
     );
   }
 

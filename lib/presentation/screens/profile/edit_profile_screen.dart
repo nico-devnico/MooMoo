@@ -1,19 +1,30 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 import '../../../core/layout/responsive.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../data/models/user_profile.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/storage_provider.dart';
-import '../../../data/models/user_profile.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_avatar.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
-import '../../widgets/app_avatar.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../widgets/skeletons.dart';
+import '../settings/settings_screen.dart';
+
+const double _avatarRadius = 40;
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -24,19 +35,13 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _bioController;
-  bool _isLoading = false;
+  final _nameController = TextEditingController();
+  final _bioController = TextEditingController();
+  bool _isSaving = false;
   bool _isInitialized = false;
-  XFile? _imageFile;
-  String? _currentAvatarUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController();
-    _bioController = TextEditingController();
-  }
+  bool _isDeaf = false;
+  Uint8List? _imageBytes;
+  String? _imagePath;
 
   @override
   void dispose() {
@@ -45,156 +50,284 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
+  void _initFrom(UserProfile profile) {
+    if (_isInitialized) return;
+    _nameController.text = profile.displayName ?? '';
+    _bioController.text = profile.bio ?? '';
+    _isDeaf = profile.isDeaf;
+    _isInitialized = true;
+  }
+
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
+    final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       maxWidth: 512,
       maxHeight: 512,
       imageQuality: 75,
     );
-
-    if (image != null) {
-      setState(() {
-        _imageFile = image;
-      });
-    }
+    if (image == null) return;
+    final bytes = await image.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _imageBytes = bytes;
+      _imagePath = kIsWeb ? null : image.path;
+    });
   }
 
-  Future<void> _saveProfile(UserProfile profile) async {
+  Future<void> _save(UserProfile profile) async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
 
-    setState(() => _isLoading = true);
+    setState(() => _isSaving = true);
     try {
-      String? newAvatarUrl = profile.avatarUrl;
-
-      // 1. Upload image if picked
-      if (_imageFile != null) {
-        final storageRepo = ref.read(storageRepositoryProvider);
-        if (kIsWeb) {
-          final bytes = await _imageFile!.readAsBytes();
-          newAvatarUrl = await storageRepo.uploadAvatar(
-            bytes: bytes,
-            userId: profile.id,
-          );
-        } else {
-          newAvatarUrl = await storageRepo.uploadAvatar(
-            path: _imageFile!.path,
-            userId: profile.id,
-          );
-        }
-        
-        // Add timestamp to bust cache
-        newAvatarUrl = '$newAvatarUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      var avatarUrl = profile.avatarUrl;
+      if (_imageBytes != null) {
+        final url = await ref.read(storageRepositoryProvider).uploadAvatar(
+              bytes: _imageBytes,
+              path: _imagePath,
+              userId: profile.id,
+            );
+        // Le chemin de stockage est fixe par utilisateur : sans ce paramètre,
+        // l'ancienne image resterait servie depuis le cache.
+        avatarUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
       }
 
-      // 2. Update profile
-      final updatedProfile = profile.copyWith(
-        displayName: _nameController.text.trim(),
-        bio: _bioController.text.trim(),
-        avatarUrl: newAvatarUrl,
-      );
-      
-      await ref.read(profileRepositoryProvider).updateProfile(updatedProfile);
-      
-      // Force refresh the profile provider
+      final bio = _bioController.text.trim();
+      await ref.read(profileRepositoryProvider).updateProfile(
+            profile.copyWith(
+              displayName: _nameController.text.trim(),
+              bio: bio.isEmpty ? null : bio,
+              avatarUrl: avatarUrl,
+              isDeaf: _isDeaf,
+            ),
+          );
       ref.invalidate(userProfileProvider);
 
-      if (mounted) {
-        AppSnackbar.show(context, message: l10n.profileUpdateSuccess, type: AppSnackbarType.success);
-        Navigator.pop(context);
+      if (!mounted) return;
+      AppSnackbar.showSuccess(context, l10n.profileUpdateSuccess);
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.goNamed(AppRoutes.profileName);
       }
-    } catch (e) {
-      if (mounted) {
-        AppSnackbar.show(context, message: 'Erreur : $e', type: AppSnackbarType.error);
-      }
+    } catch (_) {
+      if (mounted) AppSnackbar.showError(context, l10n.accountSaveError);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(userProfileProvider);
     final l10n = AppLocalizations.of(context)!;
+    final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editProfile)),
-      body: profileAsync.when(
-        data: (profile) {
-          if (profile == null) return Center(child: Text(l10n.profileNotFound));
-          
-          if (!_isInitialized) {
-            _nameController.text = profile.displayName ?? '';
-            _bioController.text = profile.bio ?? '';
-            _currentAvatarUrl = profile.avatarUrl;
-            _isInitialized = true;
-          }
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          top: AppSpacing.l,
+          bottom: settingsBottomPadding(context),
+        ),
+        child: PageContainer.form(
+          alignment: Alignment.topCenter,
+          verticalPadding: 0,
+          child: profileAsync.when(
+            data: (profile) {
+              if (profile == null) {
+                return AppEmptyState(
+                  icon: AppIcons.profile,
+                  title: l10n.profileNotFound,
+                  message: l10n.loginToSave,
+                  actionLabel: l10n.signIn,
+                  onAction: () => context.goNamed(AppRoutes.loginName),
+                );
+              }
+              _initFrom(profile);
+              return _buildForm(context, profile);
+            },
+            loading: () => const _EditProfileSkeleton(),
+            error: (_, _) => AppEmptyState(
+              icon: AppIcons.error,
+              title: l10n.errorGeneric,
+              message: l10n.accountLoadErrorMessage,
+              actionLabel: l10n.retry,
+              onAction: () => ref.invalidate(userProfileProvider),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-          return PageContainer.form(
-            alignment: Alignment.topCenter,
-            child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  Center(
-                    child: Stack(
-                      children: [
-                        _imageFile != null
-                            ? CircleAvatar(
-                                radius: 60,
-                                backgroundImage: kIsWeb
-                                    ? NetworkImage(_imageFile!.path)
-                                    : FileImage(File(_imageFile!.path)) as ImageProvider,
-                              )
-                            : AppAvatar(
-                                imageUrl: _currentAvatarUrl,
-                                name: profile.displayName,
-                                radius: 60,
-                              ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: CircleAvatar(
-                            backgroundColor: AppColors.primary,
-                            radius: 18,
-                            child: IconButton(
-                              icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                              onPressed: _pickImage,
-                            ),
+  Widget _buildForm(BuildContext context, UserProfile profile) {
+    final l10n = AppLocalizations.of(context)!;
+    final secondary = AppColors.textSecondary(context);
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppPanel(
+            child: Row(
+              children: [
+                _imageBytes != null
+                    ? ClipOval(
+                        child: Image.memory(
+                          _imageBytes!,
+                          width: _avatarRadius * 2,
+                          height: _avatarRadius * 2,
+                          fit: BoxFit.cover,
+                          semanticLabel: l10n.accountPhotoTitle,
+                        ),
+                      )
+                    : Semantics(
+                        image: true,
+                        label: l10n.accountPhotoTitle,
+                        child: ExcludeSemantics(
+                          child: AppAvatar(
+                            imageUrl: profile.avatarUrl,
+                            name: _nameController.text.isEmpty
+                                ? profile.displayName
+                                : _nameController.text,
+                            radius: _avatarRadius,
                           ),
                         ),
+                      ),
+                const SizedBox(width: AppSpacing.m),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.accountPhotoTitle,
+                        style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        l10n.accountPhotoHint,
+                        style: AppTextStyles.bodySmall.copyWith(color: secondary),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      OutlinedButton.icon(
+                        onPressed: _isSaving ? null : _pickImage,
+                        icon: const Icon(AppIcons.camera, size: 18),
+                        label: Text(l10n.accountChangePhoto),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, kMinTouchTarget),
+                          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusM),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppTextField(
+            label: l10n.displayName,
+            controller: _nameController,
+            validator: (v) => (v == null || v.trim().isEmpty) ? l10n.requiredField : null,
+          ),
+          const SizedBox(height: AppSpacing.l),
+          AppTextField(
+            label: l10n.bio,
+            controller: _bioController,
+            maxLines: 3,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          SettingsGroup(
+            title: l10n.accountAccessibility,
+            footer: l10n.accountDeafSwitchHint,
+            children: [
+              SettingsSwitchTile(
+                icon: PhosphorIconsRegular.ear,
+                title: l10n.accountDeafSwitch,
+                value: _isDeaf,
+                onChanged: _isSaving ? null : (v) => setState(() => _isDeaf = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Center(
+            child: AppButton(
+              label: l10n.save,
+              isLoading: _isSaving,
+              onPressed: () => _save(profile),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditProfileSkeleton extends StatelessWidget {
+  const _EditProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final outline = BoxDecoration(
+      border: Border.all(color: Colors.white),
+      borderRadius: AppRadius.radiusL,
+    );
+
+    return Skeleton(
+      label: AppLocalizations.of(context)!.loading,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DecoratedBox(
+            decoration: outline,
+            child: const Padding(
+              padding: EdgeInsets.all(AppSpacing.l),
+              child: Row(
+                children: [
+                  SkeletonBlock.circle(size: _avatarRadius * 2),
+                  SizedBox(width: AppSpacing.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBlock(width: 120, height: 16),
+                        SizedBox(height: AppSpacing.s),
+                        SkeletonBlock(width: 200, height: 12),
+                        SizedBox(height: AppSpacing.s),
+                        SkeletonBlock(width: 150, height: kMinTouchTarget, radius: AppRadius.m),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppTextField(
-                    label: l10n.displayName,
-                    controller: _nameController,
-                    validator: (v) => (v == null || v.isEmpty) ? l10n.requiredField : null,
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  AppTextField(
-                    label: l10n.bio,
-                    controller: _bioController,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppButton(
-                    label: l10n.save,
-                    isLoading: _isLoading,
-                    onPressed: () => _saveProfile(profile),
                   ),
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          const SkeletonBlock(height: 58, radius: AppRadius.l),
+          const SizedBox(height: AppSpacing.l),
+          const SkeletonBlock(height: 106, radius: AppRadius.l),
+          const SizedBox(height: AppSpacing.xl),
+          const Padding(
+            padding: EdgeInsets.only(left: AppSpacing.m, bottom: AppSpacing.s),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SkeletonBlock(width: 120, height: 14),
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erreur : $e')),
+          ),
+          DecoratedBox(
+            decoration: outline,
+            child: const SettingsRowSkeleton(lines: 2),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Center(
+            child: SkeletonBlock(
+              width: context.isMobile ? double.infinity : AppButton.desktopMaxWidth,
+              height: AppButton.height,
+              radius: AppRadius.l,
+            ),
+          ),
+        ],
       ),
     );
   }

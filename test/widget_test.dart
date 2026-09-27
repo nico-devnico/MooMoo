@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:moomoo/core/layout/responsive.dart';
+import 'package:moomoo/presentation/widgets/app_avatar.dart';
 import 'package:moomoo/presentation/widgets/app_button.dart';
 
 /// Pumps [child] at a fixed logical window size so breakpoint-dependent
@@ -115,6 +116,19 @@ void main() {
         tester.getSize(find.byKey(const Key('btn'))).height,
         greaterThanOrEqualTo(48),
       );
+    });
+  });
+
+  group('AppAvatar.initialsOf', () {
+    test('takes the first letter of the first two words', () {
+      expect(AppAvatar.initialsOf('nicandre otila'), 'NO');
+      expect(AppAvatar.initialsOf('Élodie'), 'É');
+    });
+
+    test('tolerates repeated spaces and empty names', () {
+      expect(AppAvatar.initialsOf('  Jean   Paul  Marie '), 'JP');
+      expect(AppAvatar.initialsOf(''), '?');
+      expect(AppAvatar.initialsOf(null), '?');
     });
   });
 }

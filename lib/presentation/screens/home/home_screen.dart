@@ -1,306 +1,497 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
+
 import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/models/learning.dart';
+import '../../../data/models/sign_category.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../domain/providers/learning_provider.dart';
+import '../../../domain/providers/notification_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
-import '../../../domain/providers/notification_provider.dart';
-import '../../../data/models/sign_language.dart';
-import '../../../data/models/notification.dart' as model;
-import '../../widgets/app_card.dart';
-import '../../widgets/app_loader.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_panel.dart';
+import '../../widgets/skeletons.dart';
+import '../learning/widgets/learning_widgets.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+/// Vertical rhythm between landing sections.
+const double _sectionGap = AppSpacing.xxxl;
+
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Envoi de la notification de bienvenue lors de la première connexion
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndSendWelcomeNotification();
-    });
-  }
-
-  Future<void> _checkAndSendWelcomeNotification() async {
-    final user = ref.read(currentUserProvider);
-    if (user == null) return;
-
-    final repo = ref.read(notificationRepositoryProvider);
-    final notifications = await repo.getNotifications(user.id);
-    
-    // Vérifier si une notification de bienvenue existe déjà
-    final hasWelcome = notifications.any((n) => n.type == 'welcome');
-    
-    if (!hasWelcome) {
-      final welcomeNotif = model.Notification(
-        id: const Uuid().v4(),
-        userId: user.id,
-        type: 'welcome',
-        title: 'Bienvenue sur MooMoo ! 👐',
-        body: 'Nous sommes ravis de vous compter parmi nous. Commencez à explorer la langue des signes dès maintenant !',
-        isRead: false,
-        createdAt: DateTime.now(),
-      );
-      
-      // Note: Dans un vrai backend, cela se ferait côté serveur
-      // Ici on simule l'insertion via Supabase
-      try {
-        await ref.read(supabaseClientProvider)
-            .from('notifications')
-            .insert(welcomeNotif.toJson());
-      } catch (e) {
-        debugPrint('Erreur lors de l\'envoi de la notification de bienvenue: $e');
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final profileAsync = ref.watch(userProfileProvider);
-    final l10n = AppLocalizations.of(context)!;
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: PageContainer(
-        // The slivers below carry their own gutter, so only the max width and
-        // the centering come from the container here.
-        padding: 0,
-        child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 140,
-                floating: true,
-                pinned: true,
-                elevation: 0,
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: AppSpacing.m),
-                  title: profileAsync.when(
-                    data: (profile) => Text(
-                      l10n.greeting(profile?.displayName ?? user?.email?.split('@').first ?? l10n.guest),
-                      style: AppTextStyles.h3,
-                    ),
-                    loading: () => const AppLoader(width: 150, height: 20),
-                    error: (_, _) => Text(l10n.hello, style: AppTextStyles.h3),
-                  ),
-                  background: Container(color: Theme.of(context).scaffoldBackgroundColor),
-                ),
-                actions: [
-                  ref.watch(unreadNotificationsCountProvider).when(
-                    data: (count) => IconButton(
-                      icon: count > 0
-                          ? Badge(
-                              label: Text(count.toString()),
-                              child: const Icon(Icons.notifications_outlined),
-                            )
-                          : const Icon(Icons.notifications_outlined),
-                      onPressed: () => context.pushNamed(AppRoutes.notificationsName),
-                    ),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, _) => const SizedBox.shrink(),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => context.pushNamed(AppRoutes.settingsName),
-                  ),
-                  const SizedBox(width: AppSpacing.m),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref
+              ..invalidate(learnerSummaryProvider)
+              ..invalidate(unreadNotificationsCountProvider);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(
+              top: AppSpacing.l,
+              bottom: AppSpacing.xxxl + AppSpacing.xl,
+            ),
+            child: const PageContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _HomeTopBar(),
+                  SizedBox(height: AppSpacing.l),
+                  _Hero(),
+                  SizedBox(height: _sectionGap),
+                  _WaysSection(),
+                  SizedBox(height: _sectionGap),
+                  _LearningSection(),
+                  _CategoriesSection(),
+                  _ForEveryoneSection(),
+                  SizedBox(height: _sectionGap),
+                  _ContributionBanner(),
                 ],
               ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Main Actions
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _MainActionCard(
-                                title: l10n.signToText,
-                                subtitle: l10n.viaCamera,
-                                icon: Icons.videocam_outlined,
-                                color: AppColors.primary,
-                                onTap: () => context.goNamed(AppRoutes.translatorName),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.m),
-                            Expanded(
-                              child: _MainActionCard(
-                                title: l10n.textToSign,
-                                subtitle: l10n.viaKeyboard,
-                                icon: Icons.keyboard_alt_outlined,
-                                color: AppColors.primaryDeep,
-                                onTap: () => context.goNamed(AppRoutes.translatorName),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: AppSpacing.xxl),
-                    _SectionHeader(
-                      title: l10n.learnByCategory,
-                      onSeeAll: () => context.pushNamed(AppRoutes.dictionaryName),
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    const _CategoriesSection(),
-
-                    const SizedBox(height: AppSpacing.xxl),
-                    _SectionHeader(title: l10n.recentSigns, onSeeAll: () {}),
-                    const SizedBox(height: AppSpacing.m),
-                    _RecentSignTile(title: l10n.helloSign, category: l10n.salutations, date: l10n.twoHoursAgo),
-                    _RecentSignTile(title: l10n.merciSign, category: l10n.salutations, date: l10n.yesterday),
-                    _RecentSignTile(title: l10n.pleaseSign, category: l10n.politesse, date: l10n.yesterday),
-                    
-                    const SizedBox(height: AppSpacing.xl),
-                    if (user != null) const _ContributionBanner(),
-                    const SizedBox(height: AppSpacing.xxxl),
-                  ]),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MainActionCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _MainActionCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.l),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
             ),
-            const SizedBox(height: AppSpacing.l),
-            Text(
-              title,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final VoidCallback onSeeAll;
-
-  const _SectionHeader({required this.title, required this.onSeeAll});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: AppTextStyles.h3),
-        TextButton(
-          onPressed: onSeeAll,
-          child: Row(
-            children: [
-              Text(l10n.seeAll),
-              const Icon(Icons.chevron_right, size: 18),
-            ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeTopBar extends ConsumerWidget {
+  const _HomeTopBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final user = ref.watch(currentUserProvider);
+    final profile = ref.watch(userProfileProvider);
+    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+
+    final name = profile.value?.displayName ??
+        user?.email?.split('@').first ??
+        l10n.guest;
+
+    return Row(
+      children: [
+        Expanded(
+          child: profile.isLoading && !profile.hasValue
+              ? const Skeleton(child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SkeletonBlock(width: 180, height: 22),
+                ))
+              : Text(
+                  l10n.greeting(name),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.h3,
+                ),
+        ),
+        IconButton(
+          tooltip: unread > 0 ? '${l10n.homeNotifications} ($unread)' : l10n.homeNotifications,
+          onPressed: () => context.pushNamed(AppRoutes.notificationsName),
+          icon: Badge(
+            isLabelVisible: unread > 0,
+            label: Text('$unread'),
+            child: const Icon(AppIcons.notification),
+          ),
+        ),
+        IconButton(
+          tooltip: l10n.settings,
+          onPressed: () => context.pushNamed(AppRoutes.settingsName),
+          icon: const Icon(AppIcons.settings),
         ),
       ],
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  final String title;
-  final String icon;
-  final VoidCallback onTap;
-
-  const _CategoryCard({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
+class _Hero extends StatelessWidget {
+  const _Hero();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.m),
-      child: AppCard(
-        onTap: onTap,
-        width: 120,
+    final l10n = AppLocalizations.of(context)!;
+    final isWide = context.hasSideNavigation;
+
+    final actions = Wrap(
+      spacing: AppSpacing.m,
+      runSpacing: AppSpacing.m,
+      children: [
+        AppButton(
+          label: l10n.homeTranslateNow,
+          icon: AppIcons.translate,
+          fullWidth: context.isMobile,
+          onPressed: () => context.goNamed(AppRoutes.translatorName),
+        ),
+        AppButton(
+          label: l10n.homeContinueLearning,
+          icon: AppIcons.learning,
+          variant: AppButtonVariant.outline,
+          fullWidth: context.isMobile,
+          onPressed: () => context.goNamed(AppRoutes.learningName),
+        ),
+      ],
+    );
+
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            l10n.homeHeroTitle,
+            style: (isWide ? AppTextStyles.h1.copyWith(fontSize: 44) : AppTextStyles.h1)
+                .copyWith(height: 1.15),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+        Text(
+          l10n.homeHeroSubtitle,
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary(context),
+            fontWeight: FontWeight.w400,
+            fontSize: isWide ? 18 : 16,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        actions,
+      ],
+    );
+
+    if (!isWide) return text;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 6,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: text,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xxl),
+        const Expanded(flex: 5, child: _HeroVisual()),
+      ],
+    );
+  }
+}
+
+/// Brand panel next to the hero text on large screens: the app mark and the
+/// three things MooMoo does, drawn flat.
+class _HeroVisual extends StatelessWidget {
+  const _HeroVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ExcludeSemantics(
+      child: AspectRatio(
+        aspectRatio: 1.15,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: AppColors.primarySoft,
+            borderRadius: AppRadius.radiusXL,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 132,
+                height: 132,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                padding: const EdgeInsets.all(AppSpacing.m),
+                child: ClipOval(child: Image.asset('assets/images/logo.png', fit: BoxFit.cover)),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: AppSpacing.s,
+                runSpacing: AppSpacing.s,
+                children: [
+                  _HeroChip(icon: AppIcons.camera, label: l10n.signToText),
+                  _HeroChip(icon: AppIcons.keyboard, label: l10n.textToSign),
+                  _HeroChip(icon: AppIcons.learning, label: l10n.learning),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  const _HeroChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: AppRadius.radiusCircular,
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: AppSpacing.s),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, this.subtitle, this.action});
+
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(header: true, child: Text(title, style: AppTextStyles.h2)),
+              if (subtitle != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  subtitle!,
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+                ),
+              ],
+            ],
+          ),
+        ),
+        ?action,
+      ],
+    );
+  }
+}
+
+class _WaysSection extends StatelessWidget {
+  const _WaysSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cards = [
+      _FeatureCard(
+        icon: AppIcons.camera,
+        title: l10n.signToText,
+        body: l10n.homeSignToTextDesc,
+        cta: l10n.homeOpen,
+        onTap: () => context.goNamed(AppRoutes.translatorName),
+      ),
+      _FeatureCard(
+        icon: AppIcons.keyboard,
+        title: l10n.textToSign,
+        body: l10n.homeTextToSignDesc,
+        cta: l10n.homeOpen,
+        onTap: () => context.goNamed(AppRoutes.translatorName),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionTitle(title: l10n.homeWaysTitle),
+        const SizedBox(height: AppSpacing.l),
+        if (context.isMobile)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [cards[0], const SizedBox(height: AppSpacing.m), cards[1]],
+          )
+        else
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: AppSpacing.l),
+                Expanded(child: cards[1]),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.cta,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final String cta;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      onTap: onTap,
+      semanticLabel: '$title. $body',
+      child: ExcludeSemantics(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 32)),
-            const SizedBox(height: 12),
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primarySoft,
+                borderRadius: AppRadius.radiusM,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 26),
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Text(title, style: AppTextStyles.h3),
+            const SizedBox(height: AppSpacing.s),
             Text(
-              title,
-              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              body,
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary(context)),
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  cta,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                const Icon(AppIcons.forward, size: 16, color: AppColors.primary),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LearningSection extends ConsumerWidget {
+  const _LearningSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final summaryAsync = ref.watch(learnerSummaryProvider);
+
+    final Widget content = summaryAsync.when(
+      data: (summary) => _LearningStrip(summary: summary),
+      loading: () => const Skeleton(
+        child: SkeletonBlock(height: 108, radius: AppRadius.l),
+      ),
+      // Le résumé est un bonus sur l'accueil : en cas d'échec, la section
+      // s'efface au lieu d'afficher une erreur au milieu de la page.
+      error: (_, _) => const SizedBox.shrink(),
+    );
+
+    if (summaryAsync.hasError) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: _sectionGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionTitle(
+            title: l10n.homeLearningTitle,
+            subtitle: l10n.homeLearningSubtitle,
+            action: TextButton(
+              onPressed: () => context.goNamed(AppRoutes.learningName),
+              child: Text(l10n.homeContinueLearning),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.l),
+          content,
+        ],
+      ),
+    );
+  }
+}
+
+class _LearningStrip extends StatelessWidget {
+  const _LearningStrip({required this.summary});
+
+  final LearnerSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = DailyGoalCard(
+      summary: summary,
+      onTap: () => context.goNamed(AppRoutes.learningName),
+    );
+    final pills = Wrap(
+      spacing: AppSpacing.s,
+      runSpacing: AppSpacing.s,
+      children: [StreakPill(summary: summary), XpPill(summary: summary)],
+    );
+
+    if (context.isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [pills, const SizedBox(height: AppSpacing.m), goal],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        pills,
+        const SizedBox(width: AppSpacing.l),
+        Expanded(child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: goal,
+        )),
+      ],
     );
   }
 }
@@ -310,106 +501,155 @@ class _CategoriesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileProvider).value;
-    final languagesAsync = ref.watch(signLanguagesProvider);
     final l10n = AppLocalizations.of(context)!;
+    final language = ref.watch(learningLanguageProvider).value;
+    if (language == null) return const SizedBox.shrink();
 
-    return languagesAsync.when(
-      data: (languages) {
-        final currentLangCode = profile?.preferredSignLanguage ?? 'LSF';
-        final currentLang = languages.firstWhere(
-          (l) => l.code == currentLangCode,
-          orElse: () => languages.isNotEmpty ? languages.first : SignLanguage(id: 1, code: 'LSF', name: 'LSF'),
-        );
+    final categoriesAsync = ref.watch(signCategoriesProvider(language.id));
+    final categories = categoriesAsync.value;
 
-        final categoriesAsync = ref.watch(signCategoriesProvider(currentLang.id));
+    // Sans catégorie en base, la section n'a rien à montrer : elle disparaît
+    // plutôt que d'afficher un bloc vide sur la page d'accueil.
+    if (categoriesAsync.hasError || (categories != null && categories.isEmpty)) {
+      return const SizedBox.shrink();
+    }
 
-        return SizedBox(
-          height: 140,
-          child: categoriesAsync.when(
-            data: (categories) {
-              if (categories.isEmpty) {
-                return Center(child: Text(l10n.noCategory));
-              }
-              return ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final cat = categories[index];
-                  return _CategoryCard(
-                    title: cat.name,
-                    icon: _getCategoryIcon(cat.name),
-                    onTap: () => context.pushNamed(
-                      AppRoutes.categoryName,
-                      pathParameters: {'id': cat.id.toString()},
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 3,
-              itemBuilder: (_, _) => const Padding(
-                padding: EdgeInsets.only(right: AppSpacing.m),
-                child: AppLoader(width: 120, height: 140, borderRadius: 20),
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: _sectionGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionTitle(
+            title: l10n.learnByCategory,
+            action: TextButton(
+              onPressed: () => context.goNamed(AppRoutes.dictionaryName),
+              child: Text(l10n.seeAll),
             ),
-            error: (_, _) => Center(child: Text(l10n.errorLoadingCategories)),
           ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => Center(child: Text(l10n.errorLoadingLanguages)),
+          const SizedBox(height: AppSpacing.l),
+          if (categories == null)
+            Skeleton(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: adaptiveGridDelegate(maxItemWidth: 220, childAspectRatio: 2.6),
+                itemCount: 6,
+                itemBuilder: (_, _) => const SkeletonBlock(height: double.infinity, radius: AppRadius.l),
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: adaptiveGridDelegate(maxItemWidth: 220, childAspectRatio: 2.6),
+              itemCount: categories.length.clamp(0, 12),
+              itemBuilder: (context, i) => _CategoryTile(category: categories[i]),
+            ),
+        ],
+      ),
     );
-  }
-
-  String _getCategoryIcon(String name) {
-    final lower = name.toLowerCase();
-    if (lower.contains('alphabet')) return '🅰️';
-    if (lower.contains('nombre')) return '🔢';
-    if (lower.contains('salut')) return '👋';
-    if (lower.contains('famille')) return '👨‍👩‍👧‍👦';
-    if (lower.contains('animal')) return '🐶';
-    if (lower.contains('nourriture')) return '🍎';
-    if (lower.contains('couleur')) return '🎨';
-    return '📁';
   }
 }
 
-class _RecentSignTile extends StatelessWidget {
-  final String title;
-  final String category;
-  final String date;
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({required this.category});
 
-  const _RecentSignTile({
-    required this.title,
-    required this.category,
-    required this.date,
-  });
+  final SignCategory category;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.m),
-      child: AppCard(
-        child: ListTile(
-          leading: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+    final color = AppColors.fromHex(category.colorHex) ?? AppColors.primary;
+    return AppPanel(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+      semanticLabel: category.name,
+      onTap: () => context.pushNamed(
+        AppRoutes.categoryName,
+        pathParameters: {'id': category.id.toString()},
+      ),
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: AppRadius.radiusM,
+              ),
+              child: Icon(AppIcons.fromName(category.iconName), color: color, size: 22),
             ),
-            child: const Icon(Icons.history, color: AppColors.primary),
-          ),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('$category • $date'),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-          onTap: () {},
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Text(
+                category.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _ForEveryoneSection extends StatelessWidget {
+  const _ForEveryoneSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final items = [
+      (AppIcons.signLanguage, l10n.homeDeafTitle, l10n.homeDeafBody),
+      (AppIcons.learning, l10n.homeHearingTitle, l10n.homeHearingBody),
+      (AppIcons.users, l10n.homeCommunityTitle, l10n.homeCommunityBody),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionTitle(title: l10n.homeForEveryoneTitle),
+        const SizedBox(height: AppSpacing.l),
+        Wrap(
+          spacing: AppSpacing.l,
+          runSpacing: AppSpacing.l,
+          children: [
+            for (final (icon, title, body) in items)
+              SizedBox(
+                width: context.isMobile ? double.infinity : 360,
+                child: Semantics(
+                  container: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(icon, color: AppColors.primary, size: 28),
+                      const SizedBox(width: AppSpacing.m),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              body,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -421,37 +661,54 @@ class _ContributionBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l10n.helpCommunity, style: AppTextStyles.h3.copyWith(color: Colors.white)),
+        const SizedBox(height: AppSpacing.s),
+        Text(
+          l10n.contributeDescription,
+          style: AppTextStyles.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.8)),
+        ),
+      ],
+    );
+
+    final button = SizedBox(
+      height: AppButton.height,
+      width: context.isMobile ? double.infinity : null,
+      child: FilledButton.icon(
+        onPressed: () => context.pushNamed(AppRoutes.contributeName),
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.primaryDeep,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusL),
+          textStyle: AppTextStyles.button,
+        ),
+        icon: const Icon(AppIcons.upload, size: 20),
+        label: Text(l10n.contributeNow),
+      ),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.l),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.primaryDeep,
+        borderRadius: AppRadius.radiusXL,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.helpCommunity,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.contributeDescription,
-            style: const TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.pushNamed(AppRoutes.contributeName),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: context.isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [text, const SizedBox(height: AppSpacing.l), button],
+            )
+          : Row(
+              children: [
+                Expanded(child: text),
+                const SizedBox(width: AppSpacing.xl),
+                button,
+              ],
             ),
-            child: Text(l10n.contributeNow),
-          ),
-        ],
-      ),
     );
   }
 }

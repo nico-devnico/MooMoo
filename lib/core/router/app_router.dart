@@ -18,12 +18,15 @@ import '../../presentation/screens/dictionary/category_screen.dart';
 import '../../presentation/screens/learning/learning_screen.dart';
 import '../../presentation/screens/learning/lesson_screen.dart';
 import '../../presentation/screens/learning/progress_screen.dart';
+import '../../presentation/screens/learning/learning_manage_screen.dart';
+import '../../presentation/screens/admin/admin_learning_screen.dart';
 import '../../presentation/screens/history/history_screen.dart';
 import '../../presentation/screens/contribute/contribute_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
 import '../../presentation/screens/profile/edit_profile_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
 import '../../presentation/screens/notifications/notification_screen.dart';
+import '../../presentation/screens/about/about_screen.dart';
 import '../../presentation/screens/legal/help_center_screen.dart';
 import '../../presentation/screens/legal/privacy_policy_screen.dart';
 import '../../presentation/screens/legal/terms_of_service_screen.dart';
@@ -178,13 +181,6 @@ GoRouter appRouter(Ref ref) {
                 builder: (context, state) => const LearningScreen(),
                 routes: [
                   GoRoute(
-                    path: 'lesson/:id',
-                    name: AppRoutes.lessonName,
-                    builder: (context, state) => LessonScreen(
-                      id: state.pathParameters['id']!,
-                    ),
-                  ),
-                  GoRoute(
                     path: 'progress',
                     name: AppRoutes.progressName,
                     builder: (context, state) => const ProgressScreen(),
@@ -235,11 +231,30 @@ GoRouter appRouter(Ref ref) {
                     name: AppRoutes.termsOfServiceName,
                     builder: (context, state) => const TermsOfServiceScreen(),
                   ),
+                  GoRoute(
+                    path: 'about',
+                    name: AppRoutes.aboutName,
+                    builder: (context, state) => const AboutScreen(),
+                  ),
                 ],
             ),
           ],
         ),
         ],
+      ),
+      // En plein écran, hors du shell : pendant une leçon, la barre de
+      // navigation ne ferait que distraire et inviter à quitter par erreur.
+      GoRoute(
+        path: '/lesson/:id',
+        name: AppRoutes.lessonName,
+        builder: (context, state) => LessonScreen(
+          id: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/learning-manage',
+        name: AppRoutes.learningManageName,
+        builder: (context, state) => const LearningManageScreen(),
       ),
       GoRoute(
         path: AppRoutes.adminDashboard,
@@ -255,6 +270,11 @@ GoRouter appRouter(Ref ref) {
             path: 'signs',
             name: AppRoutes.adminSignsName,
             builder: (context, state) => const AdminSignsScreen(),
+          ),
+          GoRoute(
+            path: 'learning',
+            name: AppRoutes.adminLearningName,
+            builder: (context, state) => const AdminLearningScreen(),
           ),
           GoRoute(
             path: 'users',

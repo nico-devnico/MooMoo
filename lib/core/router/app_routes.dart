@@ -20,6 +20,7 @@ class AppRoutes {
   static const String helpCenter = '/help-center';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
+  static const String about = '/about';
   static const String notifications = '/notifications';
 
   // Admin
@@ -27,6 +28,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin';
   static const String adminContributions = '/admin/contributions';
   static const String adminSigns = '/admin/signs';
+  static const String adminLearning = '/admin/learning';
   static const String adminUsers = '/admin/users';
   static const String adminModels = '/admin/models';
   static const String adminSettings = '/admin/settings';
@@ -48,6 +50,8 @@ class AppRoutes {
   static const String favoritesName = 'favorites';
   static const String lessonName = 'lesson';
   static const String progressName = 'progress';
+  static const String learningManageName = 'learningManage';
+  static const String adminLearningName = 'adminLearning';
   static const String historyName = 'history';
   static const String contributeName = 'contribute';
   static const String editProfileName = 'editProfile';
@@ -55,6 +59,7 @@ class AppRoutes {
   static const String helpCenterName = 'helpCenter';
   static const String privacyPolicyName = 'privacyPolicy';
   static const String termsOfServiceName = 'termsOfService';
+  static const String aboutName = 'about';
   static const String notificationsName = 'notifications';
   static const String adminDashboardName = 'adminDashboard';
   static const String adminContributionsName = 'adminContributions';

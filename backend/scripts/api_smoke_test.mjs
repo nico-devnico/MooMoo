@@ -88,7 +88,10 @@ async function run() {
     form.append('hint', 'merci');
     const r = await fetch(`${API}/api/infer`, { method: 'POST', body: form });
     const j = await r.json();
+    // Until a real model is served, an explicit 503 is the expected answer.
+    if (r.status === 503 && j.ok === false) return `unavailable (${j.error})`;
     if (!r.ok) throw new Error(`${r.status} ${j.message || JSON.stringify(j)}`);
+    if (j.prediction?.label === 'merci') throw new Error('label echoes the hint');
     return `label=${j.prediction?.label} conf=${j.prediction?.confidence}`;
   }))) fails++; else results++;
 

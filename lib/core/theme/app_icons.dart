@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 
 /// The app's icon vocabulary.
 ///
@@ -50,6 +50,7 @@ class AppIcons {
   static const IconData info = PhosphorIconsRegular.info;
   static const IconData blocked = PhosphorIconsRegular.prohibit;
   static const IconData locked = PhosphorIconsRegular.lock;
+  static const IconData empty = PhosphorIconsRegular.tray;
 
   // Content
   static const IconData favorite = PhosphorIconsRegular.heart;
@@ -73,7 +74,12 @@ class AppIcons {
   static const IconData lesson = PhosphorIconsRegular.bookBookmark;
   static const IconData exercise = PhosphorIconsRegular.listChecks;
   static const IconData streak = PhosphorIconsRegular.fire;
+  static const IconData streakActive = PhosphorIconsFill.fire;
   static const IconData points = PhosphorIconsRegular.star;
+  static const IconData pointsActive = PhosphorIconsFill.star;
+  static const IconData trophy = PhosphorIconsFill.trophy;
+  static const IconData checkBold = PhosphorIconsBold.check;
+  static const IconData xBold = PhosphorIconsBold.x;
   static const IconData goal = PhosphorIconsRegular.target;
   static const IconData achievement = PhosphorIconsRegular.sparkle;
   static const IconData progress = PhosphorIconsRegular.chartLine;
@@ -101,6 +107,41 @@ class AppIcons {
     final key = name.trim().toLowerCase().replaceAll(RegExp(r'[-_\s]'), '');
     return _byName[key] ?? fallback;
   }
+
+  /// Names offered by content editors when they pick an icon, one per
+  /// drawing (the map below also holds plural aliases).
+  static const List<String> editorChoices = [
+    'hand-waving',
+    'alphabet',
+    'numbers',
+    'family',
+    'food',
+    'drink',
+    'animal',
+    'nature',
+    'weather',
+    'time',
+    'calendar',
+    'colors',
+    'school',
+    'work',
+    'travel',
+    'health',
+    'sport',
+    'music',
+    'money',
+    'emotions',
+    'body',
+    'transport',
+    'places',
+    'verbs',
+    'question',
+    'chat',
+    'house',
+    'heart',
+    'star',
+    'flag',
+  ];
 
   static final Map<String, IconData> _byName = {
     'hand': PhosphorIconsRegular.hand,

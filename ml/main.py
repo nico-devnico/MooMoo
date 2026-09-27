@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import time
 from typing import Optional
 
 app = FastAPI(title="MooMoo ML", version="0.1.0")
@@ -47,23 +47,23 @@ async def infer(
     dataset: Optional[str] = Form("WASL"),
     model_version: Optional[str] = Form(None),
 ):
-    """Stub inference — replace with real WASL/LSFB model later."""
-    t0 = time.perf_counter()
+    """No recognition model is loaded yet.
+
+    Answer 503 rather than inventing a label: the app shows a clear
+    "translation unavailable" state instead of a wrong word to a deaf user.
+    """
     raw = await file.read() if file is not None else b""
-    label = (hint or "").strip() or "bonjour"
-    # Confidence slightly higher when a media blob is present
-    confidence = 0.91 if (hint and hint.strip()) else (0.72 if raw else 0.55)
-    latency_ms = (time.perf_counter() - t0) * 1000 + 12.0
-    return {
-        "ok": True,
-        "label": label,
-        "confidence": confidence,
-        "latency_ms": round(latency_ms, 2),
-        "dataset": dataset or "WASL",
-        "model_version": model_version,
-        "bytes_received": len(raw),
-        "filename": file.filename if file else None,
-    }
+    return JSONResponse(
+        status_code=503,
+        content={
+            "ok": False,
+            "error": "model_not_loaded",
+            "detail": "No sign recognition model is loaded on this worker.",
+            "dataset": dataset or "WASL",
+            "model_version": model_version,
+            "bytes_received": len(raw),
+        },
+    )
 
 
 @app.post("/train")

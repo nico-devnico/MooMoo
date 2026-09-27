@@ -1,30 +1,44 @@
+import 'dart:io';
+
+import 'package:chewie/chewie.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:video_player/video_player.dart';
+
+import '../../../core/constants/character_constants.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/models/sign.dart';
+import '../../../domain/providers/camera_provider.dart';
+import '../../../domain/providers/character_provider.dart';
+import '../../../domain/providers/ml_model_provider.dart';
+import '../../../domain/providers/sign_provider.dart';
+import '../../../domain/providers/sign_view_provider.dart';
+import '../../../domain/providers/stt_provider.dart';
+import '../../../domain/providers/three_d_settings_provider.dart';
+import '../../../domain/providers/translator_provider.dart';
+import '../../../domain/providers/tts_provider.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_panel.dart';
 import '../../widgets/camera/camera_view.dart';
 import '../../widgets/landmark_viewer/landmark_viewer.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../widgets/sign_media.dart';
+import '../../widgets/skeletons.dart';
 
-import 'package:moomoo/domain/providers/translator_provider.dart';
-import 'package:moomoo/domain/providers/three_d_settings_provider.dart';
-import 'package:moomoo/domain/providers/sign_view_provider.dart';
-import 'package:moomoo/domain/providers/character_provider.dart';
-import 'package:moomoo/core/constants/character_constants.dart';
+/// Au-delà de cette largeur, média et résultat s'affichent côte à côte.
+const double _splitBreakpoint = 900;
+const double _sidePanelWidth = 400;
+const double _controlHeight = 56;
 
-import 'package:moomoo/domain/providers/stt_provider.dart';
-import 'package:moomoo/domain/providers/tts_provider.dart';
-import 'package:moomoo/domain/providers/ml_model_provider.dart';
-import 'package:moomoo/presentation/widgets/app_snackbar.dart';
+enum _SignStatus { idle, translating, done, unavailable }
 
 class TranslatorScreen extends ConsumerStatefulWidget {
   const TranslatorScreen({super.key});
@@ -35,107 +49,148 @@ class TranslatorScreen extends ConsumerStatefulWidget {
 
 class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   final _textController = TextEditingController();
+  final _textFocus = FocusNode();
   String _searchQuery = '';
+
   XFile? _selectedFile;
   bool _isImage = false;
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
-  String _translationResult = '...';
+
+  _SignStatus _signStatus = _SignStatus.idle;
+  String? _translationResult;
+  double? _confidence;
   String? _activeModelLabel;
-  bool _usingFallback = false;
+  String? _errorMessage;
 
-  Future<void> _runSignInference({bool start = true}) async {
-    final l10n = AppLocalizations.of(context)!;
-    if (!start) {
-      ref.read(translatorStateProvider.notifier).stop();
-      setState(() {
-        _translationResult = '...';
-        _usingFallback = false;
-      });
-      return;
-    }
-
-    ref.read(translatorStateProvider.notifier).start();
-    setState(() {
-      _translationResult = l10n.translatingInProgress;
-      _usingFallback = false;
-    });
-
-    final result = await ref.read(mlModelRepositoryProvider).infer();
-    if (!mounted) return;
-
-    if (result.ok && result.label != null && result.label!.isNotEmpty) {
-      setState(() {
-        _translationResult = result.label!;
-        _activeModelLabel = result.model?.displayLabel;
-        _usingFallback = false;
-      });
-    } else {
-      setState(() {
-        _translationResult = l10n.inferenceFallbackLabel;
-        _usingFallback = true;
-        _activeModelLabel = null;
-      });
-      AppSnackbar.showWarning(
-        context,
-        result.errorMessage ?? l10n.inferenceUnavailableMessage,
-      );
-    }
-  }
+  /// Incrémenté à chaque lancement ou arrêt : une réponse arrivée après coup
+  /// ne doit pas écraser l'état courant.
+  int _inferenceRun = 0;
 
   @override
   void dispose() {
     _textController.dispose();
+    _textFocus.dispose();
     _videoController?.dispose();
     _chewieController?.dispose();
-    // Stop translation immediately on dispose
     ref.read(translatorStateProvider.notifier).stop();
     super.dispose();
   }
 
-  void _toggleDirection() {
-    ref.read(translationModeStateProvider.notifier).toggleMode();
-    ref.read(translatorStateProvider.notifier).stop();
+  Future<XFile?> _captureFrame() async {
+    // Sur le web, la caméra ne s'initialise qu'une fois la traduction lancée :
+    // on laisse CameraView s'abonner au provider avant de le lire.
+    await WidgetsBinding.instance.endOfFrame;
+    final controller = await ref.read(cameraStateProvider.future);
+    if (controller == null || !controller.value.isInitialized) return null;
+    return ref.read(cameraStateProvider.notifier).takePicture();
+  }
+
+  Future<void> _runInference() async {
+    final l10n = AppLocalizations.of(context)!;
+    final run = ++_inferenceRun;
+    setState(() {
+      _signStatus = _SignStatus.translating;
+      _errorMessage = null;
+    });
+
+    List<int>? bytes;
+    String? filename;
+    try {
+      final file = _selectedFile ?? await _captureFrame();
+      if (file != null) {
+        bytes = await file.readAsBytes();
+        filename = file.name;
+      }
+    } catch (_) {
+      bytes = null;
+    }
+    if (!mounted || run != _inferenceRun) return;
+
+    if (bytes == null || bytes.isEmpty) {
+      setState(() {
+        _signStatus = _SignStatus.unavailable;
+        _translationResult = null;
+        _confidence = null;
+        _activeModelLabel = null;
+        _errorMessage = l10n.translCameraUnavailable;
+      });
+      return;
+    }
+
+    final result = await ref
+        .read(mlModelRepositoryProvider)
+        .infer(fileBytes: bytes, filename: filename);
+    if (!mounted || run != _inferenceRun) return;
+
+    final label = result.label?.trim();
+    setState(() {
+      if (result.ok && label != null && label.isNotEmpty) {
+        _signStatus = _SignStatus.done;
+        _translationResult = label;
+        _confidence = result.confidence;
+        _activeModelLabel = result.model?.displayLabel;
+      } else {
+        _signStatus = _SignStatus.unavailable;
+        _translationResult = null;
+        _confidence = null;
+        _activeModelLabel = null;
+        _errorMessage = l10n.inferenceUnavailableMessage;
+      }
+    });
+  }
+
+  void _start() => ref.read(translatorStateProvider.notifier).start();
+
+  void _stop() => ref.read(translatorStateProvider.notifier).stop();
+
+  void _setMode(TranslationMode mode) {
+    if (ref.read(translationModeStateProvider) == mode) return;
+    ref.read(translationModeStateProvider.notifier).setMode(mode);
+    _stop();
     ref.read(speechControllerProvider.notifier).stopListening();
+  }
+
+  void _toggleDirection() {
+    final current = ref.read(translationModeStateProvider);
+    _setMode(
+      current == TranslationMode.signToText
+          ? TranslationMode.textToSign
+          : TranslationMode.signToText,
+    );
   }
 
   Future<void> _pickFile(bool isVideo) async {
     final picker = ImagePicker();
-    final file = isVideo 
-      ? await picker.pickVideo(source: ImageSource.gallery)
-      : await picker.pickImage(source: ImageSource.gallery);
+    final file = isVideo
+        ? await picker.pickVideo(source: ImageSource.gallery)
+        : await picker.pickImage(source: ImageSource.gallery);
+    if (file == null || !mounted) return;
 
-    if (file != null) {
-      _videoController?.dispose();
-      _chewieController?.dispose();
-      
-      setState(() {
-        _selectedFile = file;
-        _isImage = !isVideo;
-        _videoController = null;
-        _chewieController = null;
-      });
-
-      if (isVideo) {
-        _initVideo(file);
-      }
-    }
+    _videoController?.dispose();
+    _chewieController?.dispose();
+    setState(() {
+      _selectedFile = file;
+      _isImage = !isVideo;
+      _videoController = null;
+      _chewieController = null;
+    });
+    if (isVideo) _initVideo(file);
   }
 
   void _initVideo(XFile file) {
-    if (kIsWeb) {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(file.path));
-    } else {
-      _videoController = VideoPlayerController.file(File(file.path));
-    }
-
-    _videoController!.initialize().then((_) {
+    final controller = kIsWeb
+        ? VideoPlayerController.networkUrl(Uri.parse(file.path))
+        : VideoPlayerController.file(File(file.path));
+    _videoController = controller;
+    controller.initialize().then((_) {
+      if (!mounted || _videoController != controller) return;
       setState(() {
         _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
+          videoPlayerController: controller,
           autoPlay: true,
           looping: true,
-          aspectRatio: _videoController!.value.aspectRatio,
+          aspectRatio: controller.value.aspectRatio,
         );
       });
     });
@@ -153,665 +208,1235 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // The desktop shell already provides a navigation rail and header.
     final isWide = context.hasSideNavigation;
     final isTranslating = ref.watch(translatorStateProvider);
-    final translationMode = ref.watch(translationModeStateProvider);
-    final isSignToText = translationMode == TranslationMode.signToText;
-    final theme = Theme.of(context);
+    final mode = ref.watch(translationModeStateProvider);
     final l10n = AppLocalizations.of(context)!;
 
+    // Couvre aussi le bouton flottant du shell mobile, qui ne fait que
+    // basculer l'état : l'inférence part d'ici dans tous les cas.
+    ref.listen<bool>(translatorStateProvider, (previous, next) {
+      if (next && previous != true) {
+        if (ref.read(translationModeStateProvider) ==
+            TranslationMode.signToText) {
+          _runInference();
+        }
+      } else if (!next) {
+        _inferenceRun++;
+        if (_signStatus == _SignStatus.translating) {
+          setState(() => _signStatus = _SignStatus.idle);
+        }
+      }
+    });
+
     return Scaffold(
-      appBar: isWide ? null : AppBar(
-        title: Text(l10n.translate),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
+      appBar: isWide ? null : AppBar(title: Text(l10n.translate)),
       body: PageContainer(
         width: ContentWidth.dashboard,
         padding: 0,
         child: Column(
-            children: [
-              // 
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: AppSpacing.m),
-                child: Hero(
-                  tag: 'translator_toggle',
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: theme.brightness == Brightness.light 
-                          ? AppColors.neutralLight.withValues(alpha: 0.5)
-                          : AppColors.neutralDark.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _ToggleButton(
-                            label: l10n.signs,
-                            isActive: isSignToText,
-                            onTap: () => ref.read(translationModeStateProvider.notifier).setMode(TranslationMode.signToText),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: IconButton(
-                            icon: const Icon(Icons.swap_horiz, color: AppColors.primary),
-                            onPressed: _toggleDirection,
-                          ),
-                        ),
-                        Expanded(
-                          child: _ToggleButton(
-                            label: l10n.textAudio,
-                            isActive: !isSignToText,
-                            onTap: () => ref.read(translationModeStateProvider.notifier).setMode(TranslationMode.textToSign),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.l,
+                AppSpacing.m,
+                AppSpacing.l,
+                AppSpacing.m,
               ),
-              
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.05, 0),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: isSignToText
-                      ? _SignToTextTab(
-                          key: const ValueKey('sign_to_text'),
-                          isTranslating: isTranslating,
-                          translationResult: _translationResult,
-                          selectedFile: _selectedFile,
-                          isImage: _isImage,
-                          chewieController: _chewieController,
-                          modelLabel: _activeModelLabel,
-                          usingFallback: _usingFallback,
-                          onPickFile: _pickFile,
-                          onClearFile: _clearFile,
-                          onToggleTranslation: (val) => _runSignInference(start: val),
-                        )
-                      : _TextToSignTab(
-                          key: const ValueKey('text_to_sign'),
-                          controller: _textController,
-                          onSearch: (val) => setState(() => _searchQuery = val),
-                          searchQuery: _searchQuery,
-                        ),
-                ),
+              child: _DirectionBar(
+                mode: mode,
+                onModeChanged: _setMode,
+                onSwap: _toggleDirection,
               ),
-            ],
+            ),
+            Expanded(
+              child: mode == TranslationMode.signToText
+                  ? _SignToTextView(
+                      key: const ValueKey('sign_to_text'),
+                      isTranslating: isTranslating,
+                      status: _signStatus,
+                      result: _translationResult,
+                      confidence: _confidence,
+                      modelLabel: _activeModelLabel,
+                      errorMessage: _errorMessage,
+                      selectedFile: _selectedFile,
+                      isImage: _isImage,
+                      chewieController: _chewieController,
+                      onPickFile: _pickFile,
+                      onClearFile: _clearFile,
+                      onStart: _start,
+                      onStop: _stop,
+                      onRestart: _runInference,
+                    )
+                  : _TextToSignView(
+                      key: const ValueKey('text_to_sign'),
+                      controller: _textController,
+                      focusNode: _textFocus,
+                      query: _searchQuery,
+                      onQueryChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                    ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ToggleButton extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _ToggleButton({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
+class _DirectionBar extends StatelessWidget {
+  const _DirectionBar({
+    required this.mode,
+    required this.onModeChanged,
+    required this.onSwap,
   });
+
+  final TranslationMode mode;
+  final ValueChanged<TranslationMode> onModeChanged;
+  final VoidCallback onSwap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? (isDark ? AppColors.neutralDark : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isActive
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-              : [],
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive 
-                ? AppColors.primary 
-                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-          ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Row(
+          children: [
+            Expanded(
+              child: SegmentedButton<TranslationMode>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  minimumSize: const Size(0, kMinTouchTarget),
+                ),
+                segments: [
+                  ButtonSegment(
+                    value: TranslationMode.signToText,
+                    icon: const Icon(AppIcons.signLanguage),
+                    label: Text(l10n.translDirectionSignToText),
+                  ),
+                  ButtonSegment(
+                    value: TranslationMode.textToSign,
+                    icon: const Icon(AppIcons.keyboard),
+                    label: Text(l10n.translDirectionTextToSign),
+                  ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (value) => onModeChanged(value.first),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            IconButton.outlined(
+              tooltip: l10n.translSwapDirection,
+              constraints: const BoxConstraints(
+                minWidth: kMinTouchTarget,
+                minHeight: kMinTouchTarget,
+              ),
+              onPressed: onSwap,
+              icon: const Icon(PhosphorIconsRegular.arrowsLeftRight),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SignToTextTab extends ConsumerWidget {
+/// Ligne d'état annoncée aux lecteurs d'écran à chaque changement.
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({
+    required this.text,
+    required this.icon,
+    required this.color,
+    this.busy = false,
+  });
+
+  final String text;
+  final IconData icon;
+  final Color color;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      label: text,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.m,
+          vertical: AppSpacing.s + 4,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: AppRadius.radiusM,
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 20,
+              child: busy
+                  ? CircularProgressIndicator(strokeWidth: 2, color: color)
+                  : Icon(icon, size: 20, color: color),
+            ),
+            const SizedBox(width: AppSpacing.s + 4),
+            Expanded(
+              child: Text(
+                text,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SignToTextView extends ConsumerWidget {
+  const _SignToTextView({
+    super.key,
+    required this.isTranslating,
+    required this.status,
+    required this.result,
+    required this.confidence,
+    required this.modelLabel,
+    required this.errorMessage,
+    required this.selectedFile,
+    required this.isImage,
+    required this.chewieController,
+    required this.onPickFile,
+    required this.onClearFile,
+    required this.onStart,
+    required this.onStop,
+    required this.onRestart,
+  });
+
   final bool isTranslating;
-  final String translationResult;
+  final _SignStatus status;
+  final String? result;
+  final double? confidence;
+  final String? modelLabel;
+  final String? errorMessage;
   final XFile? selectedFile;
   final bool isImage;
   final ChewieController? chewieController;
-  final String? modelLabel;
-  final bool usingFallback;
-  final Function(bool isVideo) onPickFile;
+  final ValueChanged<bool> onPickFile;
   final VoidCallback onClearFile;
-  final Function(bool) onToggleTranslation;
-
-  const _SignToTextTab({
-    super.key,
-    required this.isTranslating,
-    required this.translationResult,
-    this.selectedFile,
-    this.isImage = false,
-    this.chewieController,
-    this.modelLabel,
-    this.usingFallback = false,
-    required this.onPickFile,
-    required this.onClearFile,
-    required this.onToggleTranslation,
-  });
+  final VoidCallback onStart;
+  final VoidCallback onStop;
+  final VoidCallback onRestart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWide = context.isAtLeastTablet;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
 
-    return Column(
-      children: [
-        // Media Area (Camera or Selected File)
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s, vertical: AppSpacing.m),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              color: Colors.black,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    final statusLine = switch (status) {
+      _SignStatus.translating => _StatusLine(
+        text: l10n.translatingInProgress,
+        icon: AppIcons.info,
+        color: AppColors.primary,
+        busy: true,
+      ),
+      _SignStatus.done => _StatusLine(
+        text: l10n.translDone,
+        icon: AppIcons.success,
+        color: AppColors.success,
+      ),
+      _SignStatus.unavailable => _StatusLine(
+        text: l10n.inferenceUnavailable,
+        icon: AppIcons.warning,
+        color: AppColors.warning,
+      ),
+      _SignStatus.idle => _StatusLine(
+        text: l10n.readyToTranslate,
+        icon: AppIcons.info,
+        color: AppColors.textSecondary(context),
+      ),
+    };
+
+    final media = _MediaStage(
+      selectedFile: selectedFile,
+      isImage: isImage,
+      chewieController: chewieController,
+    );
+    final sourceBar = _SourceBar(
+      selectedFile: selectedFile,
+      onPickFile: onPickFile,
+      onClearFile: onClearFile,
+    );
+    final resultPanel = _ResultPanel(
+      result: result,
+      confidence: confidence,
+      modelLabel: modelLabel,
+      unavailable: status == _SignStatus.unavailable,
+      errorMessage: errorMessage,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _splitBreakpoint;
+        final controls = _TranslateControls(
+          isTranslating: isTranslating,
+          busy: status == _SignStatus.translating,
+          stretch: !wide,
+          onStart: onStart,
+          onStop: onStop,
+          onRestart: onRestart,
+        );
+
+        if (wide) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              0,
+              AppSpacing.l,
+              AppSpacing.l,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: media),
+                      const SizedBox(height: AppSpacing.m),
+                      sourceBar,
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.l),
+                SizedBox(
+                  width: _sidePanelWidth,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        statusLine,
+                        const SizedBox(height: AppSpacing.m),
+                        resultPanel,
+                        const SizedBox(height: AppSpacing.l),
+                        controls,
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                if (selectedFile != null)
-                  Positioned.fill(
-                    child: isImage
-                        ? kIsWeb
-                            ? Image.network(selectedFile!.path, fit: BoxFit.contain)
-                            : Image.file(File(selectedFile!.path), fit: BoxFit.contain)
-                        : chewieController != null
-                            ? Chewie(controller: chewieController!)
-                            : const Center(child: CircularProgressIndicator()),
-                  )
-                else
-                  const CameraView(),
-                
-                // Clear file button
-                if (selectedFile != null)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black54,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: onClearFile,
-                      ),
-                    ),
-                  ),
+          );
+        }
 
-                // Upload overlays
-                if (selectedFile == null)
-                  Positioned(
-                    bottom: 16,
-                    right: 16,
+        final mediaHeight = (constraints.maxWidth * 0.9).clamp(240.0, 420.0);
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.m,
+            0,
+            AppSpacing.m,
+            AppSpacing.xxl,
+          ),
+          children: [
+            statusLine,
+            const SizedBox(height: AppSpacing.m),
+            SizedBox(height: mediaHeight, child: media),
+            const SizedBox(height: AppSpacing.m),
+            sourceBar,
+            const SizedBox(height: AppSpacing.l),
+            controls,
+            const SizedBox(height: AppSpacing.l),
+            resultPanel,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MediaStage extends StatelessWidget {
+  const _MediaStage({
+    required this.selectedFile,
+    required this.isImage,
+    required this.chewieController,
+  });
+
+  final XFile? selectedFile;
+  final bool isImage;
+  final ChewieController? chewieController;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = selectedFile;
+    Widget content;
+    if (file == null) {
+      content = const CameraView();
+    } else if (isImage) {
+      content = kIsWeb
+          ? Image.network(file.path, fit: BoxFit.contain)
+          : Image.file(File(file.path), fit: BoxFit.contain);
+    } else if (chewieController != null) {
+      content = Chewie(controller: chewieController!);
+    } else {
+      content = const Skeleton(child: SkeletonBlock(height: double.infinity));
+    }
+
+    return ClipRRect(
+      borderRadius: AppRadius.radiusL,
+      child: ColoredBox(color: Colors.black, child: content),
+    );
+  }
+}
+
+class _SourceBar extends StatelessWidget {
+  const _SourceBar({
+    required this.selectedFile,
+    required this.onPickFile,
+    required this.onClearFile,
+  });
+
+  final XFile? selectedFile;
+  final ValueChanged<bool> onPickFile;
+  final VoidCallback onClearFile;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final buttonStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, kMinTouchTarget),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.s,
+          runSpacing: AppSpacing.s,
+          children: [
+            OutlinedButton.icon(
+              style: buttonStyle,
+              onPressed: () => onPickFile(true),
+              icon: const Icon(AppIcons.video, size: 20),
+              label: Text(l10n.translImportVideo),
+            ),
+            OutlinedButton.icon(
+              style: buttonStyle,
+              onPressed: () => onPickFile(false),
+              icon: const Icon(AppIcons.image, size: 20),
+              label: Text(l10n.translImportImage),
+            ),
+            if (selectedFile != null)
+              OutlinedButton.icon(
+                style: buttonStyle.copyWith(
+                  foregroundColor: const WidgetStatePropertyAll(
+                    AppColors.error,
+                  ),
+                ),
+                onPressed: onClearFile,
+                icon: const Icon(AppIcons.camera, size: 20),
+                label: Text(l10n.translRemoveFile),
+              ),
+          ],
+        ),
+        if (selectedFile != null) ...[
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            l10n.translFileSelected(selectedFile!.name),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TranslateControls extends StatelessWidget {
+  const _TranslateControls({
+    required this.isTranslating,
+    required this.busy,
+    required this.stretch,
+    required this.onStart,
+    required this.onStop,
+    required this.onRestart,
+  });
+
+  final bool isTranslating;
+  final bool busy;
+  final bool stretch;
+  final VoidCallback onStart;
+  final VoidCallback onStop;
+  final VoidCallback onRestart;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    const size = Size(0, _controlHeight);
+
+    if (!isTranslating) {
+      final start = FilledButton.icon(
+        autofocus: context.isDesktop,
+        style: FilledButton.styleFrom(minimumSize: size),
+        onPressed: onStart,
+        icon: const Icon(AppIcons.play),
+        label: Text(l10n.translStart),
+      );
+      return stretch
+          ? SizedBox(width: double.infinity, child: start)
+          : Align(alignment: Alignment.centerLeft, child: start);
+    }
+
+    final stop = FilledButton.icon(
+      style: FilledButton.styleFrom(
+        minimumSize: size,
+        backgroundColor: AppColors.error,
+      ),
+      onPressed: onStop,
+      icon: const Icon(AppIcons.stop),
+      label: Text(l10n.stopTranslation),
+    );
+    final restart = OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(minimumSize: size),
+      onPressed: busy ? null : onRestart,
+      icon: const Icon(AppIcons.refresh),
+      label: Text(l10n.translRestart),
+    );
+
+    if (stretch) {
+      return Row(
+        children: [
+          Expanded(child: stop),
+          const SizedBox(width: AppSpacing.s),
+          Expanded(child: restart),
+        ],
+      );
+    }
+    return Wrap(
+      spacing: AppSpacing.s,
+      runSpacing: AppSpacing.s,
+      children: [stop, restart],
+    );
+  }
+}
+
+class _ResultPanel extends ConsumerWidget {
+  const _ResultPanel({
+    required this.result,
+    required this.confidence,
+    required this.modelLabel,
+    required this.unavailable,
+    required this.errorMessage,
+  });
+
+  final String? result;
+  final double? confidence;
+  final String? modelLabel;
+  final bool unavailable;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final secondary = AppColors.textSecondary(context);
+    final text = result;
+
+    return AppPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.translResultLabel,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s),
+          Semantics(
+            liveRegion: true,
+            child: SelectableText(
+              text ?? l10n.translResultPlaceholder,
+              style: text == null
+                  ? AppTextStyles.bodyLarge.copyWith(color: secondary)
+                  : AppTextStyles.h1,
+            ),
+          ),
+          if (text != null && (confidence != null || modelLabel != null)) ...[
+            const SizedBox(height: AppSpacing.s),
+            Wrap(
+              spacing: AppSpacing.m,
+              runSpacing: AppSpacing.xs,
+              children: [
+                if (confidence != null)
+                  Text(
+                    l10n.translConfidence((confidence! * 100).round()),
+                    style: AppTextStyles.bodySmall.copyWith(color: secondary),
+                  ),
+                if (modelLabel != null)
+                  Text(
+                    l10n.translModelUsed(modelLabel!),
+                    style: AppTextStyles.bodySmall.copyWith(color: secondary),
+                  ),
+              ],
+            ),
+          ],
+          if (unavailable) ...[
+            const SizedBox(height: AppSpacing.m),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: AppRadius.radiusM,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(AppIcons.warning, color: AppColors.warning),
+                  const SizedBox(width: AppSpacing.s + 4),
+                  Expanded(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        FloatingActionButton.small(
-                          heroTag: 'upload_video',
-                          onPressed: () => onPickFile(true),
-                          backgroundColor: AppColors.primary,
-                          child: const Icon(Icons.video_library, color: Colors.white),
+                        Text(
+                          l10n.inferenceUnavailable,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        FloatingActionButton.small(
-                          heroTag: 'upload_image',
-                          onPressed: () => onPickFile(false),
-                          backgroundColor: AppColors.secondary,
-                          child: const Icon(Icons.image, color: Colors.white),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          errorMessage ?? l10n.inferenceUnavailableMessage,
+                          style: AppTextStyles.bodySmall,
                         ),
                       ],
                     ),
                   ),
-              ],
-            ),
-          ),
-        ),
-
-        // Result Field Below (WhatsApp style) - Takes natural height
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.neutralDark.withValues(alpha: 0.3) : AppColors.neutralLight.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.m),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            isTranslating
-                                ? l10n.translatingInProgress
-                                : (usingFallback
-                                    ? l10n.inferenceUnavailable
-                                    : l10n.readyToTranslate),
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: usingFallback
-                                  ? AppColors.warning
-                                  : (isDark
-                                      ? AppColors.textSecondaryDark
-                                      : AppColors.textSecondaryLight),
-                            ),
-                          ),
-                          Text(
-                            translationResult,
-                            style: AppTextStyles.h3,
-                          ),
-                          if (modelLabel != null)
-                            Text(
-                              modelLabel!,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.primary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: l10n.textAudio,
-                      icon: const Icon(Icons.volume_up, color: AppColors.primary),
-                      onPressed: () {
-                        if (translationResult != '...') {
-                          ref.read(ttsControllerProvider.notifier).speak(translationResult);
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                ],
               ),
-              // Translation Controls - Only show on Wide screens (Web/Tablet)
-              if (isWide) ...[
-                const SizedBox(height: AppSpacing.m),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (isTranslating) ...[
-                      _ControlFab(
-                        icon: Icons.stop,
-                        color: AppColors.error,
-                        label: 'Stopper',
-                        onTap: () => onToggleTranslation(false),
-                      ),
-                      const SizedBox(width: AppSpacing.m),
-                      _ControlFab(
-                        icon: Icons.refresh,
-                        color: AppColors.secondary,
-                        label: 'Redémarrer',
-                        onTap: () {
-                          onToggleTranslation(false);
-                          Future.delayed(const Duration(milliseconds: 100), () => onToggleTranslation(true));
-                        },
-                      ),
-                    ] else
-                      _ControlFab(
-                        icon: Icons.play_arrow,
-                        color: AppColors.primary,
-                        label: 'Lancer la traduction',
-                        onTap: () => onToggleTranslation(true),
-                        extended: true,
-                      ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s),
-            ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.m),
+          // Le son n'est qu'un complément : le texte ci-dessus reste la source.
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, kMinTouchTarget),
+            ),
+            onPressed: text == null
+                ? null
+                : () => ref.read(ttsControllerProvider.notifier).speak(text),
+            icon: const Icon(AppIcons.speaker, size: 20),
+            label: Text(l10n.translSpeak),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ControlFab extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  final VoidCallback onTap;
-  final bool extended;
-
-  const _ControlFab({
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.onTap,
-    this.extended = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (extended) {
-      return FloatingActionButton.extended(
-        heroTag: label,
-        onPressed: onTap,
-        backgroundColor: color,
-        icon: Icon(icon),
-        label: Text(label),
-      );
-    }
-    return FloatingActionButton(
-      heroTag: label,
-      onPressed: onTap,
-      backgroundColor: color,
-      mini: true,
-      child: Icon(icon),
-    );
-  }
-}
-
-class _TextToSignTab extends ConsumerStatefulWidget {
-  final TextEditingController controller;
-  final Function(String) onSearch;
-  final String searchQuery;
-
-  const _TextToSignTab({
+class _TextToSignView extends ConsumerStatefulWidget {
+  const _TextToSignView({
     super.key,
     required this.controller,
-    required this.onSearch,
-    required this.searchQuery,
+    required this.focusNode,
+    required this.query,
+    required this.onQueryChanged,
   });
 
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String query;
+  final ValueChanged<String> onQueryChanged;
+
   @override
-  ConsumerState<_TextToSignTab> createState() => _TextToSignTabState();
+  ConsumerState<_TextToSignView> createState() => _TextToSignViewState();
 }
 
-class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
-  void _handleSpeech() async {
+class _TextToSignViewState extends ConsumerState<_TextToSignView> {
+  String? _activeWord;
+  String? _selectedSignId;
+
+  void _setQuery(String value) {
+    setState(() {
+      _activeWord = null;
+      _selectedSignId = null;
+    });
+    widget.onQueryChanged(value);
+  }
+
+  void _submit() {
+    _setQuery(widget.controller.text);
+    widget.focusNode.requestFocus();
+  }
+
+  Future<void> _toggleSpeech() async {
     final isListening = ref.read(speechControllerProvider);
     final notifier = ref.read(speechControllerProvider.notifier);
-
     if (isListening) {
       await notifier.stopListening();
-    } else {
-      await notifier.startListening(
-        onResult: (text) {
-          widget.controller.text = text;
-          widget.onSearch(text);
-        },
-      );
+      return;
     }
+    await notifier.startListening(
+      onResult: (text) {
+        if (!mounted) return;
+        widget.controller.text = text;
+        _setQuery(text);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen to global STT results (triggered by FAB in MainShell)
+    final l10n = AppLocalizations.of(context)!;
+
+    // Résultats de la dictée lancée depuis le bouton flottant du shell.
     ref.listen<String>(sttResultProvider, (previous, next) {
       if (next.isNotEmpty && mounted) {
         widget.controller.text = next;
-        widget.onSearch(next);
+        _setQuery(next);
       }
     });
 
-    final threeDSettingsAsync = ref.watch(threeDSettingsProvider);
-    final viewModeAsync = ref.watch(signViewModeProvider);
     final isListening = ref.watch(speechControllerProvider);
-    final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Column(
-      children: [
-        // Mode Selector
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
-          child: viewModeAsync.when(
-            data: (mode) => SegmentedButton<SignViewModeEnum>(
-              segments: [
-                ButtonSegment(
-                  value: SignViewModeEnum.model3d,
-                  label: Text(l10n.threeDModel, style: const TextStyle(fontSize: 12)),
-                  icon: const Icon(Icons.accessibility_new),
-                ),
-                ButtonSegment(
-                  value: SignViewModeEnum.landmarks,
-                  label: Text(l10n.landmarks, style: const TextStyle(fontSize: 12)),
-                  icon: const Icon(Icons.animation),
-                ),
-                ButtonSegment(
-                  value: SignViewModeEnum.video,
-                  label: Text(l10n.videoMode, style: const TextStyle(fontSize: 12)),
-                  icon: const Icon(Icons.videocam),
-                ),
-              ],
-              selected: {mode},
-              onSelectionChanged: (val) {
-                ref.read(signViewModeProvider.notifier).setMode(val.first);
-              },
-              showSelectedIcon: false,
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-          ),
-        ),
+    final viewMode =
+        ref.watch(signViewModeProvider).value ?? SignViewModeEnum.video;
 
-        // Display Area
-        Expanded(
-          flex: 4,
-          child: Container(
-            margin: const EdgeInsets.only(
-              left: AppSpacing.m,
-              right: AppSpacing.m,
-              bottom: AppSpacing.m,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                viewModeAsync.when(
-                  data: (mode) {
-                    switch (mode) {
-                      case SignViewModeEnum.model3d:
-                        return threeDSettingsAsync.when(
-                          data: (settings) {
-                            final selectedCharacterId = settings['selectedCharacterId'] ?? CharacterConstants.defaultCharacterId;
-                            
-                            return ref.watch(characterByIdProvider(selectedCharacterId)).when(
-                              data: (character) {
-                                if (character == null) return const Center(child: Text('Personnage non trouvé'));
-                                
-                                return ModelViewer(
-                                  key: ValueKey('model_viewer_${settings['cameraControlsEnabled']}_${settings['zoomEnabled']}_${character.id}'),
-                                  src: character.modelPath,
-                                  alt: 'Un modèle 3D traducteur de langue des signes',
-                                  ar: true,
-                                  autoRotate: false,
-                                  cameraControls: settings['cameraControlsEnabled'] ?? true,
-                                  interactionPrompt: InteractionPrompt.none,
-                                  backgroundColor: Colors.transparent,
-                                  disableZoom: !(settings['zoomEnabled'] ?? true),
-                                  cameraOrbit: '0deg 75deg 2.5m',
-                                  cameraTarget: '0m 1.2m 0m',
-                                  fieldOfView: '30deg',
-                                  minCameraOrbit: 'auto 75deg auto', // Lock vertical axis to 75deg
-                                  maxCameraOrbit: 'auto 75deg auto', // Lock vertical axis to 75deg
-                                );
-                              },
-                              loading: () => const Center(child: CircularProgressIndicator()),
-                              error: (e, s) => Center(child: Text('Erreur : $e')),
-                            );
-                          },
-                          loading: () => const Center(child: CircularProgressIndicator()),
-                          error: (e, s) => Center(child: Text('Erreur : $e')),
-                        );
-                      case SignViewModeEnum.landmarks:
-                        return const LandmarkViewer(
-                          points: [], // Points will be updated by search result
-                        );
-                      case SignViewModeEnum.video:
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.video_library, size: 64, color: AppColors.primary),
-                              const SizedBox(height: 16),
-                              Text(l10n.videoWaiting),
-                            ],
-                          ),
-                        );
-                    }
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => Center(child: Text('Erreur : $e')),
-                ),
-                
-                // Audio Wave Animation Overlay when listening
-                if (isListening)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.mic, size: 64, color: Colors.white)
-                                .animate(onPlay: (controller) => controller.repeat())
-                                .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 500.ms, curve: Curves.easeInOut)
-                                .then()
-                                .scale(begin: const Offset(1.2, 1.2), end: const Offset(1, 1), duration: 500.ms, curve: Curves.easeInOut),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Écoute en cours...',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+    final trimmed = widget.query.trim();
+    final words = trimmed.isEmpty
+        ? const <String>[]
+        : trimmed.split(RegExp(r'\s+')).toList(growable: false);
+    // Une phrase se traduit mot à mot : on cherche un mot à la fois.
+    final lookup = words.length > 1
+        ? (words.contains(_activeWord) ? _activeWord! : words.first)
+        : trimmed;
 
-        // Input Field Below (WhatsApp style)
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? Colors.black45 : Colors.black12,
-                blurRadius: 15,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: widget.controller,
-                      onChanged: widget.onSearch,
-                      decoration: InputDecoration(
-                        hintText: l10n.typeWordPhrase,
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.3),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            isListening ? Icons.stop : Icons.mic,
-                            color: isListening ? AppColors.error : AppColors.primary,
-                          ),
-                          onPressed: _handleSpeech,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.m),
-                  // Only show send button on Wide screens
-                  if (context.isAtLeastTablet)
-                    FloatingActionButton.small(
-                      onPressed: () => widget.onSearch(widget.controller.text),
-                      backgroundColor: AppColors.primary,
-                      child: const Icon(Icons.send, color: Colors.white),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.m),
-            ],
-          ),
-        ),
-      ],
+    final resultsAsync = lookup.isEmpty
+        ? null
+        : ref.watch(signSearchProvider(query: lookup));
+    final signs = resultsAsync?.value ?? const <Sign>[];
+    final selected = _pickSign(signs, lookup);
+    final detailAsync = selected == null
+        ? null
+        : ref.watch(signDetailProvider(selected.id));
+    final displaySign = detailAsync?.value ?? selected;
+    final searching =
+        resultsAsync != null && resultsAsync.isLoading && signs.isEmpty;
+
+    final statusLine = isListening
+        ? _StatusLine(
+            text: l10n.translListening,
+            icon: AppIcons.microphone,
+            color: AppColors.primary,
+          )
+        : lookup.isEmpty
+        ? _StatusLine(
+            text: l10n.translEmptyPrompt,
+            icon: AppIcons.info,
+            color: AppColors.textSecondary(context),
+          )
+        : searching
+        ? _StatusLine(
+            text: l10n.translSearching,
+            icon: AppIcons.search,
+            color: AppColors.primary,
+            busy: true,
+          )
+        : resultsAsync!.hasError && signs.isEmpty
+        ? _StatusLine(
+            text: l10n.errorGeneric,
+            icon: AppIcons.error,
+            color: AppColors.error,
+          )
+        : displaySign == null
+        ? _StatusLine(
+            text: l10n.translNoMatch(lookup),
+            icon: AppIcons.warning,
+            color: AppColors.warning,
+          )
+        : _StatusLine(
+            text: l10n.translShownSign(displaySign.word),
+            icon: AppIcons.success,
+            color: AppColors.success,
+          );
+
+    final input = _InputPanel(
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      isListening: isListening,
+      words: words,
+      activeWord: lookup,
+      signs: signs,
+      selectedSignId: selected?.id,
+      onChanged: _setQuery,
+      onSubmit: _submit,
+      onToggleSpeech: _toggleSpeech,
+      onWordSelected: (word) => setState(() {
+        _activeWord = word;
+        _selectedSignId = null;
+      }),
+      onSignSelected: (id) => setState(() => _selectedSignId = id),
     );
+
+    final stage = _SignStage(
+      viewMode: viewMode,
+      lookup: lookup,
+      searching: searching,
+      sign: displaySign,
+      detailLoading: detailAsync?.isLoading ?? false,
+    );
+
+    final caption = displaySign == null
+        ? const SizedBox.shrink()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(displaySign.word, style: AppTextStyles.h1),
+              if (displaySign.description?.isNotEmpty ?? false) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(displaySign.description!, style: AppTextStyles.bodyLarge),
+              ],
+            ],
+          );
+
+    final viewSelector = _ViewModeSelector(mode: viewMode);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= _splitBreakpoint) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              0,
+              AppSpacing.l,
+              AppSpacing.l,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: _sidePanelWidth,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        statusLine,
+                        const SizedBox(height: AppSpacing.m),
+                        input,
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.l),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      viewSelector,
+                      const SizedBox(height: AppSpacing.m),
+                      Expanded(child: stage),
+                      const SizedBox(height: AppSpacing.m),
+                      caption,
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final stageHeight = (constraints.maxWidth * 0.9).clamp(240.0, 400.0);
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.m,
+            0,
+            AppSpacing.m,
+            AppSpacing.xxl,
+          ),
+          children: [
+            statusLine,
+            const SizedBox(height: AppSpacing.m),
+            input,
+            const SizedBox(height: AppSpacing.l),
+            viewSelector,
+            const SizedBox(height: AppSpacing.m),
+            SizedBox(height: stageHeight, child: stage),
+            const SizedBox(height: AppSpacing.m),
+            caption,
+          ],
+        );
+      },
+    );
+  }
+
+  Sign? _pickSign(List<Sign> signs, String lookup) {
+    if (signs.isEmpty) return null;
+    for (final sign in signs) {
+      if (sign.id == _selectedSignId) return sign;
+    }
+    final target = lookup.toLowerCase();
+    for (final sign in signs) {
+      if (sign.word.toLowerCase() == target) return sign;
+    }
+    return signs.first;
+  }
+}
+
+class _InputPanel extends StatelessWidget {
+  const _InputPanel({
+    required this.controller,
+    required this.focusNode,
+    required this.isListening,
+    required this.words,
+    required this.activeWord,
+    required this.signs,
+    required this.selectedSignId,
+    required this.onChanged,
+    required this.onSubmit,
+    required this.onToggleSpeech,
+    required this.onWordSelected,
+    required this.onSignSelected,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isListening;
+  final List<String> words;
+  final String activeWord;
+  final List<Sign> signs;
+  final String? selectedSignId;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmit;
+  final VoidCallback onToggleSpeech;
+  final ValueChanged<String> onWordSelected;
+  final ValueChanged<String> onSignSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return AppPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.search,
+            style: AppTextStyles.bodyLarge,
+            onChanged: onChanged,
+            onSubmitted: (_) => onSubmit(),
+            decoration: InputDecoration(
+              labelText: l10n.translInputLabel,
+              hintText: l10n.typeWordPhrase,
+              helperText: context.isAtLeastTablet ? l10n.translInputHint : null,
+              prefixIcon: const Icon(AppIcons.keyboard),
+              suffixIcon: IconButton(
+                tooltip: isListening
+                    ? l10n.translStopDictation
+                    : l10n.translStartDictation,
+                constraints: const BoxConstraints(
+                  minWidth: kMinTouchTarget,
+                  minHeight: kMinTouchTarget,
+                ),
+                onPressed: onToggleSpeech,
+                icon: Icon(
+                  isListening ? AppIcons.stop : AppIcons.microphone,
+                  color: isListening ? AppColors.error : AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.m),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, _controlHeight),
+              ),
+              onPressed: onSubmit,
+              icon: const Icon(AppIcons.translate),
+              label: Text(l10n.translate),
+            ),
+          ),
+          if (words.length > 1) ...[
+            const SizedBox(height: AppSpacing.l),
+            Wrap(
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
+              children: [
+                for (final word in words.toSet())
+                  ChoiceChip(
+                    label: Text(word),
+                    selected: word == activeWord,
+                    onSelected: (_) => onWordSelected(word),
+                  ),
+              ],
+            ),
+          ],
+          if (signs.length > 1) ...[
+            const SizedBox(height: AppSpacing.l),
+            Semantics(
+              header: true,
+              child: Text(
+                l10n.translMatches,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Wrap(
+              spacing: AppSpacing.s,
+              runSpacing: AppSpacing.s,
+              children: [
+                for (final sign in signs.take(12))
+                  ChoiceChip(
+                    label: Text(sign.word),
+                    selected: sign.id == selectedSignId,
+                    onSelected: (_) => onSignSelected(sign.id),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewModeSelector extends ConsumerWidget {
+  const _ViewModeSelector({required this.mode});
+
+  final SignViewModeEnum mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SegmentedButton<SignViewModeEnum>(
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          minimumSize: const Size(0, kMinTouchTarget),
+        ),
+        segments: [
+          ButtonSegment(
+            value: SignViewModeEnum.video,
+            icon: const Icon(AppIcons.video),
+            label: Text(l10n.videoMode),
+          ),
+          ButtonSegment(
+            value: SignViewModeEnum.landmarks,
+            icon: const Icon(AppIcons.signLanguage),
+            label: Text(l10n.landmarks),
+          ),
+          ButtonSegment(
+            value: SignViewModeEnum.model3d,
+            icon: const Icon(PhosphorIconsRegular.cube),
+            label: Text(l10n.threeDModel),
+          ),
+        ],
+        selected: {mode},
+        onSelectionChanged: (value) =>
+            ref.read(signViewModeProvider.notifier).setMode(value.first),
+      ),
+    );
+  }
+}
+
+class _SignStage extends StatelessWidget {
+  const _SignStage({
+    required this.viewMode,
+    required this.lookup,
+    required this.searching,
+    required this.sign,
+    required this.detailLoading,
+  });
+
+  final SignViewModeEnum viewMode;
+  final String lookup;
+  final bool searching;
+  final Sign? sign;
+  final bool detailLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final current = sign;
+
+    Widget content;
+    if (viewMode == SignViewModeEnum.model3d) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Expanded(child: _AvatarView()),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            child: Text(
+              l10n.translAvatarNote,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (searching) {
+      content = Skeleton(
+        label: l10n.translSearching,
+        child: const SkeletonBlock(
+          height: double.infinity,
+          radius: AppRadius.l,
+        ),
+      );
+    } else if (current == null) {
+      content = _StagePlaceholder(
+        icon: lookup.isEmpty ? AppIcons.signLanguage : AppIcons.search,
+        title: lookup.isEmpty
+            ? l10n.translEmptyPrompt
+            : l10n.translNoMatch(lookup),
+        message: lookup.isEmpty ? null : l10n.translNoMatchHint,
+      );
+    } else if (viewMode == SignViewModeEnum.landmarks) {
+      content = detailLoading && current.landmarkData == null
+          ? const Skeleton(
+              child: SkeletonBlock(
+                height: double.infinity,
+                radius: AppRadius.l,
+              ),
+            )
+          : LandmarkViewer(
+              points: SignMedia.parseLandmarks(current.landmarkData),
+            );
+    } else {
+      content = Padding(
+        padding: const EdgeInsets.all(AppSpacing.s),
+        child: SignMedia(sign: current),
+      );
+    }
+
+    return Semantics(
+      container: true,
+      label: current == null ? null : l10n.translShownSign(current.word),
+      child: AppPanel(padding: EdgeInsets.zero, child: content),
+    );
+  }
+}
+
+class _StagePlaceholder extends StatelessWidget {
+  const _StagePlaceholder({
+    required this.icon,
+    required this.title,
+    this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondary = AppColors.textSecondary(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.l),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: AppColors.primary),
+            const SizedBox(height: AppSpacing.m),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (message != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(color: secondary),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarView extends ConsumerWidget {
+  const _AvatarView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    const loading = Skeleton(
+      child: SkeletonBlock(height: double.infinity, radius: AppRadius.l),
+    );
+    Widget failure(Object e) => _StagePlaceholder(
+      icon: AppIcons.error,
+      title: l10n.translLoadError,
+      message: '$e',
+    );
+
+    return ref
+        .watch(threeDSettingsProvider)
+        .when(
+          loading: () => loading,
+          error: (e, _) => failure(e),
+          data: (settings) {
+            final characterId =
+                settings['selectedCharacterId'] as String? ??
+                CharacterConstants.defaultCharacterId;
+            return ref
+                .watch(characterByIdProvider(characterId))
+                .when(
+                  loading: () => loading,
+                  error: (e, _) => failure(e),
+                  data: (character) {
+                    if (character == null) {
+                      return _StagePlaceholder(
+                        icon: AppIcons.warning,
+                        title: l10n.translCharacterNotFound,
+                      );
+                    }
+                    return ModelViewer(
+                      key: ValueKey(
+                        'model_viewer_${settings['cameraControlsEnabled']}_${settings['zoomEnabled']}_${character.id}',
+                      ),
+                      src: character.modelPath,
+                      alt: l10n.translModelAlt,
+                      ar: true,
+                      autoRotate: false,
+                      cameraControls: settings['cameraControlsEnabled'] ?? true,
+                      interactionPrompt: InteractionPrompt.none,
+                      backgroundColor: Colors.transparent,
+                      disableZoom: !(settings['zoomEnabled'] ?? true),
+                      cameraOrbit: '0deg 75deg 2.5m',
+                      cameraTarget: '0m 1.2m 0m',
+                      fieldOfView: '30deg',
+                      // Axe vertical verrouillé à 75° : l'avatar reste de face.
+                      minCameraOrbit: 'auto 75deg auto',
+                      maxCameraOrbit: 'auto 75deg auto',
+                    );
+                  },
+                );
+          },
+        );
   }
 }

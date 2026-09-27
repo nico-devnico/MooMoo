@@ -53,60 +53,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    let body: Record<string, unknown> = {};
-    try {
-      body = await req.json();
-    } catch {
-      body = {};
-    }
-
-    const glossHint =
-      typeof body["hint"] === "string" ? (body["hint"] as string) : null;
-    const started = Date.now();
-
-    // Placeholder inference: real WASL/LSFB serving should replace this block.
-    // Returns a structured prediction so the Flutter client can degrade gracefully.
-    const label = glossHint?.trim() || "bonjour";
-    const confidence = glossHint ? 0.91 : 0.62;
-    const latencyMs = Date.now() - started + 40;
-
-    // Best-effort metrics bump (ignored if RLS blocks non-admin writes).
-    try {
-      const { data: latest } = await supabase
-        .from("model_metrics")
-        .select("id, inference_count")
-        .eq("model_id", model.id)
-        .order("recorded_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (latest?.id) {
-        await supabase
-          .from("model_metrics")
-          .update({
-            inference_count: (latest.inference_count ?? 0) + 1,
-            latency_ms: latencyMs,
-          })
-          .eq("id", latest.id);
-      }
-    } catch {
-      // Metrics are optional for the user path.
-    }
-
-    return json({
-      ok: true,
-      prediction: {
-        label,
-        confidence,
-        latency_ms: latencyMs,
+    // Model serving is not wired into this function yet. Never fabricate a
+    // label: the client turns this into a "translation unavailable" state.
+    return json(
+      {
+        ok: false,
+        error: "inference_not_available",
+        message: "Sign recognition is not served by this function yet.",
+        model: {
+          id: model.id,
+          name: model.name,
+          version: model.version,
+          dataset: model.dataset,
+        },
       },
-      model: {
-        id: model.id,
-        name: model.name,
-        version: model.version,
-        dataset: model.dataset,
-      },
-    });
+      503,
+    );
   } catch (e) {
     return json(
       {
