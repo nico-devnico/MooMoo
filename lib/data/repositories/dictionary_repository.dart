@@ -115,7 +115,7 @@ class DictionaryRepositoryImpl implements DictionaryRepository {
 
   @override
   Future<void> incrementViewCount(String id) async {
-    // Supabase RPC or direct update
-    await _supabase.rpc('increment_sign_view_count', params: {'sign_id': id});
+    // Also records the signed-in user's progress (user_progress).
+    await _supabase.rpc('record_sign_view', params: {'p_sign_id': id});
   }
 }

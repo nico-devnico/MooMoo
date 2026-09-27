@@ -4,7 +4,6 @@ import {
   dbPreferService,
   supabaseAdmin,
   supabaseAnon,
-  ML_SERVICE_URL,
 } from '../supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -41,10 +40,11 @@ modelsRouter.get('/', async (req, res, next) => {
 
 modelsRouter.get('/active', async (req, res, next) => {
   try {
-    const { data, error } = await readClient(req)
-      .from('ml_models')
-      .select('*')
-      .eq('is_active', true)
+    let q = readClient(req).from('ml_models').select('*').eq('stage', 'production');
+    if (req.query.language) q = q.eq('language_code', String(req.query.language));
+    const { data, error } = await q
+      .order('promoted_at', { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle();
     if (error) {
       if (String(error.message).includes('ml_models') || error.code === 'PGRST205') {
@@ -77,33 +77,49 @@ modelsRouter.get('/jobs', requireAuth, async (req, res, next) => {
   }
 });
 
+/**
+ * POST /retrain — met un entraînement en file d'attente.
+ * Le worker ML (python -m moomoo_ml.worker) consomme training_jobs : aucun
+ * appel direct au service Python, la fermeture du client n'interrompt rien.
+ */
 modelsRouter.post('/retrain', requireAuth, async (req, res, next) => {
   try {
-    const client = dbPreferService(req.accessToken);
-    const dataset = req.body?.dataset || 'WASL+LSFB';
+    const client = dbForUser(req.accessToken);
+    const datasetId = req.body?.datasetId;
+    const datasetName = typeof req.body?.dataset === 'string' ? req.body.dataset.trim() : '';
+    if (!datasetId && !datasetName) {
+      throw Object.assign(
+        new Error('datasetId requis : enregistrer d\'abord un dataset dans Admin > Modèles'),
+        { status: 400, code: 'dataset_required' },
+      );
+    }
+    // Older clients send the dataset name: take the latest registered one.
+    let lookup = client.from('ml_datasets').select('id, name, language_code');
+    lookup = datasetId
+      ? lookup.eq('id', datasetId)
+      : lookup.eq('name', datasetName).order('created_at', { ascending: false }).limit(1);
+    const { data: dataset, error: dsError } = await lookup.maybeSingle();
+    if (dsError) throw Object.assign(new Error(dsError.message), { status: 400 });
+    if (!dataset) {
+      throw Object.assign(new Error('Dataset introuvable'), { status: 404, code: 'not_found' });
+    }
+    const kind = req.body?.search ? 'search' : 'train';
     const { data, error } = await client
       .from('training_jobs')
       .insert({
+        kind,
         model_id: req.body?.modelId || null,
         requested_by: req.user.id,
-        dataset,
+        dataset: dataset.name,
+        dataset_id: dataset.id,
+        language_code: dataset.language_code,
+        config: req.body?.config || {},
         status: 'queued',
         progress: 0,
       })
       .select()
       .single();
     if (error) throw Object.assign(new Error(error.message), { status: 400 });
-
-    try {
-      await fetch(`${ML_SERVICE_URL}/train`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: data.id, dataset }),
-      });
-    } catch (e) {
-      console.warn('[retrain] ML notify failed:', e.message);
-    }
-
     res.status(201).json({ ok: true, job: data });
   } catch (e) {
     next(e);
@@ -126,23 +142,37 @@ modelsRouter.get('/:id/metrics', async (req, res, next) => {
   }
 });
 
-modelsRouter.post('/:id/activate', requireAuth, async (req, res, next) => {
+/**
+ * POST /:id/stage — transition dans le registre (validated, staging,
+ * production, archived). Les règles vivent dans promote_ml_model : la
+ * production ne se remplace jamais sans passer par le staging.
+ */
+modelsRouter.post('/:id/stage', requireAuth, async (req, res, next) => {
   try {
-    const client = dbPreferService(req.accessToken);
-    const { error } = await client.rpc('set_active_ml_model', {
+    const stage = String(req.body?.stage || '');
+    const { data, error } = await dbForUser(req.accessToken).rpc('promote_ml_model', {
       p_model_id: req.params.id,
+      p_stage: stage,
     });
     if (error) {
-      // The RPC refuses when auth.uid() is NULL (service role); RLS still guards
-      // the direct update below.
-      await client.from('ml_models').update({ is_active: false }).eq('is_active', true);
-      const { error: e2 } = await client
-        .from('ml_models')
-        .update({ is_active: true, updated_at: new Date().toISOString() })
-        .eq('id', req.params.id);
-      if (e2) throw Object.assign(new Error(e2.message), { status: 400 });
+      const status = error.code === '42501' ? 403 : 400;
+      throw Object.assign(new Error(error.message), { status, code: 'stage_refused' });
     }
-    res.json({ ok: true });
+    res.json({ ok: true, model: data });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** Ancienne route conservée : équivaut à une promotion en production. */
+modelsRouter.post('/:id/activate', requireAuth, async (req, res, next) => {
+  try {
+    const { data, error } = await dbForUser(req.accessToken).rpc('promote_ml_model', {
+      p_model_id: req.params.id,
+      p_stage: 'production',
+    });
+    if (error) throw Object.assign(new Error(error.message), { status: 400, code: 'stage_refused' });
+    res.json({ ok: true, model: data });
   } catch (e) {
     next(e);
   }

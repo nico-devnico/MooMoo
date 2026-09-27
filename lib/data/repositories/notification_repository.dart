@@ -11,6 +11,7 @@ abstract class NotificationRepository {
     int offset = 0,
   });
   Future<void> markAsRead(String notificationId);
+  Future<void> markAllAsRead(String userId);
   Stream<List<model.Notification>> watchNotifications(String userId);
 }
 
@@ -44,6 +45,15 @@ class NotificationRepositoryImpl implements NotificationRepository {
         .from('notifications')
         .update({'is_read': true})
         .eq('id', notificationId);
+  }
+
+  @override
+  Future<void> markAllAsRead(String userId) async {
+    await _supabase
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('user_id', userId)
+        .eq('is_read', false);
   }
 
   @override

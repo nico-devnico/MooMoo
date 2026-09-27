@@ -20,6 +20,21 @@ abstract class SessionRepository {
     String? title,
   });
   Future<void> addEntry(TranslationEntry entry);
+
+  /// Saves one translation, creating the session on first use.
+  /// Returns the session id to reuse for the next translations.
+  Future<String> recordTranslation({
+    required String userId,
+    String? sessionId,
+    required String direction,
+    String? sourceText,
+    String? translatedText,
+    List<String>? signIds,
+    double? confidence,
+    int? inferenceTimeMs,
+    String? modelVersion,
+  });
+  Future<void> closeSession(String sessionId);
   Future<List<TranslationEntry>> getSessionEntries(
     String sessionId, {
     int limit = 200,
@@ -79,6 +94,46 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<void> addEntry(TranslationEntry entry) async {
     await _supabase.from('translation_entries').insert(entry.toJson());
+  }
+
+  @override
+  Future<String> recordTranslation({
+    required String userId,
+    String? sessionId,
+    required String direction,
+    String? sourceText,
+    String? translatedText,
+    List<String>? signIds,
+    double? confidence,
+    int? inferenceTimeMs,
+    String? modelVersion,
+  }) async {
+    final session = sessionId ??
+        await createSession(
+          userId: userId,
+          sessionType: direction,
+          title: (sourceText ?? translatedText)?.trim(),
+        );
+    await _supabase.from('translation_entries').insert({
+      'session_id': session,
+      'user_id': userId,
+      'direction': direction,
+      'source_text': sourceText,
+      'translated_text': translatedText,
+      'sign_ids': signIds,
+      'confidence_score': confidence,
+      'inference_time_ms': inferenceTimeMs,
+      'model_version': modelVersion,
+    });
+    return session;
+  }
+
+  @override
+  Future<void> closeSession(String sessionId) async {
+    await _supabase.from('translation_sessions').update({
+      'status': 'completed',
+      'ended_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', sessionId);
   }
 
   @override

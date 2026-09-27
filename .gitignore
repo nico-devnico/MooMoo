@@ -2,6 +2,11 @@
 backend/.env
 backend/node_modules/
 ml/.venv/
+ml/.env
+ml/data/
+ml/cache/
+ml/artifacts/
+ml/.pytest_cache/
 **/__pycache__/
 *.pyc
 

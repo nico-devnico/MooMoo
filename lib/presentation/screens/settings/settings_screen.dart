@@ -17,6 +17,7 @@ import 'package:moomoo/domain/providers/auth_provider.dart';
 import 'package:moomoo/domain/providers/character_provider.dart';
 import 'package:moomoo/domain/providers/profile_provider.dart';
 import 'package:moomoo/domain/providers/sign_provider.dart';
+import 'package:moomoo/domain/providers/sign_view_provider.dart';
 import 'package:moomoo/domain/providers/three_d_settings_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_empty_state.dart';
@@ -52,8 +53,11 @@ String themeLabel(AppLocalizations l10n, String theme) => switch (theme) {
       _ => l10n.system,
     };
 
-String viewLabel(AppLocalizations l10n, String view) =>
-    view == '3d' ? l10n.model3D : l10n.video;
+String viewLabel(AppLocalizations l10n, String view) => switch (view) {
+      '3d' => l10n.model3D,
+      'landmarks' => l10n.landmarks,
+      _ => l10n.video,
+    };
 
 /// Ouvre la messagerie vers l'équipe ; sans client e-mail, l'adresse est
 /// affichée pour que l'utilisateur puisse écrire par un autre moyen.
@@ -195,10 +199,13 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
       options: [
         PickerOption(value: '3d', label: l10n.model3D, icon: PhosphorIconsRegular.cube),
         PickerOption(value: 'video', label: l10n.video, icon: AppIcons.video),
+        PickerOption(value: 'landmarks', label: l10n.landmarks, icon: AppIcons.signLanguage),
       ],
     );
     if (view == null || view == widget.profile.preferredView) return;
-    await _save(widget.profile.copyWith(preferredView: view));
+    if (await _save(widget.profile.copyWith(preferredView: view))) {
+      ref.invalidate(signViewModeProvider);
+    }
   }
 
   Future<void> _pickTheme() async {

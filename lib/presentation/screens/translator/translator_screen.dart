@@ -17,9 +17,11 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/sign.dart';
+import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/character_provider.dart';
 import '../../../domain/providers/ml_model_provider.dart';
+import '../../../domain/providers/session_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
 import '../../../domain/providers/sign_view_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
@@ -67,6 +69,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   /// ne doit pas écraser l'état courant.
   int _inferenceRun = 0;
 
+  /// One history session per direction for the time the screen is open.
+  final Map<String, String> _sessions = {};
+
   @override
   void dispose() {
     _textController.dispose();
@@ -74,7 +79,41 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     _videoController?.dispose();
     _chewieController?.dispose();
     ref.read(translatorStateProvider.notifier).stop();
+    final repo = ref.read(sessionRepositoryProvider);
+    for (final id in _sessions.values) {
+      repo.closeSession(id).catchError((_) {});
+    }
     super.dispose();
+  }
+
+  /// Saves a translation to the user's history; failures never block the UI.
+  Future<void> _record({
+    required String direction,
+    String? sourceText,
+    String? translatedText,
+    List<String>? signIds,
+    double? confidence,
+    int? inferenceTimeMs,
+    String? modelVersion,
+  }) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+    try {
+      _sessions[direction] = await ref.read(sessionRepositoryProvider).recordTranslation(
+            userId: user.id,
+            sessionId: _sessions[direction],
+            direction: direction,
+            sourceText: sourceText,
+            translatedText: translatedText,
+            signIds: signIds,
+            confidence: confidence,
+            inferenceTimeMs: inferenceTimeMs,
+            modelVersion: modelVersion,
+          );
+      ref.invalidate(userHistoryProvider);
+    } catch (e) {
+      debugPrint('[history] translation not saved: $e');
+    }
   }
 
   Future<XFile?> _captureFrame() async {
@@ -138,6 +177,15 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         _errorMessage = l10n.inferenceUnavailableMessage;
       }
     });
+    if (result.ok && label != null && label.isNotEmpty) {
+      _record(
+        direction: 'sign_to_text',
+        translatedText: label,
+        confidence: result.confidence,
+        inferenceTimeMs: result.latencyMs?.round(),
+        modelVersion: result.model?.version,
+      );
+    }
   }
 
   void _start() => ref.read(translatorStateProvider.notifier).start();
@@ -276,6 +324,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                       query: _searchQuery,
                       onQueryChanged: (value) =>
                           setState(() => _searchQuery = value),
+                      onTranslated: (text, signIds) => _record(
+                        direction: 'text_to_sign',
+                        sourceText: text,
+                        signIds: signIds,
+                      ),
                     ),
             ),
           ],
@@ -851,12 +904,14 @@ class _TextToSignView extends ConsumerStatefulWidget {
     required this.focusNode,
     required this.query,
     required this.onQueryChanged,
+    required this.onTranslated,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String query;
   final ValueChanged<String> onQueryChanged;
+  final void Function(String text, List<String> signIds) onTranslated;
 
   @override
   ConsumerState<_TextToSignView> createState() => _TextToSignViewState();
@@ -865,6 +920,10 @@ class _TextToSignView extends ConsumerStatefulWidget {
 class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   String? _activeWord;
   String? _selectedSignId;
+
+  /// Set on an explicit request (submit or dictation), not on every keystroke,
+  /// so the history only keeps finished phrases.
+  bool _recordPending = false;
 
   void _setQuery(String value) {
     setState(() {
@@ -875,6 +934,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   }
 
   void _submit() {
+    _recordPending = widget.controller.text.trim().isNotEmpty;
     _setQuery(widget.controller.text);
     widget.focusNode.requestFocus();
   }
@@ -890,6 +950,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       onResult: (text) {
         if (!mounted) return;
         widget.controller.text = text;
+        _recordPending = text.trim().isNotEmpty;
         _setQuery(text);
       },
     );
@@ -903,6 +964,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     ref.listen<String>(sttResultProvider, (previous, next) {
       if (next.isNotEmpty && mounted) {
         widget.controller.text = next;
+        _recordPending = true;
         _setQuery(next);
       }
     });
@@ -931,6 +993,12 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     final displaySign = detailAsync?.value ?? selected;
     final searching =
         resultsAsync != null && resultsAsync.isLoading && signs.isEmpty;
+
+    if (_recordPending && trimmed.isNotEmpty && resultsAsync != null && !resultsAsync.isLoading) {
+      _recordPending = false;
+      final ids = selected == null ? const <String>[] : [selected.id];
+      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onTranslated(trimmed, ids));
+    }
 
     final statusLine = isListening
         ? _StatusLine(

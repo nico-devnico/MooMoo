@@ -120,7 +120,8 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
-      data: {'display_name': displayName},
+      // Read by the on_auth_user_created trigger when there is no session yet.
+      data: {'display_name': displayName, 'is_deaf': isDeaf},
     );
 
     final user = response.user;

@@ -28,7 +28,7 @@ class NotificationScreen extends ConsumerWidget {
   ) async {
     final repository = ref.read(notificationRepositoryProvider);
     try {
-      await Future.wait(unread.map((n) => repository.markAsRead(n.id)));
+      await repository.markAllAsRead(unread.first.userId);
       ref.invalidate(notificationsProvider);
     } catch (_) {
       if (context.mounted) {
@@ -182,7 +182,11 @@ class _NotificationTile extends ConsumerWidget {
 
   void _open(BuildContext context, WidgetRef ref) {
     if (!notification.isRead) {
-      ref.read(notificationRepositoryProvider).markAsRead(notification.id).catchError((_) {});
+      ref
+          .read(notificationRepositoryProvider)
+          .markAsRead(notification.id)
+          .then((_) => ref.invalidate(notificationsProvider))
+          .catchError((Object e) => debugPrint('mark notification read: $e'));
     }
     final body = notification.body?.trim();
     if (body != null && body.isNotEmpty) {

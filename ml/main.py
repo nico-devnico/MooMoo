@@ -1,10 +1,25 @@
+"""MooMoo ML service (FastAPI).
+
+Training is NOT done here: the API only serves inference and status. Long
+jobs are queued in public.training_jobs and run by `python -m moomoo_ml.worker`.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import tempfile
+from pathlib import Path
+from typing import Optional
+
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from typing import Optional
 
-app = FastAPI(title="MooMoo ML", version="0.1.0")
+from moomoo_ml import config, db
+from moomoo_ml.datasets.discovery import media_kind
+
+app = FastAPI(title="MooMoo ML", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,77 +27,109 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATASETS = {
-    "WASL": {"format": "gif/image", "status": "ready", "samples": 0},
-    "LSFB": {"format": "gif/image", "status": "ready", "samples": 0},
-}
-
-# In-memory training job status (Node owns DB rows; Python reports worker state)
-_jobs: dict[str, dict] = {}
+_cache = None
 
 
-class TrainRequest(BaseModel):
-    job_id: str
-    dataset: str = "WASL+LSFB"
+def _models():
+    global _cache
+    if _cache is None:
+        from moomoo_ml.inference import ModelCache
+
+        _cache = ModelCache()
+    return _cache
+
+
+def _unavailable(code: str, detail: str, status: int = 503, **extra) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"ok": False, "error": code, "detail": detail, **extra})
 
 
 @app.get("/health")
 def health():
-    return {
+    status = {
         "ok": True,
         "service": "moomoo-ml",
-        "datasets": list(DATASETS.keys()),
+        "artifacts_dir": str(config.ARTIFACTS_DIR),
+        "runtimes": {name: importlib.util.find_spec(name) is not None
+                     for name in ("tensorflow", "mediapipe", "cv2")},
     }
-
-
-@app.get("/datasets")
-def list_datasets():
-    return {"ok": True, "datasets": DATASETS}
+    try:
+        row = db.one(
+            """SELECT
+                 count(*) FILTER (WHERE status = 'queued') AS queued,
+                 count(*) FILTER (WHERE status IN ('running', 'cancelling')) AS running,
+                 max(heartbeat_at) AS last_heartbeat
+               FROM public.training_jobs"""
+        )
+        status["queue"] = {k: (str(v) if k == "last_heartbeat" and v else v) for k, v in row.items()}
+        status["database"] = "ok"
+    except Exception as exc:
+        status["database"] = f"indisponible : {exc}"
+    return status
 
 
 @app.post("/infer")
 async def infer(
     file: Optional[UploadFile] = File(None),
+    landmarks: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
     hint: Optional[str] = Form(None),
-    dataset: Optional[str] = Form("WASL"),
+    dataset: Optional[str] = Form(None),
     model_version: Optional[str] = Form(None),
 ):
-    """No recognition model is loaded yet.
+    """Classifies a sign with the production model of [language].
 
-    Answer 503 rather than inventing a label: the app shows a clear
-    "translation unavailable" state instead of a wrong word to a deaf user.
+    Input: either `landmarks` (JSON [frames, features], MediaPipe layout) or a
+    video/GIF `file`. A single still image is not a sign and is refused.
     """
-    raw = await file.read() if file is not None else b""
-    return JSONResponse(
-        status_code=503,
-        content={
-            "ok": False,
-            "error": "model_not_loaded",
-            "detail": "No sign recognition model is loaded on this worker.",
-            "dataset": dataset or "WASL",
-            "model_version": model_version,
-            "bytes_received": len(raw),
-        },
-    )
+    import numpy as np
 
+    from moomoo_ml.inference import NoProductionModel, landmarks_from_media
 
-@app.post("/train")
-def train(body: TrainRequest):
-    _jobs[body.job_id] = {
-        "job_id": body.job_id,
-        "dataset": body.dataset,
-        "status": "queued",
-        "progress": 0.0,
-        "message": "Job accepted (no GPU training in this stub)",
+    try:
+        model = _models().get(language)
+    except NoProductionModel as exc:
+        return _unavailable("no_production_model", str(exc))
+    except db.DbUnavailable as exc:
+        return _unavailable("model_registry_unavailable", str(exc))
+
+    if landmarks:
+        try:
+            raw = np.asarray(json.loads(landmarks), dtype=np.float32)
+        except (ValueError, TypeError):
+            return _unavailable("invalid_landmarks", "landmarks doit être un tableau JSON [frames, features]", 422)
+    elif file is not None:
+        suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
+        kind = media_kind(Path("x" + suffix))
+        if kind not in ("video", "gif"):
+            return _unavailable(
+                "sequence_required",
+                "Un signe est un mouvement : envoyer une vidéo, un GIF ou une séquence de landmarks.",
+                422,
+            )
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(await file.read())
+            path = Path(tmp.name)
+        try:
+            raw = landmarks_from_media(path, kind, model.layout, model.max_frames)
+        finally:
+            path.unlink(missing_ok=True)
+    else:
+        return _unavailable("no_input", "Aucune entrée : fichier vidéo/GIF ou landmarks attendus.", 422)
+
+    if raw.ndim != 2 or raw.shape[0] == 0 or not raw.any():
+        return _unavailable("no_landmarks", "Aucun geste détecté dans la séquence.", 422)
+    try:
+        prediction = model.classify(raw)
+    except ValueError as exc:
+        return _unavailable("invalid_landmarks", str(exc), 422)
+
+    row = model.row
+    return {
+        "ok": True,
+        **prediction,
+        "dataset": row.get("dataset"),
+        "model_version": row.get("version"),
+        "language": row.get("language_code"),
+        "model": {"id": row["id"], "name": row["name"], "version": row["version"],
+                  "dataset": row.get("dataset")},
     }
-    # Simulate immediate queue ack — a real worker would set running/done
-    _jobs[body.job_id]["status"] = "queued"
-    return {"ok": True, "job": _jobs[body.job_id]}
-
-
-@app.get("/train/{job_id}")
-def train_status(job_id: str):
-    job = _jobs.get(job_id)
-    if not job:
-        return {"ok": False, "error": "not_found", "job_id": job_id}
-    return {"ok": True, "job": job}

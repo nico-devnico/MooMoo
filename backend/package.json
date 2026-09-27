@@ -8,6 +8,7 @@
     "dev": "node --watch src/index.js",
     "migrate": "node scripts/apply_migrations.mjs",
     "test:api": "node scripts/api_smoke_test.mjs",
+    "test:live": "node scripts/live_persistence_test.mjs",
     "test:supabase": "node ../scripts/supabase_smoke_test.mjs"
   },
   "dependencies": {

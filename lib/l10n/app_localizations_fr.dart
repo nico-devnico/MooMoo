@@ -1989,4 +1989,1088 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get adminLearningForbidden =>
       'Réservé aux administrateurs, enseignants et experts en langue des signes.';
+
+  @override
+  String get mlScreenSubtitle =>
+      'Datasets, entraînements, expériences et registre des modèles par langue des signes';
+
+  @override
+  String get mlTabDatasets => 'Datasets';
+
+  @override
+  String get mlTabJobs => 'Entraînements';
+
+  @override
+  String get mlTabExperiments => 'Expériences';
+
+  @override
+  String get mlTabRegistry => 'Registre';
+
+  @override
+  String get mlClose => 'Fermer';
+
+  @override
+  String get mlYes => 'Oui';
+
+  @override
+  String mlUnitB(String value) {
+    return '$value o';
+  }
+
+  @override
+  String mlUnitKb(String value) {
+    return '$value Ko';
+  }
+
+  @override
+  String mlUnitMb(String value) {
+    return '$value Mo';
+  }
+
+  @override
+  String get mlStatusRegistered => 'Enregistré';
+
+  @override
+  String get mlStatusAnalyzing => 'Analyse en cours';
+
+  @override
+  String get mlStatusAnalyzed => 'Analysé';
+
+  @override
+  String get mlStatusPreprocessing => 'Prétraitement en cours';
+
+  @override
+  String get mlStatusReady => 'Prêt';
+
+  @override
+  String get mlStatusFailed => 'Échec';
+
+  @override
+  String get mlJobQueued => 'En file';
+
+  @override
+  String get mlJobRunning => 'En cours';
+
+  @override
+  String get mlJobCancelling => 'Annulation…';
+
+  @override
+  String get mlJobCancelled => 'Annulé';
+
+  @override
+  String get mlJobDone => 'Terminé';
+
+  @override
+  String get mlJobFailed => 'Échec';
+
+  @override
+  String get mlExpQueued => 'En attente';
+
+  @override
+  String get mlExpRunning => 'En cours';
+
+  @override
+  String get mlExpCompleted => 'Terminée';
+
+  @override
+  String get mlExpFailed => 'Échec';
+
+  @override
+  String get mlExpPruned => 'Élaguée';
+
+  @override
+  String get mlExpCancelled => 'Annulée';
+
+  @override
+  String get mlStageTraining => 'ENTRAÎNEMENT';
+
+  @override
+  String get mlStageTrained => 'ENTRAÎNÉ';
+
+  @override
+  String get mlStageEvaluated => 'ÉVALUÉ';
+
+  @override
+  String get mlStageValidated => 'VALIDÉ';
+
+  @override
+  String get mlStageStaging => 'STAGING';
+
+  @override
+  String get mlStageProduction => 'PRODUCTION';
+
+  @override
+  String get mlStageArchived => 'ARCHIVÉ';
+
+  @override
+  String get mlKindAnalyze => 'Analyse';
+
+  @override
+  String get mlKindPreprocess => 'Prétraitement';
+
+  @override
+  String get mlKindTrain => 'Entraînement';
+
+  @override
+  String get mlKindSearch => 'Recherche d\'hyperparamètres';
+
+  @override
+  String get mlKindEvaluate => 'Enregistrement';
+
+  @override
+  String get mlKindConvert => 'Conversion TFLite';
+
+  @override
+  String get mlDatasetsSubtitle =>
+      'Chaque dataset appartient à une seule langue des signes. Il est analysé automatiquement avant tout entraînement.';
+
+  @override
+  String get mlDatasetAdd => 'Ajouter un dataset';
+
+  @override
+  String get mlDatasetAddHint =>
+      'Le worker ML lit le dossier local (sur sa machine) ou télécharge l\'archive depuis l\'URL, puis lance l\'analyse.';
+
+  @override
+  String get mlDatasetCreate => 'Créer et analyser';
+
+  @override
+  String get mlDatasetCreated => 'Dataset enregistré, analyse en file';
+
+  @override
+  String get mlDatasetsEmpty => 'Aucun dataset';
+
+  @override
+  String get mlDatasetsEmptyMessage =>
+      'Ajoutez un dataset (dossier local ou URL) pour commencer à entraîner un modèle.';
+
+  @override
+  String get mlDatasetTrainable => 'Entraînable';
+
+  @override
+  String get mlDatasetDeleteTitle => 'Supprimer le dataset ?';
+
+  @override
+  String mlDatasetDeleteMessage(String name) {
+    return '« $name » sera retiré de la plateforme. Les fichiers sources ne sont pas supprimés.';
+  }
+
+  @override
+  String get mlDatasetDeleted => 'Dataset supprimé';
+
+  @override
+  String get mlAnalysisPending =>
+      'Analyse pas encore disponible : elle démarre dès qu\'un worker est actif.';
+
+  @override
+  String get mlUnstructured => 'Non structuré';
+
+  @override
+  String mlMappingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count règles de label',
+      one: '1 règle de label',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mlShowClasses(int count) {
+    return 'Voir la répartition des classes ($count)';
+  }
+
+  @override
+  String get mlHideClasses => 'Masquer la répartition des classes';
+
+  @override
+  String mlMoreClasses(int count) {
+    return '+ $count autres classes';
+  }
+
+  @override
+  String mlClassBarSemantics(String label, int count) {
+    return '$label : $count exemples';
+  }
+
+  @override
+  String mlMediaSummary(String mean, String min, String max, String suffix) {
+    return '$mean$suffix (min $min, max $max)';
+  }
+
+  @override
+  String get mlStatFiles => 'Fichiers';
+
+  @override
+  String get mlStatClasses => 'Classes';
+
+  @override
+  String get mlStatLabeled => 'Échantillons labellisés';
+
+  @override
+  String get mlStatUnlabeled => 'Sans label';
+
+  @override
+  String get mlStatSigners => 'Signataires';
+
+  @override
+  String get mlStatInvalid => 'Invalides';
+
+  @override
+  String get mlStatDuplicates => 'Groupes de doublons';
+
+  @override
+  String get mlStatImbalance => 'Déséquilibre max/min';
+
+  @override
+  String get mlStatPrepared => 'Séquences préparées';
+
+  @override
+  String get mlStatRejected => 'Séquences rejetées';
+
+  @override
+  String get mlStatFps => 'FPS';
+
+  @override
+  String get mlStatDuration => 'Durée';
+
+  @override
+  String get mlStatResolutions => 'Résolutions';
+
+  @override
+  String get mlActionTrain => 'Entraîner';
+
+  @override
+  String get mlActionPreprocess => 'Prétraiter';
+
+  @override
+  String get mlActionReanalyze => 'Réanalyser';
+
+  @override
+  String get mlActionEditMapping => 'Modifier le mapping de labels';
+
+  @override
+  String get mlActionDeleteDataset => 'Supprimer le dataset';
+
+  @override
+  String get mlTrainDisabledHint =>
+      'Dataset non entraînable : il faut au moins 2 classes et 4 échantillons labellisés après analyse.';
+
+  @override
+  String get mlJobQueuedMessage => 'Tâche ajoutée à la file du worker';
+
+  @override
+  String get mlFieldName => 'Nom';
+
+  @override
+  String get mlFieldLanguage => 'Langue des signes';
+
+  @override
+  String get mlLanguageOther => 'Autre code…';
+
+  @override
+  String get mlFieldLanguageCode => 'Code de langue';
+
+  @override
+  String get mlFieldLanguageCodeHelp =>
+      'Par exemple LSC, BSL, DGS (2 à 10 lettres)';
+
+  @override
+  String get mlFieldSource => 'Source';
+
+  @override
+  String get mlSourceLocal => 'Dossier local';
+
+  @override
+  String get mlSourceUrl => 'URL';
+
+  @override
+  String get mlFieldPath => 'Chemin du dossier';
+
+  @override
+  String get mlFieldPathHelp =>
+      'Chemin absolu sur la machine du worker, ex. D:/datasets/lsfb';
+
+  @override
+  String get mlFieldUrl => 'URL de l\'archive';
+
+  @override
+  String get mlFieldUrlHelp => 'Lien http(s) vers une archive .zip ou .tar.gz';
+
+  @override
+  String get mlFieldFormat => 'Format des médias';
+
+  @override
+  String get mlFormatAuto => 'Détection automatique';
+
+  @override
+  String get mlFormatImages => 'Images';
+
+  @override
+  String get mlFormatGif => 'GIF';
+
+  @override
+  String get mlFormatVideo => 'Vidéos';
+
+  @override
+  String get mlFormatMixed => 'Mixte';
+
+  @override
+  String get mlFieldStructured => 'Structuré';
+
+  @override
+  String get mlFieldStructuredHelp =>
+      'Un dossier par classe (le nom du dossier est le label)';
+
+  @override
+  String get mlFieldLabeled => 'Labellisé';
+
+  @override
+  String get mlFieldLabeledHelp =>
+      'Les labels viennent des dossiers, de labels.csv ou du mapping ci-dessous ; ils ne sont jamais devinés.';
+
+  @override
+  String get mlFieldLabelMapping => 'Mapping de labels (optionnel)';
+
+  @override
+  String get mlFieldLabelMappingHelp =>
+      'Une règle par ligne : chemin = label. Les lignes vides ou commençant par # sont ignorées.';
+
+  @override
+  String mlMappingTitle(String name) {
+    return 'Mapping de labels · $name';
+  }
+
+  @override
+  String get mlMappingReanalyze => 'Relancer l\'analyse après enregistrement';
+
+  @override
+  String get mlMappingSaved => 'Mapping de labels enregistré';
+
+  @override
+  String mlPreprocessTitle(String name) {
+    return 'Prétraiter · $name';
+  }
+
+  @override
+  String get mlPreprocessHint =>
+      'Extraction des landmarks MediaPipe (mains, pose et visage en option) pour chaque échantillon. Les séquences sans mains détectées peuvent être rejetées.';
+
+  @override
+  String get mlFieldMaxFrames => 'Images max par échantillon';
+
+  @override
+  String get mlFieldMaxFramesHelp =>
+      'Les vidéos plus longues sont échantillonnées uniformément.';
+
+  @override
+  String get mlFieldIncludeFace => 'Inclure le visage';
+
+  @override
+  String get mlFieldIncludeFaceHelp =>
+      'Ajoute les landmarks du visage (expressions), au prix de séquences plus lourdes.';
+
+  @override
+  String get mlFieldRequireHands => 'Rejeter les séquences sans mains';
+
+  @override
+  String get mlErrRequired => 'Champ obligatoire';
+
+  @override
+  String get mlErrUrl => 'URL http(s) invalide';
+
+  @override
+  String get mlErrLanguageCode => 'Code invalide : 2 à 10 lettres';
+
+  @override
+  String mlErrMappingLine(int line) {
+    return 'Ligne $line invalide : format attendu « chemin = label »';
+  }
+
+  @override
+  String mlErrIntRange(int min, int max) {
+    return 'Entrez un entier entre $min et $max';
+  }
+
+  @override
+  String mlErrNumberRange(String min, String max) {
+    return 'Entrez un nombre entre $min et $max';
+  }
+
+  @override
+  String get mlErrIntList =>
+      'Entrez des entiers séparés par des virgules, ex. 128,256,128';
+
+  @override
+  String mlErrSplitSum(int sum) {
+    return 'La somme train + validation + test doit faire 100 % (actuellement $sum %)';
+  }
+
+  @override
+  String get mlErrRangeOrder =>
+      'Le maximum doit être supérieur ou égal au minimum';
+
+  @override
+  String get mlErrFixFields => 'Corrigez les champs en erreur avant de lancer';
+
+  @override
+  String get mlJobsSubtitle =>
+      'Les tâches tournent sur le worker ML : fermer l\'application ne les interrompt pas.';
+
+  @override
+  String get mlTrainNew => 'Nouvel entraînement';
+
+  @override
+  String get mlJobsEmpty => 'Aucune tâche';
+
+  @override
+  String get mlJobsEmptyMessage =>
+      'Les analyses, prétraitements et entraînements lancés apparaîtront ici avec leur progression.';
+
+  @override
+  String get mlWorkerMissingTitle => 'Aucun worker actif';
+
+  @override
+  String get mlWorkerMissingMessage =>
+      'Des tâches attendent mais aucun worker n\'a donné signe de vie depuis 2 minutes. Lancez python -m moomoo_ml.worker dans le dossier ml/ :';
+
+  @override
+  String mlWorkerLastSeen(String date) {
+    return 'Dernier signal du worker : $date';
+  }
+
+  @override
+  String mlWorkerActive(String date) {
+    return 'Worker actif · dernier signal $date';
+  }
+
+  @override
+  String mlJobEpoch(int current, int total) {
+    return 'Époque $current / $total';
+  }
+
+  @override
+  String mlJobElapsed(String duration) {
+    return 'Durée : $duration';
+  }
+
+  @override
+  String mlJobAttempts(int count) {
+    return 'Tentative n° $count';
+  }
+
+  @override
+  String get mlActionCancelJob => 'Annuler la tâche';
+
+  @override
+  String get mlJobCancelTitle => 'Annuler la tâche ?';
+
+  @override
+  String get mlJobCancelQueuedMessage => 'La tâche sera retirée de la file.';
+
+  @override
+  String get mlJobCancelRunningMessage =>
+      'Le worker arrêtera la tâche à la fin de l\'époque en cours. Les expériences terminées sont conservées.';
+
+  @override
+  String get mlJobCancelRequested => 'Annulation demandée';
+
+  @override
+  String get mlProgress => 'Progression';
+
+  @override
+  String get mlAttempts => 'Tentatives';
+
+  @override
+  String get mlLogs => 'Journal';
+
+  @override
+  String get mlLogsEmpty => 'Aucun message pour le moment.';
+
+  @override
+  String get mlExperimentsNone =>
+      'Aucune expérience pour cette tâche pour le moment.';
+
+  @override
+  String get mlColCode => 'Code';
+
+  @override
+  String get mlColStatus => 'Statut';
+
+  @override
+  String get mlColRung => 'Palier';
+
+  @override
+  String get mlColEpochs => 'Époques';
+
+  @override
+  String get mlColBestValAcc => 'Meilleure précision val.';
+
+  @override
+  String get mlColBestValLoss => 'Meilleure perte val.';
+
+  @override
+  String get mlColTestAcc => 'Exactitude test';
+
+  @override
+  String get mlColMacroF1 => 'F1 macro';
+
+  @override
+  String get mlColDuration => 'Durée';
+
+  @override
+  String get mlColLabel => 'Label';
+
+  @override
+  String get mlColSupport => 'Support';
+
+  @override
+  String get mlTrainTitle => 'Lancer un entraînement';
+
+  @override
+  String get mlTrainQueued => 'Entraînement ajouté à la file du worker';
+
+  @override
+  String get mlTrainNoDataset =>
+      'Aucun dataset entraînable. Ajoutez un dataset et attendez la fin de son analyse (au moins 2 classes et 4 échantillons labellisés).';
+
+  @override
+  String get mlModeManual => 'Configuration précise';
+
+  @override
+  String get mlModeSearch => 'Recherche automatique';
+
+  @override
+  String get mlModeManualHint =>
+      'Un seul modèle, entraîné avec exactement les paramètres ci-dessous.';
+
+  @override
+  String get mlModeSearchHint =>
+      'Random Search + Hyperband : plusieurs configurations tirées dans l\'espace de recherche, les moins prometteuses sont arrêtées tôt.';
+
+  @override
+  String get mlFieldDataset => 'Dataset';
+
+  @override
+  String mlTrainLanguageNote(String language, int classes, int samples) {
+    return 'Langue $language · $classes classes · $samples échantillons. Un modèle n\'est jamais entraîné sur plusieurs langues.';
+  }
+
+  @override
+  String get mlSectionData => 'Données';
+
+  @override
+  String get mlSectionAugmentation => 'Augmentation';
+
+  @override
+  String get mlSectionModel => 'Modèle';
+
+  @override
+  String get mlSectionSearch => 'Recherche';
+
+  @override
+  String get mlSectionExport => 'Export';
+
+  @override
+  String get mlFieldSequenceLength => 'Longueur de séquence';
+
+  @override
+  String get mlFieldSequenceLengthHelp =>
+      'Nombre d\'images par séquence envoyée au modèle';
+
+  @override
+  String get mlFieldMinPerClass => 'Échantillons min. par classe';
+
+  @override
+  String get mlFieldNormalize => 'Normaliser les landmarks';
+
+  @override
+  String get mlFieldSplitTrain => 'Entraînement (%)';
+
+  @override
+  String get mlFieldSplitVal => 'Validation (%)';
+
+  @override
+  String get mlFieldSplitTest => 'Test (%)';
+
+  @override
+  String get mlFieldSplitStrategy => 'Stratégie de découpage';
+
+  @override
+  String get mlFieldSplitStrategyHelp =>
+      'Automatique : indépendant des signataires si ≥ 3 signataires, sinon stratifié par classe.';
+
+  @override
+  String get mlSplitAuto => 'Automatique';
+
+  @override
+  String get mlSplitSigner => 'Par signataire';
+
+  @override
+  String get mlSplitStratified => 'Stratifié par classe';
+
+  @override
+  String get mlSplitPredefined => 'Prédéfini par le dataset';
+
+  @override
+  String get mlFieldAugment => 'Activer l\'augmentation';
+
+  @override
+  String get mlFieldAugmentHelp =>
+      'Appliquée au jeu d\'entraînement uniquement, pour compléter les classes peu représentées.';
+
+  @override
+  String get mlFieldTargetPerClass => 'Cible par classe';
+
+  @override
+  String get mlFieldMaxFactor => 'Facteur max.';
+
+  @override
+  String get mlAdvancedSettings => 'Paramètres avancés';
+
+  @override
+  String get mlFieldTimeWarp => 'Déformation temporelle';
+
+  @override
+  String get mlFieldFrameDrop => 'Suppression d\'images';
+
+  @override
+  String get mlFieldRotation => 'Rotation (degrés)';
+
+  @override
+  String get mlFieldScale => 'Échelle';
+
+  @override
+  String get mlFieldTranslation => 'Translation';
+
+  @override
+  String get mlFieldNoise => 'Bruit (écart-type)';
+
+  @override
+  String get mlModelDefaultArchitecture =>
+      'Architecture par défaut : LSTM(128) → LSTM(256) → LSTM(128) → Dense(classes, softmax).';
+
+  @override
+  String get mlFieldLstmUnits => 'Unités LSTM';
+
+  @override
+  String get mlFieldListHelp => 'Valeurs séparées par des virgules';
+
+  @override
+  String get mlFieldDenseUnits => 'Couches denses';
+
+  @override
+  String get mlFieldDenseHelp => 'Vide = aucune couche dense cachée';
+
+  @override
+  String get mlFieldDropout => 'Dropout';
+
+  @override
+  String get mlFieldLearningRate => 'Taux d\'apprentissage';
+
+  @override
+  String get mlFieldBatchSize => 'Taille de batch';
+
+  @override
+  String get mlFieldEpochs => 'Époques';
+
+  @override
+  String get mlFieldLabelSmoothing => 'Lissage des labels';
+
+  @override
+  String get mlFieldEarlyStopping => 'Patience arrêt anticipé';
+
+  @override
+  String get mlFieldReduceLr => 'Patience réduction du taux';
+
+  @override
+  String get mlFieldOptimizer => 'Optimiseur';
+
+  @override
+  String get mlFieldLoss => 'Fonction de perte';
+
+  @override
+  String get mlFieldClassWeight => 'Poids de classes équilibrés';
+
+  @override
+  String get mlFieldClassWeightHelp =>
+      'Compense le déséquilibre entre classes pendant l\'entraînement.';
+
+  @override
+  String get mlFieldLayerNorm => 'Normalisation de couche';
+
+  @override
+  String get mlSearchHelp =>
+      'Hyperband alloue plus d\'époques aux configurations prometteuses. Les listes définissent les choix possibles, les min/max des plages continues.';
+
+  @override
+  String get mlFieldSearchMaxEpochs => 'Époques max. par essai';
+
+  @override
+  String get mlFieldSearchEta => 'Facteur de réduction (eta)';
+
+  @override
+  String get mlFieldSearchTrials => 'Nombre max. d\'essais';
+
+  @override
+  String get mlFieldSearchSeed => 'Graine aléatoire';
+
+  @override
+  String get mlFieldSpaceLstmLayers => 'Nombres de couches LSTM';
+
+  @override
+  String get mlFieldSpaceLstmUnits => 'Unités LSTM possibles';
+
+  @override
+  String get mlFieldSpaceDropoutMin => 'Dropout min.';
+
+  @override
+  String get mlFieldSpaceDropoutMax => 'Dropout max.';
+
+  @override
+  String get mlFieldSpaceDenseLayers => 'Nombres de couches denses';
+
+  @override
+  String get mlFieldSpaceDenseUnits => 'Unités denses possibles';
+
+  @override
+  String get mlFieldSpaceLrMin => 'Taux min. (échelle log)';
+
+  @override
+  String get mlFieldSpaceLrMax => 'Taux max. (échelle log)';
+
+  @override
+  String get mlFieldSpaceBatch => 'Tailles de batch possibles';
+
+  @override
+  String get mlFieldSpaceOptimizers => 'Optimiseurs possibles';
+
+  @override
+  String get mlFieldQuantization => 'Quantification TFLite';
+
+  @override
+  String get mlQuantDynamic => 'Dynamique (int8)';
+
+  @override
+  String get mlQuantFloat16 => 'Float16';
+
+  @override
+  String get mlQuantNone => 'Aucune (float32)';
+
+  @override
+  String get mlQuantDynamicHelp =>
+      'Modèle environ 4 fois plus léger, légère perte de précision possible.';
+
+  @override
+  String get mlQuantFloat16Help =>
+      'Modèle 2 fois plus léger, précision quasi identique.';
+
+  @override
+  String get mlQuantNoneHelp => 'Précision maximale, fichier le plus lourd.';
+
+  @override
+  String get mlFieldAutoRegister =>
+      'Enregistrer automatiquement le meilleur modèle';
+
+  @override
+  String get mlFieldAutoRegisterHelp =>
+      'Évalue, convertit en TFLite et ajoute au registre au stade ÉVALUÉ.';
+
+  @override
+  String get mlTrainSubmit => 'Lancer l\'entraînement';
+
+  @override
+  String get mlTrainSubmitSearch => 'Lancer la recherche';
+
+  @override
+  String get mlExperimentsSubtitle =>
+      'Chaque entraînement produit une ou plusieurs expériences. Sélectionnez-en jusqu\'à 4 pour les comparer.';
+
+  @override
+  String get mlExperimentsEmpty => 'Aucune expérience';
+
+  @override
+  String get mlExperimentsEmptyMessage =>
+      'Lancez un entraînement ou une recherche automatique pour voir les expériences et leurs courbes.';
+
+  @override
+  String get mlFilterAll => 'Toutes les langues';
+
+  @override
+  String get mlRegistered => 'Enregistré';
+
+  @override
+  String get mlCompare => 'Comparer';
+
+  @override
+  String get mlClearSelection => 'Effacer la sélection';
+
+  @override
+  String mlCompareSelection(int count, int max) {
+    return '$count / $max sélectionnées';
+  }
+
+  @override
+  String mlCompareMax(int max) {
+    return 'Vous pouvez comparer au maximum $max expériences';
+  }
+
+  @override
+  String mlCompareSelect(String code) {
+    return 'Sélectionner $code pour la comparaison';
+  }
+
+  @override
+  String get mlCompareTitle => 'Comparaison';
+
+  @override
+  String get mlCompareValAccuracy => 'Précision de validation par époque';
+
+  @override
+  String mlCompareSemantics(int count) {
+    return 'Courbes de précision de validation de $count expériences superposées';
+  }
+
+  @override
+  String get mlCompareMetric => 'Métrique';
+
+  @override
+  String get mlCompareBestHint => '★ meilleure valeur de la ligne';
+
+  @override
+  String mlExperimentTitle(String code) {
+    return 'Expérience $code';
+  }
+
+  @override
+  String get mlMetricAccuracy => 'Exactitude';
+
+  @override
+  String get mlMetricAccuracyVal => 'Exactitude (validation)';
+
+  @override
+  String get mlMetricPrecision => 'Précision';
+
+  @override
+  String get mlMetricRecall => 'Rappel';
+
+  @override
+  String get mlMetricF1 => 'F1';
+
+  @override
+  String get mlMetricParams => 'Paramètres';
+
+  @override
+  String get mlMetricSize => 'Taille';
+
+  @override
+  String get mlActionRegister => 'Enregistrer dans le registre';
+
+  @override
+  String get mlRegisterTitle => 'Quantification pour le registre';
+
+  @override
+  String get mlRegisterQueued => 'Enregistrement du modèle ajouté à la file';
+
+  @override
+  String get mlChartAccuracy => 'Exactitude';
+
+  @override
+  String get mlChartLoss => 'Perte';
+
+  @override
+  String get mlChartLearningRate => 'Taux d\'apprentissage';
+
+  @override
+  String get mlChartTrain => 'Entraînement';
+
+  @override
+  String get mlChartVal => 'Validation';
+
+  @override
+  String get mlChartNoData => 'Pas encore de données';
+
+  @override
+  String mlChartAccuracySemantics(int epochs) {
+    return 'Courbes d\'exactitude entraînement et validation sur $epochs époques';
+  }
+
+  @override
+  String mlChartLossSemantics(int epochs) {
+    return 'Courbes de perte entraînement et validation sur $epochs époques';
+  }
+
+  @override
+  String mlChartLearningRateSemantics(int epochs) {
+    return 'Évolution du taux d\'apprentissage sur $epochs époques';
+  }
+
+  @override
+  String get mlConfusionTitle => 'Matrice de confusion';
+
+  @override
+  String get mlConfusionPredicted => 'Classe prédite →';
+
+  @override
+  String get mlConfusionActual => 'Classe réelle ↓';
+
+  @override
+  String mlConfusionCell(String actual, String predicted, int count) {
+    return 'Réel $actual → prédit $predicted : $count';
+  }
+
+  @override
+  String mlConfusionSemantics(
+    int classes,
+    int correct,
+    int total,
+    String accuracy,
+  ) {
+    return 'Matrice de confusion de $classes classes : $correct prédictions correctes sur $total ($accuracy %)';
+  }
+
+  @override
+  String get mlPerClassTitle => 'Métriques par classe';
+
+  @override
+  String get mlDataWarnings => 'Avertissements sur les données';
+
+  @override
+  String get mlArtifacts => 'Fichiers produits';
+
+  @override
+  String get mlConfigJson => 'Configuration (JSON)';
+
+  @override
+  String get mlRegistrySubtitle =>
+      'Un seul modèle en production par langue. Promouvoir un modèle archive automatiquement l\'ancien.';
+
+  @override
+  String get mlRegistryEmpty => 'Registre vide';
+
+  @override
+  String get mlRegistryEmptyMessage =>
+      'Les modèles évalués apparaissent ici après un entraînement avec enregistrement automatique ou depuis une expérience.';
+
+  @override
+  String mlRegistryLanguage(String language) {
+    return 'Langue $language';
+  }
+
+  @override
+  String mlRegistryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles',
+      one: '1 modèle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mlRegistryNoProduction =>
+      'Aucun modèle en production pour cette langue.';
+
+  @override
+  String mlClassesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count classes',
+      one: '1 classe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String mlInputShape(String shape) {
+    return 'Entrée $shape';
+  }
+
+  @override
+  String mlTrainingDuration(String duration) {
+    return 'Entraînement : $duration';
+  }
+
+  @override
+  String mlPromotedOn(String date) {
+    return 'Promu le $date';
+  }
+
+  @override
+  String mlPipelineSemantics(String stage) {
+    return 'Cycle de vie du modèle, étape actuelle : $stage';
+  }
+
+  @override
+  String get mlMetricKerasSize => 'Taille Keras';
+
+  @override
+  String get mlMetricTfliteSize => 'Taille TFLite';
+
+  @override
+  String get mlMetricTfliteLatency => 'Latence TFLite moy.';
+
+  @override
+  String get mlMetricTfliteAccuracy => 'Exactitude TFLite';
+
+  @override
+  String get mlMetricAgreement => 'Accord avec Keras';
+
+  @override
+  String get mlMetricMobile => 'Compatible mobile';
+
+  @override
+  String get mlFlexRequired => 'délégué Flex requis';
+
+  @override
+  String get mlActionValidate => 'Valider';
+
+  @override
+  String get mlActionStaging => 'Passer en staging';
+
+  @override
+  String get mlActionRestoreStaging => 'Remettre en staging';
+
+  @override
+  String get mlActionPromote => 'Promouvoir en production';
+
+  @override
+  String get mlActionArchive => 'Archiver';
+
+  @override
+  String get mlActionConvert => 'Convertir en TFLite';
+
+  @override
+  String get mlConvertTitle => 'Quantification de la conversion';
+
+  @override
+  String mlPromoteTitle(String language) {
+    return 'Mettre en production ($language) ?';
+  }
+
+  @override
+  String mlPromoteMessage(String version, String current, String language) {
+    return 'La version $version deviendra le modèle de production $language. La version $current, actuellement en production, sera archivée.';
+  }
+
+  @override
+  String mlPromoteMessageNoCurrent(String version, String language) {
+    return 'La version $version deviendra le modèle de production $language.';
+  }
+
+  @override
+  String get mlArchiveTitle => 'Archiver le modèle ?';
+
+  @override
+  String mlArchiveMessage(String version) {
+    return 'La version $version ne sera plus proposée. Elle pourra être remise en staging plus tard.';
+  }
+
+  @override
+  String mlStageChanged(String stage) {
+    return 'Modèle passé au stade $stage';
+  }
 }

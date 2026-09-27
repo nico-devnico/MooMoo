@@ -3595,6 +3595,1883 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Réservé aux administrateurs, enseignants et experts en langue des signes.'**
   String get adminLearningForbidden;
+
+  /// No description provided for @mlScreenSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Datasets, entraînements, expériences et registre des modèles par langue des signes'**
+  String get mlScreenSubtitle;
+
+  /// No description provided for @mlTabDatasets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Datasets'**
+  String get mlTabDatasets;
+
+  /// No description provided for @mlTabJobs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get mlTabJobs;
+
+  /// No description provided for @mlTabExperiments.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expériences'**
+  String get mlTabExperiments;
+
+  /// No description provided for @mlTabRegistry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Registre'**
+  String get mlTabRegistry;
+
+  /// No description provided for @mlClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get mlClose;
+
+  /// No description provided for @mlYes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui'**
+  String get mlYes;
+
+  /// No description provided for @mlUnitB.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} o'**
+  String mlUnitB(String value);
+
+  /// No description provided for @mlUnitKb.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} Ko'**
+  String mlUnitKb(String value);
+
+  /// No description provided for @mlUnitMb.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} Mo'**
+  String mlUnitMb(String value);
+
+  /// No description provided for @mlStatusRegistered.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistré'**
+  String get mlStatusRegistered;
+
+  /// No description provided for @mlStatusAnalyzing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse en cours'**
+  String get mlStatusAnalyzing;
+
+  /// No description provided for @mlStatusAnalyzed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analysé'**
+  String get mlStatusAnalyzed;
+
+  /// No description provided for @mlStatusPreprocessing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prétraitement en cours'**
+  String get mlStatusPreprocessing;
+
+  /// No description provided for @mlStatusReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prêt'**
+  String get mlStatusReady;
+
+  /// No description provided for @mlStatusFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec'**
+  String get mlStatusFailed;
+
+  /// No description provided for @mlJobQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'En file'**
+  String get mlJobQueued;
+
+  /// No description provided for @mlJobRunning.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get mlJobRunning;
+
+  /// No description provided for @mlJobCancelling.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulation…'**
+  String get mlJobCancelling;
+
+  /// No description provided for @mlJobCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulé'**
+  String get mlJobCancelled;
+
+  /// No description provided for @mlJobDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get mlJobDone;
+
+  /// No description provided for @mlJobFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec'**
+  String get mlJobFailed;
+
+  /// No description provided for @mlExpQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get mlExpQueued;
+
+  /// No description provided for @mlExpRunning.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get mlExpRunning;
+
+  /// No description provided for @mlExpCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminée'**
+  String get mlExpCompleted;
+
+  /// No description provided for @mlExpFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec'**
+  String get mlExpFailed;
+
+  /// No description provided for @mlExpPruned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Élaguée'**
+  String get mlExpPruned;
+
+  /// No description provided for @mlExpCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulée'**
+  String get mlExpCancelled;
+
+  /// No description provided for @mlStageTraining.
+  ///
+  /// In fr, this message translates to:
+  /// **'ENTRAÎNEMENT'**
+  String get mlStageTraining;
+
+  /// No description provided for @mlStageTrained.
+  ///
+  /// In fr, this message translates to:
+  /// **'ENTRAÎNÉ'**
+  String get mlStageTrained;
+
+  /// No description provided for @mlStageEvaluated.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉVALUÉ'**
+  String get mlStageEvaluated;
+
+  /// No description provided for @mlStageValidated.
+  ///
+  /// In fr, this message translates to:
+  /// **'VALIDÉ'**
+  String get mlStageValidated;
+
+  /// No description provided for @mlStageStaging.
+  ///
+  /// In fr, this message translates to:
+  /// **'STAGING'**
+  String get mlStageStaging;
+
+  /// No description provided for @mlStageProduction.
+  ///
+  /// In fr, this message translates to:
+  /// **'PRODUCTION'**
+  String get mlStageProduction;
+
+  /// No description provided for @mlStageArchived.
+  ///
+  /// In fr, this message translates to:
+  /// **'ARCHIVÉ'**
+  String get mlStageArchived;
+
+  /// No description provided for @mlKindAnalyze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse'**
+  String get mlKindAnalyze;
+
+  /// No description provided for @mlKindPreprocess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prétraitement'**
+  String get mlKindPreprocess;
+
+  /// No description provided for @mlKindTrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement'**
+  String get mlKindTrain;
+
+  /// No description provided for @mlKindSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche d\'hyperparamètres'**
+  String get mlKindSearch;
+
+  /// No description provided for @mlKindEvaluate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement'**
+  String get mlKindEvaluate;
+
+  /// No description provided for @mlKindConvert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversion TFLite'**
+  String get mlKindConvert;
+
+  /// No description provided for @mlDatasetsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque dataset appartient à une seule langue des signes. Il est analysé automatiquement avant tout entraînement.'**
+  String get mlDatasetsSubtitle;
+
+  /// No description provided for @mlDatasetAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un dataset'**
+  String get mlDatasetAdd;
+
+  /// No description provided for @mlDatasetAddHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le worker ML lit le dossier local (sur sa machine) ou télécharge l\'archive depuis l\'URL, puis lance l\'analyse.'**
+  String get mlDatasetAddHint;
+
+  /// No description provided for @mlDatasetCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer et analyser'**
+  String get mlDatasetCreate;
+
+  /// No description provided for @mlDatasetCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dataset enregistré, analyse en file'**
+  String get mlDatasetCreated;
+
+  /// No description provided for @mlDatasetsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun dataset'**
+  String get mlDatasetsEmpty;
+
+  /// No description provided for @mlDatasetsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez un dataset (dossier local ou URL) pour commencer à entraîner un modèle.'**
+  String get mlDatasetsEmptyMessage;
+
+  /// No description provided for @mlDatasetTrainable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînable'**
+  String get mlDatasetTrainable;
+
+  /// No description provided for @mlDatasetDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le dataset ?'**
+  String get mlDatasetDeleteTitle;
+
+  /// No description provided for @mlDatasetDeleteMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {name} » sera retiré de la plateforme. Les fichiers sources ne sont pas supprimés.'**
+  String mlDatasetDeleteMessage(String name);
+
+  /// No description provided for @mlDatasetDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dataset supprimé'**
+  String get mlDatasetDeleted;
+
+  /// No description provided for @mlAnalysisPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse pas encore disponible : elle démarre dès qu\'un worker est actif.'**
+  String get mlAnalysisPending;
+
+  /// No description provided for @mlUnstructured.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non structuré'**
+  String get mlUnstructured;
+
+  /// No description provided for @mlMappingCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 règle de label} other{{count} règles de label}}'**
+  String mlMappingCount(int count);
+
+  /// No description provided for @mlShowClasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la répartition des classes ({count})'**
+  String mlShowClasses(int count);
+
+  /// No description provided for @mlHideClasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Masquer la répartition des classes'**
+  String get mlHideClasses;
+
+  /// No description provided for @mlMoreClasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'+ {count} autres classes'**
+  String mlMoreClasses(int count);
+
+  /// No description provided for @mlClassBarSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'{label} : {count} exemples'**
+  String mlClassBarSemantics(String label, int count);
+
+  /// No description provided for @mlMediaSummary.
+  ///
+  /// In fr, this message translates to:
+  /// **'{mean}{suffix} (min {min}, max {max})'**
+  String mlMediaSummary(String mean, String min, String max, String suffix);
+
+  /// No description provided for @mlStatFiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichiers'**
+  String get mlStatFiles;
+
+  /// No description provided for @mlStatClasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classes'**
+  String get mlStatClasses;
+
+  /// No description provided for @mlStatLabeled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échantillons labellisés'**
+  String get mlStatLabeled;
+
+  /// No description provided for @mlStatUnlabeled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans label'**
+  String get mlStatUnlabeled;
+
+  /// No description provided for @mlStatSigners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signataires'**
+  String get mlStatSigners;
+
+  /// No description provided for @mlStatInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invalides'**
+  String get mlStatInvalid;
+
+  /// No description provided for @mlStatDuplicates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupes de doublons'**
+  String get mlStatDuplicates;
+
+  /// No description provided for @mlStatImbalance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déséquilibre max/min'**
+  String get mlStatImbalance;
+
+  /// No description provided for @mlStatPrepared.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séquences préparées'**
+  String get mlStatPrepared;
+
+  /// No description provided for @mlStatRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séquences rejetées'**
+  String get mlStatRejected;
+
+  /// No description provided for @mlStatFps.
+  ///
+  /// In fr, this message translates to:
+  /// **'FPS'**
+  String get mlStatFps;
+
+  /// No description provided for @mlStatDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get mlStatDuration;
+
+  /// No description provided for @mlStatResolutions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résolutions'**
+  String get mlStatResolutions;
+
+  /// No description provided for @mlActionTrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraîner'**
+  String get mlActionTrain;
+
+  /// No description provided for @mlActionPreprocess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prétraiter'**
+  String get mlActionPreprocess;
+
+  /// No description provided for @mlActionReanalyze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réanalyser'**
+  String get mlActionReanalyze;
+
+  /// No description provided for @mlActionEditMapping.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le mapping de labels'**
+  String get mlActionEditMapping;
+
+  /// No description provided for @mlActionDeleteDataset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le dataset'**
+  String get mlActionDeleteDataset;
+
+  /// No description provided for @mlTrainDisabledHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dataset non entraînable : il faut au moins 2 classes et 4 échantillons labellisés après analyse.'**
+  String get mlTrainDisabledHint;
+
+  /// No description provided for @mlJobQueuedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tâche ajoutée à la file du worker'**
+  String get mlJobQueuedMessage;
+
+  /// No description provided for @mlFieldName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get mlFieldName;
+
+  /// No description provided for @mlFieldLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue des signes'**
+  String get mlFieldLanguage;
+
+  /// No description provided for @mlLanguageOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre code…'**
+  String get mlLanguageOther;
+
+  /// No description provided for @mlFieldLanguageCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de langue'**
+  String get mlFieldLanguageCode;
+
+  /// No description provided for @mlFieldLanguageCodeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par exemple LSC, BSL, DGS (2 à 10 lettres)'**
+  String get mlFieldLanguageCodeHelp;
+
+  /// No description provided for @mlFieldSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Source'**
+  String get mlFieldSource;
+
+  /// No description provided for @mlSourceLocal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier local'**
+  String get mlSourceLocal;
+
+  /// No description provided for @mlSourceUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL'**
+  String get mlSourceUrl;
+
+  /// No description provided for @mlFieldPath.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chemin du dossier'**
+  String get mlFieldPath;
+
+  /// No description provided for @mlFieldPathHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chemin absolu sur la machine du worker, ex. D:/datasets/lsfb'**
+  String get mlFieldPathHelp;
+
+  /// No description provided for @mlFieldUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL de l\'archive'**
+  String get mlFieldUrl;
+
+  /// No description provided for @mlFieldUrlHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lien http(s) vers une archive .zip ou .tar.gz'**
+  String get mlFieldUrlHelp;
+
+  /// No description provided for @mlFieldFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format des médias'**
+  String get mlFieldFormat;
+
+  /// No description provided for @mlFormatAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détection automatique'**
+  String get mlFormatAuto;
+
+  /// No description provided for @mlFormatImages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Images'**
+  String get mlFormatImages;
+
+  /// No description provided for @mlFormatGif.
+  ///
+  /// In fr, this message translates to:
+  /// **'GIF'**
+  String get mlFormatGif;
+
+  /// No description provided for @mlFormatVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéos'**
+  String get mlFormatVideo;
+
+  /// No description provided for @mlFormatMixed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mixte'**
+  String get mlFormatMixed;
+
+  /// No description provided for @mlFieldStructured.
+  ///
+  /// In fr, this message translates to:
+  /// **'Structuré'**
+  String get mlFieldStructured;
+
+  /// No description provided for @mlFieldStructuredHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un dossier par classe (le nom du dossier est le label)'**
+  String get mlFieldStructuredHelp;
+
+  /// No description provided for @mlFieldLabeled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Labellisé'**
+  String get mlFieldLabeled;
+
+  /// No description provided for @mlFieldLabeledHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les labels viennent des dossiers, de labels.csv ou du mapping ci-dessous ; ils ne sont jamais devinés.'**
+  String get mlFieldLabeledHelp;
+
+  /// No description provided for @mlFieldLabelMapping.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mapping de labels (optionnel)'**
+  String get mlFieldLabelMapping;
+
+  /// No description provided for @mlFieldLabelMappingHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une règle par ligne : chemin = label. Les lignes vides ou commençant par # sont ignorées.'**
+  String get mlFieldLabelMappingHelp;
+
+  /// No description provided for @mlMappingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mapping de labels · {name}'**
+  String mlMappingTitle(String name);
+
+  /// No description provided for @mlMappingReanalyze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer l\'analyse après enregistrement'**
+  String get mlMappingReanalyze;
+
+  /// No description provided for @mlMappingSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mapping de labels enregistré'**
+  String get mlMappingSaved;
+
+  /// No description provided for @mlPreprocessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prétraiter · {name}'**
+  String mlPreprocessTitle(String name);
+
+  /// No description provided for @mlPreprocessHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Extraction des landmarks MediaPipe (mains, pose et visage en option) pour chaque échantillon. Les séquences sans mains détectées peuvent être rejetées.'**
+  String get mlPreprocessHint;
+
+  /// No description provided for @mlFieldMaxFrames.
+  ///
+  /// In fr, this message translates to:
+  /// **'Images max par échantillon'**
+  String get mlFieldMaxFrames;
+
+  /// No description provided for @mlFieldMaxFramesHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les vidéos plus longues sont échantillonnées uniformément.'**
+  String get mlFieldMaxFramesHelp;
+
+  /// No description provided for @mlFieldIncludeFace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inclure le visage'**
+  String get mlFieldIncludeFace;
+
+  /// No description provided for @mlFieldIncludeFaceHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoute les landmarks du visage (expressions), au prix de séquences plus lourdes.'**
+  String get mlFieldIncludeFaceHelp;
+
+  /// No description provided for @mlFieldRequireHands.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejeter les séquences sans mains'**
+  String get mlFieldRequireHands;
+
+  /// No description provided for @mlErrRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Champ obligatoire'**
+  String get mlErrRequired;
+
+  /// No description provided for @mlErrUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL http(s) invalide'**
+  String get mlErrUrl;
+
+  /// No description provided for @mlErrLanguageCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code invalide : 2 à 10 lettres'**
+  String get mlErrLanguageCode;
+
+  /// No description provided for @mlErrMappingLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ligne {line} invalide : format attendu « chemin = label »'**
+  String mlErrMappingLine(int line);
+
+  /// No description provided for @mlErrIntRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrez un entier entre {min} et {max}'**
+  String mlErrIntRange(int min, int max);
+
+  /// No description provided for @mlErrNumberRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrez un nombre entre {min} et {max}'**
+  String mlErrNumberRange(String min, String max);
+
+  /// No description provided for @mlErrIntList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrez des entiers séparés par des virgules, ex. 128,256,128'**
+  String get mlErrIntList;
+
+  /// No description provided for @mlErrSplitSum.
+  ///
+  /// In fr, this message translates to:
+  /// **'La somme train + validation + test doit faire 100 % (actuellement {sum} %)'**
+  String mlErrSplitSum(int sum);
+
+  /// No description provided for @mlErrRangeOrder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le maximum doit être supérieur ou égal au minimum'**
+  String get mlErrRangeOrder;
+
+  /// No description provided for @mlErrFixFields.
+  ///
+  /// In fr, this message translates to:
+  /// **'Corrigez les champs en erreur avant de lancer'**
+  String get mlErrFixFields;
+
+  /// No description provided for @mlJobsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les tâches tournent sur le worker ML : fermer l\'application ne les interrompt pas.'**
+  String get mlJobsSubtitle;
+
+  /// No description provided for @mlTrainNew.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel entraînement'**
+  String get mlTrainNew;
+
+  /// No description provided for @mlJobsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune tâche'**
+  String get mlJobsEmpty;
+
+  /// No description provided for @mlJobsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les analyses, prétraitements et entraînements lancés apparaîtront ici avec leur progression.'**
+  String get mlJobsEmptyMessage;
+
+  /// No description provided for @mlWorkerMissingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun worker actif'**
+  String get mlWorkerMissingTitle;
+
+  /// No description provided for @mlWorkerMissingMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des tâches attendent mais aucun worker n\'a donné signe de vie depuis 2 minutes. Lancez python -m moomoo_ml.worker dans le dossier ml/ :'**
+  String get mlWorkerMissingMessage;
+
+  /// No description provided for @mlWorkerLastSeen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernier signal du worker : {date}'**
+  String mlWorkerLastSeen(String date);
+
+  /// No description provided for @mlWorkerActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Worker actif · dernier signal {date}'**
+  String mlWorkerActive(String date);
+
+  /// No description provided for @mlJobEpoch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Époque {current} / {total}'**
+  String mlJobEpoch(int current, int total);
+
+  /// No description provided for @mlJobElapsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée : {duration}'**
+  String mlJobElapsed(String duration);
+
+  /// No description provided for @mlJobAttempts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tentative n° {count}'**
+  String mlJobAttempts(int count);
+
+  /// No description provided for @mlActionCancelJob.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la tâche'**
+  String get mlActionCancelJob;
+
+  /// No description provided for @mlJobCancelTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la tâche ?'**
+  String get mlJobCancelTitle;
+
+  /// No description provided for @mlJobCancelQueuedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La tâche sera retirée de la file.'**
+  String get mlJobCancelQueuedMessage;
+
+  /// No description provided for @mlJobCancelRunningMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le worker arrêtera la tâche à la fin de l\'époque en cours. Les expériences terminées sont conservées.'**
+  String get mlJobCancelRunningMessage;
+
+  /// No description provided for @mlJobCancelRequested.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulation demandée'**
+  String get mlJobCancelRequested;
+
+  /// No description provided for @mlProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Progression'**
+  String get mlProgress;
+
+  /// No description provided for @mlAttempts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tentatives'**
+  String get mlAttempts;
+
+  /// No description provided for @mlLogs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journal'**
+  String get mlLogs;
+
+  /// No description provided for @mlLogsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun message pour le moment.'**
+  String get mlLogsEmpty;
+
+  /// No description provided for @mlExperimentsNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune expérience pour cette tâche pour le moment.'**
+  String get mlExperimentsNone;
+
+  /// No description provided for @mlColCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code'**
+  String get mlColCode;
+
+  /// No description provided for @mlColStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statut'**
+  String get mlColStatus;
+
+  /// No description provided for @mlColRung.
+  ///
+  /// In fr, this message translates to:
+  /// **'Palier'**
+  String get mlColRung;
+
+  /// No description provided for @mlColEpochs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Époques'**
+  String get mlColEpochs;
+
+  /// No description provided for @mlColBestValAcc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleure précision val.'**
+  String get mlColBestValAcc;
+
+  /// No description provided for @mlColBestValLoss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Meilleure perte val.'**
+  String get mlColBestValLoss;
+
+  /// No description provided for @mlColTestAcc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exactitude test'**
+  String get mlColTestAcc;
+
+  /// No description provided for @mlColMacroF1.
+  ///
+  /// In fr, this message translates to:
+  /// **'F1 macro'**
+  String get mlColMacroF1;
+
+  /// No description provided for @mlColDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get mlColDuration;
+
+  /// No description provided for @mlColLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Label'**
+  String get mlColLabel;
+
+  /// No description provided for @mlColSupport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Support'**
+  String get mlColSupport;
+
+  /// No description provided for @mlTrainTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer un entraînement'**
+  String get mlTrainTitle;
+
+  /// No description provided for @mlTrainQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement ajouté à la file du worker'**
+  String get mlTrainQueued;
+
+  /// No description provided for @mlTrainNoDataset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun dataset entraînable. Ajoutez un dataset et attendez la fin de son analyse (au moins 2 classes et 4 échantillons labellisés).'**
+  String get mlTrainNoDataset;
+
+  /// No description provided for @mlModeManual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration précise'**
+  String get mlModeManual;
+
+  /// No description provided for @mlModeSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche automatique'**
+  String get mlModeSearch;
+
+  /// No description provided for @mlModeManualHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul modèle, entraîné avec exactement les paramètres ci-dessous.'**
+  String get mlModeManualHint;
+
+  /// No description provided for @mlModeSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Random Search + Hyperband : plusieurs configurations tirées dans l\'espace de recherche, les moins prometteuses sont arrêtées tôt.'**
+  String get mlModeSearchHint;
+
+  /// No description provided for @mlFieldDataset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dataset'**
+  String get mlFieldDataset;
+
+  /// No description provided for @mlTrainLanguageNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue {language} · {classes} classes · {samples} échantillons. Un modèle n\'est jamais entraîné sur plusieurs langues.'**
+  String mlTrainLanguageNote(String language, int classes, int samples);
+
+  /// No description provided for @mlSectionData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données'**
+  String get mlSectionData;
+
+  /// No description provided for @mlSectionAugmentation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Augmentation'**
+  String get mlSectionAugmentation;
+
+  /// No description provided for @mlSectionModel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle'**
+  String get mlSectionModel;
+
+  /// No description provided for @mlSectionSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche'**
+  String get mlSectionSearch;
+
+  /// No description provided for @mlSectionExport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Export'**
+  String get mlSectionExport;
+
+  /// No description provided for @mlFieldSequenceLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Longueur de séquence'**
+  String get mlFieldSequenceLength;
+
+  /// No description provided for @mlFieldSequenceLengthHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre d\'images par séquence envoyée au modèle'**
+  String get mlFieldSequenceLengthHelp;
+
+  /// No description provided for @mlFieldMinPerClass.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échantillons min. par classe'**
+  String get mlFieldMinPerClass;
+
+  /// No description provided for @mlFieldNormalize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Normaliser les landmarks'**
+  String get mlFieldNormalize;
+
+  /// No description provided for @mlFieldSplitTrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement (%)'**
+  String get mlFieldSplitTrain;
+
+  /// No description provided for @mlFieldSplitVal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validation (%)'**
+  String get mlFieldSplitVal;
+
+  /// No description provided for @mlFieldSplitTest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Test (%)'**
+  String get mlFieldSplitTest;
+
+  /// No description provided for @mlFieldSplitStrategy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stratégie de découpage'**
+  String get mlFieldSplitStrategy;
+
+  /// No description provided for @mlFieldSplitStrategyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique : indépendant des signataires si ≥ 3 signataires, sinon stratifié par classe.'**
+  String get mlFieldSplitStrategyHelp;
+
+  /// No description provided for @mlSplitAuto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique'**
+  String get mlSplitAuto;
+
+  /// No description provided for @mlSplitSigner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par signataire'**
+  String get mlSplitSigner;
+
+  /// No description provided for @mlSplitStratified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stratifié par classe'**
+  String get mlSplitStratified;
+
+  /// No description provided for @mlSplitPredefined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prédéfini par le dataset'**
+  String get mlSplitPredefined;
+
+  /// No description provided for @mlFieldAugment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer l\'augmentation'**
+  String get mlFieldAugment;
+
+  /// No description provided for @mlFieldAugmentHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appliquée au jeu d\'entraînement uniquement, pour compléter les classes peu représentées.'**
+  String get mlFieldAugmentHelp;
+
+  /// No description provided for @mlFieldTargetPerClass.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cible par classe'**
+  String get mlFieldTargetPerClass;
+
+  /// No description provided for @mlFieldMaxFactor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facteur max.'**
+  String get mlFieldMaxFactor;
+
+  /// No description provided for @mlAdvancedSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres avancés'**
+  String get mlAdvancedSettings;
+
+  /// No description provided for @mlFieldTimeWarp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déformation temporelle'**
+  String get mlFieldTimeWarp;
+
+  /// No description provided for @mlFieldFrameDrop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression d\'images'**
+  String get mlFieldFrameDrop;
+
+  /// No description provided for @mlFieldRotation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rotation (degrés)'**
+  String get mlFieldRotation;
+
+  /// No description provided for @mlFieldScale.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échelle'**
+  String get mlFieldScale;
+
+  /// No description provided for @mlFieldTranslation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Translation'**
+  String get mlFieldTranslation;
+
+  /// No description provided for @mlFieldNoise.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bruit (écart-type)'**
+  String get mlFieldNoise;
+
+  /// No description provided for @mlModelDefaultArchitecture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Architecture par défaut : LSTM(128) → LSTM(256) → LSTM(128) → Dense(classes, softmax).'**
+  String get mlModelDefaultArchitecture;
+
+  /// No description provided for @mlFieldLstmUnits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unités LSTM'**
+  String get mlFieldLstmUnits;
+
+  /// No description provided for @mlFieldListHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valeurs séparées par des virgules'**
+  String get mlFieldListHelp;
+
+  /// No description provided for @mlFieldDenseUnits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couches denses'**
+  String get mlFieldDenseUnits;
+
+  /// No description provided for @mlFieldDenseHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vide = aucune couche dense cachée'**
+  String get mlFieldDenseHelp;
+
+  /// No description provided for @mlFieldDropout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dropout'**
+  String get mlFieldDropout;
+
+  /// No description provided for @mlFieldLearningRate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux d\'apprentissage'**
+  String get mlFieldLearningRate;
+
+  /// No description provided for @mlFieldBatchSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille de batch'**
+  String get mlFieldBatchSize;
+
+  /// No description provided for @mlFieldEpochs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Époques'**
+  String get mlFieldEpochs;
+
+  /// No description provided for @mlFieldLabelSmoothing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lissage des labels'**
+  String get mlFieldLabelSmoothing;
+
+  /// No description provided for @mlFieldEarlyStopping.
+  ///
+  /// In fr, this message translates to:
+  /// **'Patience arrêt anticipé'**
+  String get mlFieldEarlyStopping;
+
+  /// No description provided for @mlFieldReduceLr.
+  ///
+  /// In fr, this message translates to:
+  /// **'Patience réduction du taux'**
+  String get mlFieldReduceLr;
+
+  /// No description provided for @mlFieldOptimizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Optimiseur'**
+  String get mlFieldOptimizer;
+
+  /// No description provided for @mlFieldLoss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fonction de perte'**
+  String get mlFieldLoss;
+
+  /// No description provided for @mlFieldClassWeight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Poids de classes équilibrés'**
+  String get mlFieldClassWeight;
+
+  /// No description provided for @mlFieldClassWeightHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compense le déséquilibre entre classes pendant l\'entraînement.'**
+  String get mlFieldClassWeightHelp;
+
+  /// No description provided for @mlFieldLayerNorm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Normalisation de couche'**
+  String get mlFieldLayerNorm;
+
+  /// No description provided for @mlSearchHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hyperband alloue plus d\'époques aux configurations prometteuses. Les listes définissent les choix possibles, les min/max des plages continues.'**
+  String get mlSearchHelp;
+
+  /// No description provided for @mlFieldSearchMaxEpochs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Époques max. par essai'**
+  String get mlFieldSearchMaxEpochs;
+
+  /// No description provided for @mlFieldSearchEta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facteur de réduction (eta)'**
+  String get mlFieldSearchEta;
+
+  /// No description provided for @mlFieldSearchTrials.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre max. d\'essais'**
+  String get mlFieldSearchTrials;
+
+  /// No description provided for @mlFieldSearchSeed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Graine aléatoire'**
+  String get mlFieldSearchSeed;
+
+  /// No description provided for @mlFieldSpaceLstmLayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombres de couches LSTM'**
+  String get mlFieldSpaceLstmLayers;
+
+  /// No description provided for @mlFieldSpaceLstmUnits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unités LSTM possibles'**
+  String get mlFieldSpaceLstmUnits;
+
+  /// No description provided for @mlFieldSpaceDropoutMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dropout min.'**
+  String get mlFieldSpaceDropoutMin;
+
+  /// No description provided for @mlFieldSpaceDropoutMax.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dropout max.'**
+  String get mlFieldSpaceDropoutMax;
+
+  /// No description provided for @mlFieldSpaceDenseLayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombres de couches denses'**
+  String get mlFieldSpaceDenseLayers;
+
+  /// No description provided for @mlFieldSpaceDenseUnits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unités denses possibles'**
+  String get mlFieldSpaceDenseUnits;
+
+  /// No description provided for @mlFieldSpaceLrMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux min. (échelle log)'**
+  String get mlFieldSpaceLrMin;
+
+  /// No description provided for @mlFieldSpaceLrMax.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux max. (échelle log)'**
+  String get mlFieldSpaceLrMax;
+
+  /// No description provided for @mlFieldSpaceBatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tailles de batch possibles'**
+  String get mlFieldSpaceBatch;
+
+  /// No description provided for @mlFieldSpaceOptimizers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Optimiseurs possibles'**
+  String get mlFieldSpaceOptimizers;
+
+  /// No description provided for @mlFieldQuantization.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quantification TFLite'**
+  String get mlFieldQuantization;
+
+  /// No description provided for @mlQuantDynamic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dynamique (int8)'**
+  String get mlQuantDynamic;
+
+  /// No description provided for @mlQuantFloat16.
+  ///
+  /// In fr, this message translates to:
+  /// **'Float16'**
+  String get mlQuantFloat16;
+
+  /// No description provided for @mlQuantNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune (float32)'**
+  String get mlQuantNone;
+
+  /// No description provided for @mlQuantDynamicHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle environ 4 fois plus léger, légère perte de précision possible.'**
+  String get mlQuantDynamicHelp;
+
+  /// No description provided for @mlQuantFloat16Help.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle 2 fois plus léger, précision quasi identique.'**
+  String get mlQuantFloat16Help;
+
+  /// No description provided for @mlQuantNoneHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision maximale, fichier le plus lourd.'**
+  String get mlQuantNoneHelp;
+
+  /// No description provided for @mlFieldAutoRegister.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer automatiquement le meilleur modèle'**
+  String get mlFieldAutoRegister;
+
+  /// No description provided for @mlFieldAutoRegisterHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évalue, convertit en TFLite et ajoute au registre au stade ÉVALUÉ.'**
+  String get mlFieldAutoRegisterHelp;
+
+  /// No description provided for @mlTrainSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer l\'entraînement'**
+  String get mlTrainSubmit;
+
+  /// No description provided for @mlTrainSubmitSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer la recherche'**
+  String get mlTrainSubmitSearch;
+
+  /// No description provided for @mlExperimentsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque entraînement produit une ou plusieurs expériences. Sélectionnez-en jusqu\'à 4 pour les comparer.'**
+  String get mlExperimentsSubtitle;
+
+  /// No description provided for @mlExperimentsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune expérience'**
+  String get mlExperimentsEmpty;
+
+  /// No description provided for @mlExperimentsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancez un entraînement ou une recherche automatique pour voir les expériences et leurs courbes.'**
+  String get mlExperimentsEmptyMessage;
+
+  /// No description provided for @mlFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les langues'**
+  String get mlFilterAll;
+
+  /// No description provided for @mlRegistered.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistré'**
+  String get mlRegistered;
+
+  /// No description provided for @mlCompare.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparer'**
+  String get mlCompare;
+
+  /// No description provided for @mlClearSelection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer la sélection'**
+  String get mlClearSelection;
+
+  /// No description provided for @mlCompareSelection.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} / {max} sélectionnées'**
+  String mlCompareSelection(int count, int max);
+
+  /// No description provided for @mlCompareMax.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez comparer au maximum {max} expériences'**
+  String mlCompareMax(int max);
+
+  /// No description provided for @mlCompareSelect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner {code} pour la comparaison'**
+  String mlCompareSelect(String code);
+
+  /// No description provided for @mlCompareTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparaison'**
+  String get mlCompareTitle;
+
+  /// No description provided for @mlCompareValAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision de validation par époque'**
+  String get mlCompareValAccuracy;
+
+  /// No description provided for @mlCompareSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courbes de précision de validation de {count} expériences superposées'**
+  String mlCompareSemantics(int count);
+
+  /// No description provided for @mlCompareMetric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Métrique'**
+  String get mlCompareMetric;
+
+  /// No description provided for @mlCompareBestHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'★ meilleure valeur de la ligne'**
+  String get mlCompareBestHint;
+
+  /// No description provided for @mlExperimentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expérience {code}'**
+  String mlExperimentTitle(String code);
+
+  /// No description provided for @mlMetricAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exactitude'**
+  String get mlMetricAccuracy;
+
+  /// No description provided for @mlMetricAccuracyVal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exactitude (validation)'**
+  String get mlMetricAccuracyVal;
+
+  /// No description provided for @mlMetricPrecision.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision'**
+  String get mlMetricPrecision;
+
+  /// No description provided for @mlMetricRecall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappel'**
+  String get mlMetricRecall;
+
+  /// No description provided for @mlMetricF1.
+  ///
+  /// In fr, this message translates to:
+  /// **'F1'**
+  String get mlMetricF1;
+
+  /// No description provided for @mlMetricParams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres'**
+  String get mlMetricParams;
+
+  /// No description provided for @mlMetricSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille'**
+  String get mlMetricSize;
+
+  /// No description provided for @mlActionRegister.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer dans le registre'**
+  String get mlActionRegister;
+
+  /// No description provided for @mlRegisterTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quantification pour le registre'**
+  String get mlRegisterTitle;
+
+  /// No description provided for @mlRegisterQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement du modèle ajouté à la file'**
+  String get mlRegisterQueued;
+
+  /// No description provided for @mlChartAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exactitude'**
+  String get mlChartAccuracy;
+
+  /// No description provided for @mlChartLoss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Perte'**
+  String get mlChartLoss;
+
+  /// No description provided for @mlChartLearningRate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux d\'apprentissage'**
+  String get mlChartLearningRate;
+
+  /// No description provided for @mlChartTrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement'**
+  String get mlChartTrain;
+
+  /// No description provided for @mlChartVal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validation'**
+  String get mlChartVal;
+
+  /// No description provided for @mlChartNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore de données'**
+  String get mlChartNoData;
+
+  /// No description provided for @mlChartAccuracySemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courbes d\'exactitude entraînement et validation sur {epochs} époques'**
+  String mlChartAccuracySemantics(int epochs);
+
+  /// No description provided for @mlChartLossSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courbes de perte entraînement et validation sur {epochs} époques'**
+  String mlChartLossSemantics(int epochs);
+
+  /// No description provided for @mlChartLearningRateSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évolution du taux d\'apprentissage sur {epochs} époques'**
+  String mlChartLearningRateSemantics(int epochs);
+
+  /// No description provided for @mlConfusionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matrice de confusion'**
+  String get mlConfusionTitle;
+
+  /// No description provided for @mlConfusionPredicted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classe prédite →'**
+  String get mlConfusionPredicted;
+
+  /// No description provided for @mlConfusionActual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classe réelle ↓'**
+  String get mlConfusionActual;
+
+  /// No description provided for @mlConfusionCell.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réel {actual} → prédit {predicted} : {count}'**
+  String mlConfusionCell(String actual, String predicted, int count);
+
+  /// No description provided for @mlConfusionSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matrice de confusion de {classes} classes : {correct} prédictions correctes sur {total} ({accuracy} %)'**
+  String mlConfusionSemantics(
+    int classes,
+    int correct,
+    int total,
+    String accuracy,
+  );
+
+  /// No description provided for @mlPerClassTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Métriques par classe'**
+  String get mlPerClassTitle;
+
+  /// No description provided for @mlDataWarnings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avertissements sur les données'**
+  String get mlDataWarnings;
+
+  /// No description provided for @mlArtifacts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichiers produits'**
+  String get mlArtifacts;
+
+  /// No description provided for @mlConfigJson.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration (JSON)'**
+  String get mlConfigJson;
+
+  /// No description provided for @mlRegistrySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul modèle en production par langue. Promouvoir un modèle archive automatiquement l\'ancien.'**
+  String get mlRegistrySubtitle;
+
+  /// No description provided for @mlRegistryEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Registre vide'**
+  String get mlRegistryEmpty;
+
+  /// No description provided for @mlRegistryEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les modèles évalués apparaissent ici après un entraînement avec enregistrement automatique ou depuis une expérience.'**
+  String get mlRegistryEmptyMessage;
+
+  /// No description provided for @mlRegistryLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue {language}'**
+  String mlRegistryLanguage(String language);
+
+  /// No description provided for @mlRegistryCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 modèle} other{{count} modèles}}'**
+  String mlRegistryCount(int count);
+
+  /// No description provided for @mlRegistryNoProduction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun modèle en production pour cette langue.'**
+  String get mlRegistryNoProduction;
+
+  /// No description provided for @mlClassesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 classe} other{{count} classes}}'**
+  String mlClassesCount(int count);
+
+  /// No description provided for @mlInputShape.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrée {shape}'**
+  String mlInputShape(String shape);
+
+  /// No description provided for @mlTrainingDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement : {duration}'**
+  String mlTrainingDuration(String duration);
+
+  /// No description provided for @mlPromotedOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Promu le {date}'**
+  String mlPromotedOn(String date);
+
+  /// No description provided for @mlPipelineSemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cycle de vie du modèle, étape actuelle : {stage}'**
+  String mlPipelineSemantics(String stage);
+
+  /// No description provided for @mlMetricKerasSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille Keras'**
+  String get mlMetricKerasSize;
+
+  /// No description provided for @mlMetricTfliteSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille TFLite'**
+  String get mlMetricTfliteSize;
+
+  /// No description provided for @mlMetricTfliteLatency.
+  ///
+  /// In fr, this message translates to:
+  /// **'Latence TFLite moy.'**
+  String get mlMetricTfliteLatency;
+
+  /// No description provided for @mlMetricTfliteAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exactitude TFLite'**
+  String get mlMetricTfliteAccuracy;
+
+  /// No description provided for @mlMetricAgreement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accord avec Keras'**
+  String get mlMetricAgreement;
+
+  /// No description provided for @mlMetricMobile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compatible mobile'**
+  String get mlMetricMobile;
+
+  /// No description provided for @mlFlexRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'délégué Flex requis'**
+  String get mlFlexRequired;
+
+  /// No description provided for @mlActionValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get mlActionValidate;
+
+  /// No description provided for @mlActionStaging.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer en staging'**
+  String get mlActionStaging;
+
+  /// No description provided for @mlActionRestoreStaging.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remettre en staging'**
+  String get mlActionRestoreStaging;
+
+  /// No description provided for @mlActionPromote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Promouvoir en production'**
+  String get mlActionPromote;
+
+  /// No description provided for @mlActionArchive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Archiver'**
+  String get mlActionArchive;
+
+  /// No description provided for @mlActionConvert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convertir en TFLite'**
+  String get mlActionConvert;
+
+  /// No description provided for @mlConvertTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quantification de la conversion'**
+  String get mlConvertTitle;
+
+  /// No description provided for @mlPromoteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en production ({language}) ?'**
+  String mlPromoteTitle(String language);
+
+  /// No description provided for @mlPromoteMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La version {version} deviendra le modèle de production {language}. La version {current}, actuellement en production, sera archivée.'**
+  String mlPromoteMessage(String version, String current, String language);
+
+  /// No description provided for @mlPromoteMessageNoCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'La version {version} deviendra le modèle de production {language}.'**
+  String mlPromoteMessageNoCurrent(String version, String language);
+
+  /// No description provided for @mlArchiveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Archiver le modèle ?'**
+  String get mlArchiveTitle;
+
+  /// No description provided for @mlArchiveMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'La version {version} ne sera plus proposée. Elle pourra être remise en staging plus tard.'**
+  String mlArchiveMessage(String version);
+
+  /// No description provided for @mlStageChanged.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle passé au stade {stage}'**
+  String mlStageChanged(String stage);
 }
 
 class _AppLocalizationsDelegate

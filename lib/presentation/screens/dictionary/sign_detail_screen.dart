@@ -142,6 +142,15 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
   final _shareKey = GlobalKey();
   bool _togglingFavorite = false;
 
+  @override
+  void initState() {
+    super.initState();
+    ref
+        .read(dictionaryRepositoryProvider)
+        .incrementViewCount(widget.sign.id)
+        .catchError((Object e) => debugPrint('record sign view: $e'));
+  }
+
   Future<void> _toggleFavorite(bool isFavorite) async {
     setState(() => _togglingFavorite = true);
     await toggleSignFavorite(context, ref, widget.sign, isFavorite: isFavorite);

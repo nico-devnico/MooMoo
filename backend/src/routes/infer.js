@@ -10,33 +10,45 @@ const upload = multer({
 
 inferRouter.post('/', upload.single('file'), async (req, res, next) => {
   try {
+    const client =
+      supabaseAdmin || (req.accessToken ? dbForUser(req.accessToken) : supabaseAnon);
+
+    let language = req.body?.language ? String(req.body.language) : null;
+    if (!language && req.user) {
+      const { data: profile } = await client
+        .from('profiles')
+        .select('preferred_sign_language')
+        .eq('id', req.user.id)
+        .maybeSingle();
+      language = profile?.preferred_sign_language || null;
+    }
+
     let model = null;
     try {
-      const client =
-        supabaseAdmin ||
-        (req.accessToken ? dbForUser(req.accessToken) : supabaseAnon);
-      const { data } = await client
+      let q = client
         .from('ml_models')
-        .select('id, name, version, dataset, status')
-        .eq('is_active', true)
-        .maybeSingle();
+        .select('id, name, version, dataset, language_code, stage')
+        .eq('stage', 'production');
+      if (language) q = q.eq('language_code', language);
+      const { data } = await q.limit(1).maybeSingle();
       model = data;
     } catch (e) {
       console.warn('[infer] model lookup:', e.message);
     }
 
-    const hint = req.body?.hint || null;
     const form = new FormData();
     if (req.file) {
       form.append(
         'file',
         new Blob([req.file.buffer], { type: req.file.mimetype || 'application/octet-stream' }),
-        req.file.originalname || 'frame.gif',
+        req.file.originalname || 'clip.mp4',
       );
     }
-    if (hint) form.append('hint', String(hint));
-    if (model?.dataset) form.append('dataset', model.dataset);
-    if (model?.version) form.append('model_version', model.version);
+    if (req.body?.landmarks) {
+      const lm = req.body.landmarks;
+      form.append('landmarks', typeof lm === 'string' ? lm : JSON.stringify(lm));
+    }
+    if (language) form.append('language', language);
 
     const started = Date.now();
     let mlRes;
@@ -69,9 +81,11 @@ inferRouter.post('/', upload.single('file'), async (req, res, next) => {
       prediction: {
         label: payload.label,
         confidence: payload.confidence,
+        top: payload.top,
         latency_ms: payload.latency_ms ?? Date.now() - started,
       },
-      model,
+      model: payload.model || model,
+      language: payload.language || language,
       dataset: payload.dataset,
     });
   } catch (e) {

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { dbForUser, dbPreferService, supabaseAdmin } from '../supabase.js';
+import { createAuthUser, deleteAuthUser, hasDirectDb } from '../pgdb.js';
 
 export const adminRouter = Router();
 
@@ -15,15 +16,21 @@ function badRequest(message, code = 'validation') {
   return Object.assign(new Error(message), { status: 400, code });
 }
 
-function serviceRoleRequired(action) {
+function serverAccessRequired(action) {
   return Object.assign(
     new Error(
-      `${action} exige la clé service role Supabase. Ajouter ` +
-        'SUPABASE_SERVICE_ROLE_KEY dans backend/.env puis redémarrer l\'API ' +
-        '(la clé ne doit jamais être embarquée côté Flutter).',
+      `${action} exige un accès serveur à la base : SUPABASE_DB_URL ou ` +
+        'SUPABASE_SERVICE_ROLE_KEY dans backend/.env, puis redémarrer l\'API.',
     ),
-    { status: 503, code: 'missing_service_role' },
+    { status: 503, code: 'missing_server_db' },
   );
+}
+
+/** A present but wrong/expired service key must not break account admin. */
+function isServiceKeyError(error) {
+  const status = Number(error?.status || 0);
+  return status === 401 || status === 403 ||
+    /invalid (api key|jwt)|not allowed|unauthori[sz]ed|forbidden|bad_jwt/i.test(String(error?.message || ''));
 }
 
 /** Valide et dédoublonne une liste de rôles reçue du client. */
@@ -254,44 +261,67 @@ adminRouter.post('/users', async (req, res, next) => {
       throw badRequest('le mot de passe doit faire au moins 8 caractères');
     }
 
-    const service = db();
-    if (!service) throw serviceRoleRequired('La création de compte');
-
-    const { data, error } = await service.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { display_name: displayName || email.split('@')[0] },
-    });
-    if (error) throw Object.assign(new Error(error.message), { status: 400 });
-
-    const userId = data.user.id;
-    const { error: profileError } = await service.from('profiles').upsert(
-      {
-        id: userId,
+    const name = displayName || email.split('@')[0];
+    let service = db();
+    let userId;
+    if (service) {
+      const { data, error } = await service.auth.admin.createUser({
         email,
-        display_name: displayName || email.split('@')[0],
-        is_deaf: Boolean(req.body?.isDeaf),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
-    if (profileError) {
-      throw Object.assign(new Error(profileError.message), { status: 400 });
+        password,
+        email_confirm: true,
+        user_metadata: { display_name: name },
+      });
+      if (error && !(isServiceKeyError(error) && hasDirectDb())) {
+        throw Object.assign(new Error(error.message), { status: 400 });
+      }
+      if (error) {
+        console.warn('[admin] service role rejected, using direct database:', error.message);
+        service = null;
+      } else {
+        userId = data.user.id;
+      }
+    }
+    if (!userId) {
+      if (!hasDirectDb()) throw serverAccessRequired('La création de compte');
+      userId = await createAuthUser({ email, password, displayName: name });
     }
 
-    if (roles.length) {
-      const { error: roleError } = await service.from('user_roles').upsert(
-        roles.map((role) => ({
-          user_id: userId,
-          role,
-          granted_by: req.user.id,
-        })),
-        { onConflict: 'user_id,role' },
-      );
-      if (roleError) {
-        throw Object.assign(new Error(roleError.message), { status: 400 });
+    // Without the service key the admin's JWT does the rest. The profile row
+    // already exists (on_auth_user_created trigger) and RLS only lets admins
+    // UPDATE other profiles, so no upsert there.
+    const writer = service || dbForUser(req.accessToken);
+    const profile = {
+      email,
+      display_name: name,
+      is_deaf: Boolean(req.body?.isDeaf),
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      const { error: profileError } = service
+        ? await service.from('profiles').upsert({ id: userId, ...profile }, { onConflict: 'id' })
+        : await writer.from('profiles').update(profile).eq('id', userId);
+      if (profileError) {
+        throw Object.assign(new Error(profileError.message), { status: 400 });
       }
+
+      if (roles.length) {
+        const { error: roleError } = await writer.from('user_roles').upsert(
+          roles.map((role) => ({
+            user_id: userId,
+            role,
+            granted_by: req.user.id,
+          })),
+          { onConflict: 'user_id,role' },
+        );
+        if (roleError) {
+          throw Object.assign(new Error(roleError.message), { status: 400 });
+        }
+      }
+    } catch (err) {
+      // Never leave a half-created account behind.
+      if (service) await service.auth.admin.deleteUser(userId).catch(() => {});
+      else await deleteAuthUser(userId).catch(() => {});
+      throw err;
     }
 
     res.status(201).json({ ok: true, user: { id: userId, email }, roles });
@@ -354,18 +384,35 @@ adminRouter.delete('/users/:id', async (req, res, next) => {
       );
     }
 
-    const service = db();
-    if (!service) throw serviceRoleRequired('La suppression de compte');
+    let service = db();
+    if (!service && !hasDirectDb()) {
+      throw serverAccessRequired('La suppression de compte');
+    }
 
-    if ((await otherAdminCount(service, req.params.id)) === 0) {
+    const reader = dbForUser(req.accessToken);
+    const { data: target } = await reader
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (target?.is_admin && (await otherAdminCount(reader, req.params.id)) === 0) {
       throw Object.assign(
         new Error('Impossible de supprimer le dernier admin du système'),
         { status: 409, code: 'last_admin' },
       );
     }
 
-    const { error } = await service.auth.admin.deleteUser(req.params.id);
-    if (error) throw Object.assign(new Error(error.message), { status: 400 });
+    if (service) {
+      const { error } = await service.auth.admin.deleteUser(req.params.id);
+      if (error && !(isServiceKeyError(error) && hasDirectDb())) {
+        throw Object.assign(new Error(error.message), { status: 400 });
+      }
+      if (error) {
+        console.warn('[admin] service role rejected, using direct database:', error.message);
+        service = null;
+      }
+    }
+    if (!service) await deleteAuthUser(req.params.id);
     res.json({ ok: true });
   } catch (e) {
     next(e);

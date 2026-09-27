@@ -27,7 +27,14 @@ class ContributionRepositoryImpl implements ContributionRepository {
 
   @override
   Future<void> submitContribution(Contribution contribution) async {
-    await _supabase.from('contributions').insert(contribution.toJson());
+    // Review fields and timestamps are server-managed (RLS rejects them).
+    final row = contribution.toJson()
+      ..removeWhere((key, value) =>
+          value == null ||
+          const {'status', 'reviewer_id', 'reviewer_note', 'reviewed_at', 'created_at', 'updated_at'}
+              .contains(key));
+    if ((row['id'] as String?)?.isEmpty ?? false) row.remove('id');
+    await _supabase.from('contributions').insert(row);
   }
 
   @override

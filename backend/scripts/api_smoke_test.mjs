@@ -95,8 +95,23 @@ async function run() {
     return `label=${j.prediction?.label} conf=${j.prediction?.confidence}`;
   }))) fails++; else results++;
 
+  await removeTestAccount();
   console.log(`\npassed=${results} failed=${fails}`);
   process.exit(fails ? 1 : 0);
+}
+
+/** The signup check creates a real account: delete it when the database is reachable. */
+async function removeTestAccount() {
+  try {
+    await import('dotenv/config');
+    const { hasDirectDb, query, getPool } = await import('../src/pgdb.js');
+    if (!hasDirectDb()) return;
+    const { rowCount } = await query('delete from auth.users where email = $1', [email]);
+    await getPool().end();
+    console.log(`cleanup: ${rowCount} compte de test supprimé`);
+  } catch (e) {
+    console.log(`cleanup ignoré — ${e.message}`);
+  }
 }
 
 run();
