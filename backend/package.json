@@ -1,0 +1,21 @@
+{
+  "name": "moomoo-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node scripts/apply_migrations.mjs",
+    "test:api": "node scripts/api_smoke_test.mjs",
+    "test:supabase": "node ../scripts/supabase_smoke_test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.23.0"
+  }
+}

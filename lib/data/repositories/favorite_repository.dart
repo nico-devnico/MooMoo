@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/favorite.dart';
 import '../models/sign.dart';
 
 abstract class FavoriteRepository {

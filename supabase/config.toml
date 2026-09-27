@@ -1,0 +1,14 @@
+# Minimal Supabase project config for local CLI (db push / functions).
+# Link the remote project with: supabase link --project-ref <ref>
+
+[project]
+id = "pckgblyvjgztogjykrvw"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[functions.sign-inference]
+verify_jwt = true

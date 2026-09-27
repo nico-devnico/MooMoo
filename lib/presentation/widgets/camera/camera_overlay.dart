@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -14,7 +13,7 @@ class CameraOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
     // Main body frame - Adapts to screen size (Maximize coverage)
@@ -79,7 +78,7 @@ class CameraOverlayPainter extends CustomPainter {
 
     // Scanning line
     final scanPaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.5)
+      ..color = AppColors.primary.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
@@ -92,22 +91,6 @@ class CameraOverlayPainter extends CustomPainter {
 
     // Status indicator
     _drawStatusIndicator(canvas, size, rect);
-  }
-
-  void _drawAnimatedDashes(Canvas canvas, RRect rrect, Paint paint) {
-    // This is a simplified version of animated dashes
-    // In a real app, we'd use a more sophisticated dash path effect
-    final double phase = animation.value * 2 * math.pi;
-    
-    // Pulse effect
-    final double pulse = 1.0 + (math.sin(phase) * 0.05);
-    
-    canvas.save();
-    canvas.translate(rrect.center.dx, rrect.center.dy);
-    canvas.scale(pulse);
-    canvas.translate(-rrect.center.dx, -rrect.center.dy);
-    canvas.drawRRect(rrect, paint);
-    canvas.restore();
   }
 
   void _drawStatusIndicator(Canvas canvas, Size size, Rect targetRect) {
@@ -131,7 +114,7 @@ class CameraOverlayPainter extends CustomPainter {
     );
 
     final bgPaint = Paint()
-      ..color = isRecording ? AppColors.error : Colors.black.withOpacity(0.6)
+      ..color = isRecording ? AppColors.error : Colors.black.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
 
     canvas.drawRRect(RRect.fromRectAndRadius(bgRect, const Radius.circular(16)), bgPaint);

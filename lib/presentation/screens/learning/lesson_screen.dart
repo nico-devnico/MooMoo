@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/layout/responsive.dart';
 
 class LessonScreen extends StatelessWidget {
   final String id;
@@ -8,7 +9,9 @@ class LessonScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Lesson $id')),
-      body: const Center(child: Text('Lesson Screen')),
+      body: const PageContainer.reading(
+        child: Center(child: Text('Lesson Screen')),
+      ),
     );
   }
 }

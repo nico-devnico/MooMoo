@@ -77,7 +77,7 @@ class AppTextField extends StatelessWidget {
               color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
             ),
             hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppColors.textSecondaryDark.withOpacity(0.5) : AppColors.textSecondaryLight.withOpacity(0.5),
+              color: isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.5) : AppColors.textSecondaryLight.withValues(alpha: 0.5),
             ),
           ),
         ),

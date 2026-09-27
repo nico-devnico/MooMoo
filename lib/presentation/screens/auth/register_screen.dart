@@ -6,8 +6,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
+import 'widgets/auth_form_error.dart';
+import 'widgets/auth_layout.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -17,14 +21,16 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isSourd = false;
+  bool _isDeaf = false;
   bool _isLoading = false;
   double _passwordStrength = 0;
+  String? _formError;
 
   @override
   void dispose() {
@@ -51,20 +57,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
   }
 
-  Color _getStrengthColor() {
+  Color _strengthColor() {
     if (_passwordStrength <= 0.25) return AppColors.error;
-    if (_passwordStrength <= 0.5) return Colors.orange;
-    if (_passwordStrength <= 0.75) return Colors.blue;
-    return AppColors.secondary;
+    if (_passwordStrength <= 0.5) return AppColors.warning;
+    if (_passwordStrength <= 0.75) return AppColors.info;
+    return AppColors.success;
   }
 
   Future<void> _handleRegister() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
-      );
-      return;
-    }
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _formError = null);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
     try {
@@ -72,20 +75,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _emailController.text.trim(),
             _passwordController.text,
             _nameController.text.trim(),
+            isDeaf: _isDeaf,
           );
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Compte créé ! Veuillez vérifier votre email.')),
-        );
+        AppSnackbar.showSuccess(context, l10n.accountCreatedVerifyEmail);
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur d\'inscription: ${e.toString()}')),
-        );
-      }
+      if (mounted) setState(() => _formError = '${l10n.registerError} : $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -93,110 +91,164 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Créer un compte'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => context.pop(),
-        ),
+    final l10n = AppLocalizations.of(context)!;
+
+    return AuthLayout(
+      title: l10n.registerHeadline,
+      subtitle: l10n.registerSubtitle,
+      onBack: () => context.canPop() ? context.pop() : context.go(AppRoutes.login),
+      footer: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              l10n.alreadyHaveAccount,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondaryLight,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () =>
+                context.canPop() ? context.pop() : context.go(AppRoutes.login),
+            child: Text(l10n.signIn),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                 child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 80,
-                  height: 80,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthFormError(message: _formError),
+            AppTextField(
+              label: l10n.fullName,
+              controller: _nameController,
+              prefixIcon: Icons.person_outline,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? l10n.requiredField : null,
+            ),
+            const SizedBox(height: AppSpacing.m),
+            AppTextField(
+              label: l10n.email,
+              hintText: l10n.emailHint,
+              controller: _emailController,
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) {
+                final value = v?.trim() ?? '';
+                if (value.isEmpty) return l10n.requiredField;
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                  return l10n.invalidEmail;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.m),
+            AppTextField(
+              label: l10n.password,
+              controller: _passwordController,
+              obscureText: !_isPasswordVisible,
+              prefixIcon: Icons.lock_outline,
+              onChanged: _onPasswordChanged,
+              validator: (v) {
+                if (v == null || v.isEmpty) return l10n.requiredField;
+                if (v.length < 6) return l10n.passwordTooShort;
+                return null;
+              },
+              suffixIcon: IconButton(
+                tooltip: _isPasswordVisible ? l10n.hidePassword : l10n.showPassword,
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                  color: AppColors.textSecondaryLight,
                 ),
-               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                'Rejoignez la communauté MooMoo',
-                style: AppTextStyles.h2.copyWith(color: AppColors.primary),
+                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
               ),
-              const SizedBox(height: AppSpacing.m),
-              Text(
-                'Commencez votre voyage vers une communication plus inclusive.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondaryLight),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              AppTextField(
-                label: 'Prénom & Nom',
-                controller: _nameController,
-                prefixIcon: Icons.person_outline,
-              ),
-              const SizedBox(height: AppSpacing.m),
-              AppTextField(
-                label: 'Email',
-                controller: _emailController,
-                prefixIcon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: AppSpacing.m),
-              AppTextField(
-                label: 'Mot de passe',
-                controller: _passwordController,
-                obscureText: !_isPasswordVisible,
-                prefixIcon: Icons.lock_outline,
-                onChanged: _onPasswordChanged,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                    color: AppColors.textSecondaryLight,
-                  ),
-                  onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Semantics(
+              label: l10n.passwordStrength,
+              value: '${(_passwordStrength * 100).round()}%',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: _passwordStrength,
                   backgroundColor: AppColors.neutralLight,
-                  valueColor: AlwaysStoppedAnimation<Color>(_getStrengthColor()),
-                  minHeight: 4,
+                  valueColor: AlwaysStoppedAnimation<Color>(_strengthColor()),
+                  minHeight: 6,
                 ),
               ),
-              const SizedBox(height: AppSpacing.m),
-              AppTextField(
-                label: 'Confirmer le mot de passe',
-                controller: _confirmPasswordController,
-                obscureText: true,
-                prefixIcon: Icons.lock_reset_outlined,
-              ),
-              const SizedBox(height: AppSpacing.l),
-              CheckboxListTile(
-                value: _isSourd,
-                onChanged: (val) => setState(() => _isSourd = val ?? false),
-                title: const Text('Je suis sourd / malentendant'),
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                activeColor: AppColors.primary,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              AppButton(
-                label: 'S\'inscrire',
-                isLoading: _isLoading,
-                onPressed: _handleRegister,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Déjà un compte ?'),
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Se connecter'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            AppTextField(
+              label: l10n.confirmPassword,
+              controller: _confirmPasswordController,
+              obscureText: !_isPasswordVisible,
+              prefixIcon: Icons.lock_reset_outlined,
+              validator: (v) {
+                if (v == null || v.isEmpty) return l10n.requiredField;
+                if (v != _passwordController.text) return l10n.passwordsDoNotMatch;
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.m),
+            _DeafToggle(
+              value: _isDeaf,
+              label: l10n.deafUser,
+              onChanged: (v) => setState(() => _isDeaf = v),
+            ),
+            const SizedBox(height: AppSpacing.l),
+            AppButton(
+              label: l10n.signUp,
+              isLoading: _isLoading,
+              onPressed: _handleRegister,
+              stretchOnLargeScreens: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeafToggle extends StatelessWidget {
+  const _DeafToggle({
+    required this.value,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final String label;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.m,
+          vertical: AppSpacing.s,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.neutralDark : AppColors.neutralLight,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: AppColors.primary,
+            ),
+            Expanded(
+              child: Text(label, style: AppTextStyles.bodyMedium),
+            ),
+          ],
         ),
       ),
     );

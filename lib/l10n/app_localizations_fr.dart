@@ -331,4 +331,579 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noLandmarkData => 'Aucune donnée de landmark';
+
+  @override
+  String get pageNotFound => 'Page non trouvée';
+
+  @override
+  String get pageNotFoundMessage =>
+      'Désolé, la page que vous recherchez n\'existe pas.';
+
+  @override
+  String get backHome => 'Retour à l\'accueil';
+
+  @override
+  String get back => 'Retour';
+
+  @override
+  String get retry => 'Réessayer';
+
+  @override
+  String get errorGeneric => 'Une erreur est survenue';
+
+  @override
+  String get filterAll => 'Tout';
+
+  @override
+  String get results => 'Résultats';
+
+  @override
+  String get noFavoritesYet => 'Aucun favori pour le moment';
+
+  @override
+  String get noSignsFound => 'Aucun signe trouvé';
+
+  @override
+  String get adminPanel => 'Administration';
+
+  @override
+  String get adminDashboard => 'Tableau de bord';
+
+  @override
+  String get adminDashboardSubtitle =>
+      'Vue d\'ensemble de la plateforme MooMoo';
+
+  @override
+  String get adminModeration => 'Modération';
+
+  @override
+  String get adminModerationSubtitle =>
+      'Examinez et validez les contributions de la communauté';
+
+  @override
+  String get adminSigns => 'Signes';
+
+  @override
+  String get adminUsers => 'Utilisateurs';
+
+  @override
+  String get adminUsersSubtitle =>
+      'Consultez les profils et gérez les droits administrateur';
+
+  @override
+  String get adminSettings => 'Paramètres admin';
+
+  @override
+  String get adminSettingsSubtitle =>
+      'Informations et notes pour l\'équipe d\'administration';
+
+  @override
+  String get adminAccessDenied => 'Accès refusé';
+
+  @override
+  String get adminAccessDeniedMessage =>
+      'Vous n\'avez pas les droits administrateur pour accéder à cet espace.';
+
+  @override
+  String get backToProfile => 'Retour au profil';
+
+  @override
+  String get backToApp => 'Retour à l\'application';
+
+  @override
+  String get adminStatUsers => 'Utilisateurs';
+
+  @override
+  String get adminStatSigns => 'Signes';
+
+  @override
+  String get adminStatPending => 'En attente';
+
+  @override
+  String get adminStatValidated => 'Signes validés';
+
+  @override
+  String get adminQuickActions => 'Actions rapides';
+
+  @override
+  String get adminReviewPending => 'Modérer les contributions';
+
+  @override
+  String adminReviewPendingDesc(int count) {
+    return '$count contribution(s) en attente';
+  }
+
+  @override
+  String get adminManageSigns => 'Gérer le dictionnaire';
+
+  @override
+  String get adminManageSignsDesc => 'Ajouter, valider ou supprimer des signes';
+
+  @override
+  String get adminManageUsers => 'Gérer les utilisateurs';
+
+  @override
+  String get adminManageUsersDesc =>
+      'Voir les profils et attribuer le rôle admin';
+
+  @override
+  String get adminContributionsOverview => 'Aperçu des contributions';
+
+  @override
+  String get statusPending => 'En attente';
+
+  @override
+  String get statusApproved => 'Approuvée';
+
+  @override
+  String get statusRejected => 'Rejetée';
+
+  @override
+  String get statusValidated => 'Validé';
+
+  @override
+  String get statusNotValidated => 'Non validé';
+
+  @override
+  String get adminNoContributions => 'Aucune contribution';
+
+  @override
+  String get adminNoContributionsMessage =>
+      'Il n\'y a rien à modérer pour ce filtre.';
+
+  @override
+  String get approveContribution => 'Approuver la contribution';
+
+  @override
+  String get rejectContribution => 'Rejeter la contribution';
+
+  @override
+  String get reviewerNote => 'Note du modérateur';
+
+  @override
+  String get reviewerNoteHint => 'Commentaire optionnel pour le contributeur';
+
+  @override
+  String get approve => 'Approuver';
+
+  @override
+  String get reject => 'Rejeter';
+
+  @override
+  String get contributionApproved => 'Contribution approuvée';
+
+  @override
+  String get contributionRejected => 'Contribution rejetée';
+
+  @override
+  String submittedAt(String date) {
+    return 'Soumise le $date';
+  }
+
+  @override
+  String get submittedAtUnknown => 'Date de soumission inconnue';
+
+  @override
+  String get adminAddSign => 'Ajouter';
+
+  @override
+  String get adminEditSign => 'Modifier le signe';
+
+  @override
+  String get adminNoSigns => 'Aucun signe';
+
+  @override
+  String get adminNoSignsMessage => 'Aucun signe ne correspond à ces critères.';
+
+  @override
+  String get signWord => 'Mot / glosse';
+
+  @override
+  String get signWordHint => 'Ex. Bonjour';
+
+  @override
+  String get signDescription => 'Description';
+
+  @override
+  String get signVideoUrl => 'URL de la vidéo';
+
+  @override
+  String get difficultyLevel => 'Niveau de difficulté';
+
+  @override
+  String get views => 'Vues';
+
+  @override
+  String get validate => 'Valider';
+
+  @override
+  String get unvalidate => 'Retirer la validation';
+
+  @override
+  String get delete => 'Supprimer';
+
+  @override
+  String get deleteSign => 'Supprimer le signe';
+
+  @override
+  String deleteSignConfirm(String word) {
+    return 'Supprimer définitivement « $word » ?';
+  }
+
+  @override
+  String get signUpdated => 'Signe mis à jour';
+
+  @override
+  String get signDeleted => 'Signe supprimé';
+
+  @override
+  String get searchUsers => 'Rechercher un utilisateur...';
+
+  @override
+  String get adminNoUsers => 'Aucun utilisateur';
+
+  @override
+  String get adminNoUsersMessage =>
+      'Aucun profil ne correspond à votre recherche.';
+
+  @override
+  String get grantAdmin => 'Accorder le rôle admin';
+
+  @override
+  String get revokeAdmin => 'Retirer le rôle admin';
+
+  @override
+  String grantAdminConfirm(String name) {
+    return 'Accorder les droits administrateur à $name ?';
+  }
+
+  @override
+  String revokeAdminConfirm(String name) {
+    return 'Retirer les droits administrateur à $name ?';
+  }
+
+  @override
+  String get confirm => 'Confirmer';
+
+  @override
+  String get userUpdated => 'Utilisateur mis à jour';
+
+  @override
+  String get you => 'Vous';
+
+  @override
+  String get adminRole => 'Administrateur';
+
+  @override
+  String get deafUser => 'Sourd / Malentendant';
+
+  @override
+  String get adminPlatformInfo => 'Informations plateforme';
+
+  @override
+  String get adminBackend => 'Backend';
+
+  @override
+  String get adminRlsNoteTitle => 'Sécurité Supabase (RLS)';
+
+  @override
+  String get adminRlsNoteBody =>
+      'Les actions admin nécessitent des politiques RLS adaptées (lecture/écriture sur profiles, signs et contributions pour les comptes is_admin). Sans ces politiques, certaines opérations échoueront côté client.';
+
+  @override
+  String get adminHowToGrant => 'Comment devenir admin';
+
+  @override
+  String get adminHowToGrantBody =>
+      'Définissez is_admin = true sur le profil dans Supabase, ou role = admin dans les métadonnées utilisateur. Un admin peut ensuite promouvoir d\'autres comptes depuis cet écran.';
+
+  @override
+  String get contributeFormTitle => 'Proposer un signe';
+
+  @override
+  String get contributeFormSubtitle =>
+      'Votre proposition sera examinée par un administrateur avant publication.';
+
+  @override
+  String get submitContribution => 'Envoyer la contribution';
+
+  @override
+  String get contributionSubmitted => 'Contribution envoyée';
+
+  @override
+  String get mySubmissions => 'Mes soumissions';
+
+  @override
+  String get noContributionsYet => 'Pas encore de contribution';
+
+  @override
+  String get noContributionsYetMessage =>
+      'Proposez un premier signe pour enrichir le dictionnaire.';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get password => 'Mot de passe';
+
+  @override
+  String get confirmPassword => 'Confirmer le mot de passe';
+
+  @override
+  String get fullName => 'Prénom & Nom';
+
+  @override
+  String get forgotPassword => 'Mot de passe oublié ?';
+
+  @override
+  String get orDivider => 'ou';
+
+  @override
+  String get continueWithGoogle => 'Continuer avec Google';
+
+  @override
+  String get noAccountYet => 'Pas encore de compte ?';
+
+  @override
+  String get createAccount => 'Créer un compte';
+
+  @override
+  String get alreadyHaveAccount => 'Déjà un compte ?';
+
+  @override
+  String get signUp => 'S\'inscrire';
+
+  @override
+  String get loginSubtitle => 'Brisons les barrières ensemble';
+
+  @override
+  String get registerHeadline => 'Rejoignez la communauté MooMoo';
+
+  @override
+  String get registerSubtitle =>
+      'Commencez votre voyage vers une communication plus inclusive.';
+
+  @override
+  String get invalidEmail => 'Adresse e-mail invalide';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get accountCreatedVerifyEmail =>
+      'Compte créé ! Veuillez vérifier votre e-mail.';
+
+  @override
+  String get registerError => 'Erreur d\'inscription';
+
+  @override
+  String get authInvalidCredentials => 'E-mail ou mot de passe incorrect';
+
+  @override
+  String get authEmailNotConfirmed =>
+      'Veuillez confirmer votre e-mail avant de vous connecter';
+
+  @override
+  String get authNetworkError => 'Problème réseau. Vérifiez votre connexion.';
+
+  @override
+  String get showPassword => 'Afficher le mot de passe';
+
+  @override
+  String get hidePassword => 'Masquer le mot de passe';
+
+  @override
+  String get passwordStrength => 'Force du mot de passe';
+
+  @override
+  String get authBrandHeadline => 'Parlez avec vos mains';
+
+  @override
+  String get authBrandTagline =>
+      'Traduisez, apprenez et partagez la langue des signes, où que vous soyez.';
+
+  @override
+  String get authFeatureTranslate => 'Traduction en direct par la caméra';
+
+  @override
+  String get authFeatureLearn => 'Dictionnaire et cours guidés';
+
+  @override
+  String get authFeatureCommunity =>
+      'Une communauté qui enrichit le dictionnaire';
+
+  @override
+  String get loginHeadline => 'Content de vous revoir';
+
+  @override
+  String get forgotPasswordHeadline => 'Réinitialiser le mot de passe';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Entrez votre adresse e-mail : nous vous enverrons un lien pour choisir un nouveau mot de passe.';
+
+  @override
+  String get forgotPasswordSend => 'Envoyer le lien';
+
+  @override
+  String forgotPasswordSent(String email) {
+    return 'Lien de réinitialisation envoyé à $email';
+  }
+
+  @override
+  String get backToLogin => 'Retour à la connexion';
+
+  @override
+  String get emailHint => 'vous@exemple.com';
+
+  @override
+  String get onboardingSkip => 'Passer';
+
+  @override
+  String get onboardingNext => 'Suivant';
+
+  @override
+  String get onboardingStart => 'Commencer';
+
+  @override
+  String get onboardingTitle1 => 'MooMoo, parlez avec vos mains';
+
+  @override
+  String get onboardingDesc1 =>
+      'Découvrez une nouvelle façon de communiquer grâce à la langue des signes.';
+
+  @override
+  String get onboardingTitle2 => 'Traduisez en un geste';
+
+  @override
+  String get onboardingDesc2 =>
+      'Pointez la caméra sur vos mains pour obtenir une traduction assistée par le modèle actif.';
+
+  @override
+  String get onboardingTitle3 => 'Apprenez et contribuez';
+
+  @override
+  String get onboardingDesc3 =>
+      'Explorez le dictionnaire, suivez des cours et enrichissez la communauté.';
+
+  @override
+  String get onboardingSemantics1 =>
+      'Illustration : langue des signes et communication';
+
+  @override
+  String get onboardingSemantics2 =>
+      'Illustration : traduction caméra et reconnaissance';
+
+  @override
+  String get onboardingSemantics3 =>
+      'Illustration : apprentissage et communauté';
+
+  @override
+  String onboardingPageIndicator(int current, int total) {
+    return 'Page $current sur $total';
+  }
+
+  @override
+  String get adminModels => 'Modèles IA';
+
+  @override
+  String get adminModelsSubtitle =>
+      'Performances, modèle actif et jobs de réentraînement (WASL / LSFB)';
+
+  @override
+  String get adminModelsList => 'Modèles disponibles';
+
+  @override
+  String get adminModelActive => 'Actif';
+
+  @override
+  String get adminSetActiveModel => 'Activer ce modèle';
+
+  @override
+  String get adminModelActivated => 'Modèle actif mis à jour';
+
+  @override
+  String get adminRequestRetrain => 'Demander un réentraînement';
+
+  @override
+  String get adminRetrainHint =>
+      'Crée un job en file (queued). Aucun entraînement GPU dans l\'app — le worker backend traitera le job.';
+
+  @override
+  String get adminStartRetrain => 'Lancer le réentraînement';
+
+  @override
+  String get adminRetrainFromModel => 'Réentraîner à partir de ce modèle';
+
+  @override
+  String get adminRetrainQueued => 'Job de réentraînement ajouté à la file';
+
+  @override
+  String get adminTrainingJobs => 'Historique des jobs';
+
+  @override
+  String get adminNoJobs => 'Aucun job pour le moment';
+
+  @override
+  String get adminNoModels => 'Aucun modèle';
+
+  @override
+  String get adminNoModelsMessage =>
+      'Appliquez la migration AI puis rechargez. Les modèles seed WASL/LSFB apparaîtront ici.';
+
+  @override
+  String get adminNoMetrics => 'Pas de métriques';
+
+  @override
+  String get adminAccuracy => 'Précision';
+
+  @override
+  String get adminLatency => 'Latence';
+
+  @override
+  String get adminInferences => 'Inférences';
+
+  @override
+  String get adminDataset => 'Dataset';
+
+  @override
+  String get adminRlsOrNetworkError =>
+      'Action refusée (RLS) ou backend indisponible';
+
+  @override
+  String get inferenceUnavailable => 'Reconnaissance indisponible';
+
+  @override
+  String get inferenceUnavailableMessage =>
+      'Le backend d\'inférence ne répond pas. Réessayez plus tard ou vérifiez le modèle actif.';
+
+  @override
+  String get inferenceFallbackLabel => 'Traduction locale (repli)';
+
+  @override
+  String get translatingInProgress => 'Traduction en cours...';
+
+  @override
+  String get readyToTranslate => 'Prêt à traduire';
+
+  @override
+  String get about => 'À propos';
+
+  @override
+  String get stopTranslation => 'Arrêter';
+
+  @override
+  String get navigationMenu => 'Menu de navigation';
+
+  @override
+  String get expandMenu => 'Déployer le menu';
+
+  @override
+  String get collapseMenu => 'Replier le menu';
+
+  @override
+  String get adminTableView => 'Vue tableau';
+
+  @override
+  String get adminCardView => 'Vue cartes';
 }

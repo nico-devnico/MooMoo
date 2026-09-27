@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/profile_provider.dart';
-import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/storage_provider.dart';
 import '../../../data/models/user_profile.dart';
 import '../../widgets/app_button.dart';
@@ -133,8 +132,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _isInitialized = true;
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.l),
+          return PageContainer.form(
+            alignment: Alignment.topCenter,
+            child: SingleChildScrollView(
             child: Form(
               key: _formKey,
               child: Column(
@@ -189,6 +189,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           );
         },

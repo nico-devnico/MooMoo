@@ -15,6 +15,7 @@ abstract class UserProfile with _$UserProfile {
     @JsonKey(name: 'preferred_output') @Default('text') String preferredOutput,
     @JsonKey(name: 'preferred_view') @Default('3d') String preferredView,
     @JsonKey(name: 'is_deaf') @Default(false) bool isDeaf,
+    @JsonKey(name: 'is_admin') @Default(false) bool isAdmin,
     @JsonKey(name: 'three_d_auto_rotate', includeToJson: false) @Default(false) bool threeDAutoRotate,
     @JsonKey(name: 'three_d_zoom_enabled', includeToJson: false) @Default(true) bool threeDZoomEnabled,
     @JsonKey(name: 'selected_character_id', includeToJson: false) @Default('alex') String selectedCharacterId,

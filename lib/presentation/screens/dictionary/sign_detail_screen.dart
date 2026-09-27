@@ -2,13 +2,13 @@ import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/sign_provider.dart';
 import '../../../data/models/landmark_point.dart';
 import '../../widgets/landmark_viewer/landmark_viewer.dart';
-import '../../widgets/sign_card.dart';
 
 class SignDetailScreen extends ConsumerStatefulWidget {
   final String id;
@@ -53,10 +53,10 @@ class _SignDetailScreenState extends ConsumerState<SignDetailScreen> {
     final signAsync = ref.watch(signDetailProvider(widget.id));
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: signAsync.when(
+      body: PageContainer(
+        width: ContentWidth.detail,
+        padding: 0,
+        child: signAsync.when(
             data: (sign) {
               if (sign == null) return const Center(child: Text('Signe non trouvé'));
               
@@ -135,9 +135,9 @@ class _SignDetailScreenState extends ConsumerState<SignDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(AppSpacing.m),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.05),
+                              color: AppColors.primary.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                             ),
                             child: Text(
                               sign.exampleSentence!,
@@ -186,7 +186,6 @@ class _SignDetailScreenState extends ConsumerState<SignDetailScreen> {
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => Center(child: Text('Erreur: $err')),
-          ),
         ),
       ),
     );
@@ -208,9 +207,9 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,

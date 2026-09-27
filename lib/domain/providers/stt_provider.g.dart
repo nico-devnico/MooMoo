@@ -41,7 +41,7 @@ final class SpeechControllerProvider
   }
 }
 
-String _$speechControllerHash() => r'1e475c261f8b59dc2d6612494a520f3e811fa92c';
+String _$speechControllerHash() => r'e03e313a07750f5dd6203887adaacccb9c189585';
 
 abstract class _$SpeechController extends $Notifier<bool> {
   bool build();
@@ -92,7 +92,7 @@ final class SttResultProvider extends $NotifierProvider<SttResult, String> {
   }
 }
 
-String _$sttResultHash() => r'65050d0295a5c051d68b1d4c4ae5f4c35dd725a1';
+String _$sttResultHash() => r'43d17c5c8a9e2338c9a2401e1fc52b26a215b778';
 
 abstract class _$SttResult extends $Notifier<String> {
   String build();

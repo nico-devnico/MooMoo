@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/session_provider.dart';
 import '../../widgets/app_card.dart';
 
@@ -18,26 +18,24 @@ class HistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Historique'),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: historyAsync.when(
-            data: (history) {
-              if (history.isEmpty) {
-                return const Center(child: Text('Aucun historique de traduction'));
-              }
-              return ListView.builder(
-                padding: const EdgeInsets.all(AppSpacing.l),
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final session = history[index];
-                  return _HistoryTile(session: session);
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Center(child: Text('Erreur : $e')),
-          ),
+      body: PageContainer(
+        width: ContentWidth.reading,
+        verticalPadding: AppSpacing.l,
+        child: historyAsync.when(
+          data: (history) {
+            if (history.isEmpty) {
+              return const Center(child: Text('Aucun historique de traduction'));
+            }
+            return ListView.builder(
+              itemCount: history.length,
+              itemBuilder: (context, index) {
+                final session = history[index];
+                return _HistoryTile(session: session);
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Center(child: Text('Erreur : $e')),
         ),
       ),
     );
@@ -64,7 +62,7 @@ class _HistoryTile extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 
@@ -9,8 +10,9 @@ class HelpCenterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Centre d\'aide')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.l),
+      body: PageContainer.reading(
+        verticalPadding: AppSpacing.l,
+        child: ListView(
         children: [
           _buildHelpItem(
             context,
@@ -28,6 +30,7 @@ class HelpCenterScreen extends StatelessWidget {
             'Allez dans l\'onglet Profil et cliquez sur "Modifier le profil" pour changer votre nom ou votre bio.',
           ),
         ],
+        ),
       ),
     );
   }

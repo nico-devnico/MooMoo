@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'app_routes.dart';
+import '../layout/responsive.dart';
 import '../../domain/providers/auth_provider.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
 import '../../presentation/screens/onboarding/onboarding_screen.dart';
@@ -26,9 +27,16 @@ import '../../presentation/screens/notifications/notification_screen.dart';
 import '../../presentation/screens/legal/help_center_screen.dart';
 import '../../presentation/screens/legal/privacy_policy_screen.dart';
 import '../../presentation/screens/legal/terms_of_service_screen.dart';
+import '../../presentation/screens/admin/admin_dashboard_screen.dart';
+import '../../presentation/screens/admin/admin_contributions_screen.dart';
+import '../../presentation/screens/admin/admin_signs_screen.dart';
+import '../../presentation/screens/admin/admin_users_screen.dart';
+import '../../presentation/screens/admin/admin_models_screen.dart';
+import '../../presentation/screens/admin/admin_settings_screen.dart';
 
 import '../../presentation/screens/home/main_shell.dart';
 import '../../presentation/widgets/app_empty_state.dart';
+import '../../l10n/app_localizations.dart';
 
 part 'app_router.g.dart';
 
@@ -38,16 +46,21 @@ GoRouter appRouter(Ref ref) {
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
-    errorBuilder: (context, state) => Scaffold(
-      body: AppEmptyState(
-        title: 'Page non trouvée',
-        message: 'Désolé, la page que vous recherchez n\'existe pas.',
-        imagePath: 'assets/images/empty_state/empty_404.gif',
-        isSvg: false,
-        actionLabel: 'Retour à l\'accueil',
-        onAction: () => context.go(AppRoutes.home),
-      ),
-    ),
+    errorBuilder: (context, state) {
+      final l10n = AppLocalizations.of(context);
+      return Scaffold(
+        body: PageContainer.form(
+          child: AppEmptyState(
+            title: l10n?.pageNotFound ?? 'Page not found',
+            message: l10n?.pageNotFoundMessage ?? 'Sorry, this page does not exist.',
+            imagePath: 'assets/images/empty_state/empty_404.gif',
+            isSvg: false,
+            actionLabel: l10n?.backHome ?? 'Home',
+            onAction: () => context.go(AppRoutes.home),
+          ),
+        ),
+      );
+    },
     redirect: (context, state) {
       final isLoggedIn = session != null;
       final isGoingToAuth = state.matchedLocation == AppRoutes.login ||
@@ -226,6 +239,38 @@ GoRouter appRouter(Ref ref) {
             ),
           ],
         ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.adminDashboard,
+        name: AppRoutes.adminDashboardName,
+        builder: (context, state) => const AdminDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'contributions',
+            name: AppRoutes.adminContributionsName,
+            builder: (context, state) => const AdminContributionsScreen(),
+          ),
+          GoRoute(
+            path: 'signs',
+            name: AppRoutes.adminSignsName,
+            builder: (context, state) => const AdminSignsScreen(),
+          ),
+          GoRoute(
+            path: 'users',
+            name: AppRoutes.adminUsersName,
+            builder: (context, state) => const AdminUsersScreen(),
+          ),
+          GoRoute(
+            path: 'models',
+            name: AppRoutes.adminModelsName,
+            builder: (context, state) => const AdminModelsScreen(),
+          ),
+          GoRoute(
+            path: 'settings',
+            name: AppRoutes.adminSettingsName,
+            builder: (context, state) => const AdminSettingsScreen(),
+          ),
         ],
       ),
     ],

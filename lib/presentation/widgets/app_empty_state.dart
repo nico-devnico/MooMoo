@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import 'app_button.dart';
 
 class AppEmptyState extends StatelessWidget {
   final String title;
@@ -12,6 +11,7 @@ class AppEmptyState extends StatelessWidget {
   final bool isSvg;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final IconData? icon;
 
   const AppEmptyState({
     super.key,
@@ -21,90 +21,83 @@ class AppEmptyState extends StatelessWidget {
     this.isSvg = true,
     this.actionLabel,
     this.onAction,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF09090B) : Colors.white;
+    final secondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: backgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (imagePath != null) ...[
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.8,
-                  maxHeight: MediaQuery.of(context).size.height * 0.4,
-                ),
-                child: isSvg 
-                  ? SvgPicture.asset(
-                      imagePath!,
-                      fit: BoxFit.contain,
-                    )
-                  : ColorFiltered(
-                      colorFilter: isDark 
-                        ? ColorFilter.mode(
-                            Colors.white.withOpacity(0.8), 
-                            BlendMode.modulate
-                          )
-                        : const ColorFilter.mode(
-                            Colors.transparent, 
-                            BlendMode.dst
-                          ),
-                      child: Image.asset(
-                        imagePath!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.image_not_supported_outlined,
-                          size: 100,
-                          color: AppColors.primary,
-                        ),
-                      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bounded = constraints.hasBoundedHeight;
+        return Container(
+          width: double.infinity,
+          height: bounded ? constraints.maxHeight : null,
+          color: bounded
+              ? (isDark ? const Color(0xFF09090B) : Colors.white)
+              : Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+              children: [
+                if (imagePath != null) ...[
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                      maxHeight: bounded
+                          ? MediaQuery.of(context).size.height * 0.28
+                          : 160,
                     ),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-            ],
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.h2.copyWith(
-                color: isDark ? Colors.white : AppColors.neutralDark,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: AppSpacing.xxl),
-              ElevatedButton(
-                onPressed: onAction,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xl,
-                    vertical: AppSpacing.l,
+                    child: isSvg
+                        ? SvgPicture.asset(imagePath!, fit: BoxFit.contain)
+                        : Image.asset(
+                            imagePath!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              icon ?? Icons.inbox_outlined,
+                              size: 72,
+                              color: AppColors.primary.withValues(alpha: 0.7),
+                            ),
+                          ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  const SizedBox(height: AppSpacing.l),
+                ] else ...[
+                  Icon(
+                    icon ?? Icons.inbox_outlined,
+                    size: 56,
+                    color: AppColors.primary.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                ],
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.h3.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutralDark,
                   ),
                 ),
-                child: Text(actionLabel!),
-              ),
-            ],
-          ],
-        ),
-      ),
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(color: secondary),
+                ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: AppSpacing.l),
+                  FilledButton(
+                    onPressed: onAction,
+                    child: Text(actionLabel!),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

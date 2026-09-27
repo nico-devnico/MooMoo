@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moomoo/core/layout/responsive.dart';
 import 'package:moomoo/core/router/app_routes.dart';
 import 'package:moomoo/core/theme/app_colors.dart';
 import 'package:moomoo/core/theme/app_spacing.dart';
@@ -10,7 +11,6 @@ import 'package:moomoo/domain/providers/auth_provider.dart';
 import 'package:moomoo/domain/providers/three_d_settings_provider.dart';
 import 'package:moomoo/domain/providers/character_provider.dart';
 import 'package:moomoo/core/constants/character_constants.dart';
-import 'package:moomoo/data/models/character.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -31,8 +31,10 @@ class SettingsScreen extends ConsumerWidget {
         data: (profile) {
           if (profile == null) return Center(child: Text(l10n.profileNotFound));
 
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.l),
+          return PageContainer(
+            width: ContentWidth.reading,
+            verticalPadding: AppSpacing.l,
+            child: ListView(
             children: [
               _buildSection(
                 l10n.accountSecurity,
@@ -59,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Text(_getFlagForCode(profile.preferredSignLanguage), style: const TextStyle(fontSize: 16)),
@@ -111,7 +113,7 @@ class SettingsScreen extends ConsumerWidget {
                           leading: CircularProgressIndicator.adaptive(),
                           title: Text('Chargement du personnage...'),
                         ),
-                        error: (_, __) => ListTile(
+                        error: (_, _) => ListTile(
                           leading: const Icon(Icons.error_outline, color: AppColors.error),
                           title: Text(l10n.character3D),
                           subtitle: const Text('Erreur de chargement'),
@@ -120,7 +122,7 @@ class SettingsScreen extends ConsumerWidget {
                       );
                     },
                     loading: () => const ListTile(title: Text('Chargement...')),
-                    error: (_, __) => const ListTile(title: Text('Erreur')),
+                    error: (_, _) => const ListTile(title: Text('Erreur')),
                   ),
                   threeDSettingsAsync.when(
                     data: (settings) => Column(
@@ -205,6 +207,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xxl),
             ],
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -252,7 +255,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             Card(
               elevation: 0,
-              color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withOpacity(0.3),
+              color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(children: children),
             ),

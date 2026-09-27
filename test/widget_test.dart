@@ -1,30 +1,120 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:moomoo/main.dart';
+import 'package:moomoo/core/layout/responsive.dart';
+import 'package:moomoo/presentation/widgets/app_button.dart';
+
+/// Pumps [child] at a fixed logical window size so breakpoint-dependent
+/// widgets can be exercised deterministically.
+Future<void> pumpAtWidth(
+  WidgetTester tester,
+  Widget child, {
+  required double width,
+}) async {
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.physicalSize = Size(width, 900);
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      child: MaterialApp(home: Scaffold(body: child)),
+    ),
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MooMooApp());
+  group('Breakpoints', () {
+    testWidgets('classifies mobile, tablet and desktop widths', (tester) async {
+      final seen = <double, FormFactor>{};
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      for (final width in <double>[390, 800, 1440]) {
+        await pumpAtWidth(
+          tester,
+          Builder(
+            builder: (context) {
+              seen[width] = context.formFactor;
+              return const SizedBox.shrink();
+            },
+          ),
+          width: width,
+        );
+      }
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(seen[390], FormFactor.mobile);
+      expect(seen[800], FormFactor.tablet);
+      expect(seen[1440], FormFactor.desktop);
+    });
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  group('PageContainer', () {
+    testWidgets('caps content width on desktop', (tester) async {
+      await pumpAtWidth(
+        tester,
+        const PageContainer(
+          width: ContentWidth.form,
+          child: SizedBox(key: Key('content'), height: 40),
+        ),
+        width: 1440,
+      );
+
+      final contentWidth = tester.getSize(find.byKey(const Key('content'))).width;
+      expect(contentWidth, lessThanOrEqualTo(ContentWidth.form.maxWidth));
+    });
+
+    testWidgets('fills the available width on mobile', (tester) async {
+      await pumpAtWidth(
+        tester,
+        const PageContainer(
+          width: ContentWidth.form,
+          child: SizedBox(key: Key('content'), height: 40),
+        ),
+        width: 390,
+      );
+
+      final contentWidth = tester.getSize(find.byKey(const Key('content'))).width;
+      expect(contentWidth, lessThan(390));
+      expect(contentWidth, greaterThan(300));
+    });
+  });
+
+  group('AppButton', () {
+    testWidgets('stays intrinsic on desktop and stretches on mobile',
+        (tester) async {
+      await pumpAtWidth(
+        tester,
+        const Align(
+          alignment: Alignment.topLeft,
+          child: AppButton(key: Key('btn'), label: 'Valider'),
+        ),
+        width: 1440,
+      );
+      final desktopWidth = tester.getSize(find.byKey(const Key('btn'))).width;
+      expect(desktopWidth, lessThanOrEqualTo(AppButton.desktopMaxWidth));
+
+      await pumpAtWidth(
+        tester,
+        const Align(
+          alignment: Alignment.topLeft,
+          child: AppButton(key: Key('btn'), label: 'Valider'),
+        ),
+        width: 390,
+      );
+      final mobileWidth = tester.getSize(find.byKey(const Key('btn'))).width;
+      expect(mobileWidth, 390);
+    });
+
+    testWidgets('meets the minimum touch target height', (tester) async {
+      await pumpAtWidth(
+        tester,
+        const AppButton(key: Key('btn'), label: 'Valider'),
+        width: 390,
+      );
+
+      expect(
+        tester.getSize(find.byKey(const Key('btn'))).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
   });
 }

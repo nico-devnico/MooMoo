@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
+import 'widgets/auth_form_error.dart';
+import 'widgets/auth_layout.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -16,9 +19,10 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   bool _isLoading = false;
+  String? _formError;
 
   @override
   void dispose() {
@@ -26,24 +30,29 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     super.dispose();
   }
 
+  void _close() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.login);
+    }
+  }
+
   Future<void> _handleResetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _formError = null);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final email = _emailController.text.trim();
     setState(() => _isLoading = true);
-
     try {
-      await ref.read(authRepositoryProvider).resetPassword(_emailController.text.trim());
+      await ref.read(authRepositoryProvider).resetPassword(email);
       if (mounted) {
-        AppSnackbar.showSuccess(
-          context,
-          'Un email de réinitialisation a été envoyé à ${_emailController.text}',
-        );
-        Navigator.of(context).pop();
+        AppSnackbar.showSuccess(context, l10n.forgotPasswordSent(email));
+        _close();
       }
     } catch (e) {
-      if (mounted) {
-        AppSnackbar.showError(context, 'Erreur : ${e.toString()}');
-      }
+      if (mounted) setState(() => _formError = '${l10n.errorGeneric} : $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -51,69 +60,47 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mot de passe oublié'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+    return AuthLayout(
+      title: l10n.forgotPasswordHeadline,
+      subtitle: l10n.forgotPasswordSubtitle,
+      onBack: _close,
+      footer: Center(
+        child: TextButton(
+          onPressed: _close,
+          child: Text(l10n.backToLogin),
+        ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 80,
-                    height: 80,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'Réinitialisez votre mot de passe',
-                  style: AppTextStyles.h2.copyWith(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  'Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                AppTextField(
-                  label: 'Email',
-                  hintText: 'votre@email.com',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Veuillez entrer un email valide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                AppButton(
-                  label: 'Envoyer le lien',
-                  onPressed: _handleResetPassword,
-                  isLoading: _isLoading,
-                ),
-              ],
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthFormError(message: _formError),
+            AppTextField(
+              label: l10n.email,
+              hintText: l10n.emailHint,
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: Icons.email_outlined,
+              validator: (value) {
+                final v = value?.trim() ?? '';
+                if (v.isEmpty) return l10n.requiredField;
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
+                  return l10n.invalidEmail;
+                }
+                return null;
+              },
             ),
-          ),
+            const SizedBox(height: AppSpacing.l),
+            AppButton(
+              label: l10n.forgotPasswordSend,
+              onPressed: _handleResetPassword,
+              isLoading: _isLoading,
+              stretchOnLargeScreens: true,
+            ),
+          ],
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -10,7 +11,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/storage_provider.dart';
+import '../../../domain/providers/admin_provider.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_badge.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_loader.dart';
@@ -107,11 +110,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final photoUrl = profile?.avatarUrl;
           final email = profile?.email ?? user?.email ?? l10n.loginToSave;
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.l),
+          return PageContainer(
+            width: ContentWidth.reading,
+            verticalPadding: AppSpacing.l,
+            child: ListView(
                 children: [
                   // Header
                   Center(
@@ -136,7 +138,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(email, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondaryLight)),
                         if (user != null) ...[
                           const SizedBox(height: AppSpacing.s),
-                          const _UserTypeBadge(),
+                          if (profile?.isDeaf == true) const _UserTypeBadge(),
+                          if (ref.watch(isAdminProvider)) ...[
+                            const SizedBox(height: AppSpacing.s),
+                            AppBadge(label: l10n.adminRole, color: AppColors.primary),
+                          ],
                         ],
                       ],
                     ),
@@ -206,6 +212,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: l10n.myContributions,
                         onTap: () => context.pushNamed(AppRoutes.contributeName),
                       ),
+                      if (ref.watch(isAdminProvider))
+                        _ProfileTile(
+                          icon: Icons.admin_panel_settings_outlined,
+                          title: l10n.adminPanel,
+                          onTap: () => context.goNamed(AppRoutes.adminDashboardName),
+                        ),
                     ],
                   ),
 
@@ -246,7 +258,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                 ],
-              ),
             ),
           );
         },
@@ -270,7 +281,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         Card(
           elevation: 0,
-          color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withOpacity(0.5),
+          color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(children: children),
         ),
@@ -313,15 +324,16 @@ class _UserTypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.1),
+        color: AppColors.secondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
       ),
       child: Text(
-        'Sourd / Malentendant',
+        l10n.deafUser,
         style: AppTextStyles.bodySmall.copyWith(color: AppColors.secondary, fontWeight: FontWeight.bold),
       ),
     );

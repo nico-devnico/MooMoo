@@ -21,6 +21,15 @@ class AppRoutes {
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfService = '/terms-of-service';
   static const String notifications = '/notifications';
+
+  // Admin
+  static const String admin = '/admin';
+  static const String adminDashboard = '/admin';
+  static const String adminContributions = '/admin/contributions';
+  static const String adminSigns = '/admin/signs';
+  static const String adminUsers = '/admin/users';
+  static const String adminModels = '/admin/models';
+  static const String adminSettings = '/admin/settings';
   
   // Route Names (For pushNamed)
   static const String splashName = 'splash';
@@ -47,4 +56,10 @@ class AppRoutes {
   static const String privacyPolicyName = 'privacyPolicy';
   static const String termsOfServiceName = 'termsOfService';
   static const String notificationsName = 'notifications';
+  static const String adminDashboardName = 'adminDashboard';
+  static const String adminContributionsName = 'adminContributions';
+  static const String adminSignsName = 'adminSigns';
+  static const String adminUsersName = 'adminUsers';
+  static const String adminModelsName = 'adminModels';
+  static const String adminSettingsName = 'adminSettings';
 }

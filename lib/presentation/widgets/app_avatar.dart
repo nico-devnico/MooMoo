@@ -33,7 +33,7 @@ class AppAvatar extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               border: Border.all(color: AppColors.primary, width: 2),
             ),
             child: ClipOval(
@@ -41,7 +41,7 @@ class AppAvatar extends StatelessWidget {
                   ? Image.network(
                       imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(size),
+                      errorBuilder: (_, _, _) => _buildPlaceholder(size),
                     )
                   : _buildPlaceholder(size),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 
@@ -9,8 +10,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Politique de confidentialité')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.l),
+      body: PageContainer.reading(
+        verticalPadding: AppSpacing.l,
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -34,6 +36,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               'Nous mettons en œuvre des mesures de sécurité robustes pour protéger vos informations personnelles.',
             ),
           ],
+        ),
         ),
       ),
     );

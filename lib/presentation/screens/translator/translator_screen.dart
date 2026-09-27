@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../widgets/camera/camera_view.dart';
 import '../../widgets/landmark_viewer/landmark_viewer.dart';
-import '../../../domain/providers/sign_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -16,15 +16,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../l10n/app_localizations.dart';
 
 import 'package:moomoo/domain/providers/translator_provider.dart';
-import 'package:moomoo/domain/providers/profile_provider.dart';
 import 'package:moomoo/domain/providers/three_d_settings_provider.dart';
 import 'package:moomoo/domain/providers/sign_view_provider.dart';
 import 'package:moomoo/domain/providers/character_provider.dart';
 import 'package:moomoo/core/constants/character_constants.dart';
-import 'package:moomoo/data/models/character.dart';
 
 import 'package:moomoo/domain/providers/stt_provider.dart';
 import 'package:moomoo/domain/providers/tts_provider.dart';
+import 'package:moomoo/domain/providers/ml_model_provider.dart';
+import 'package:moomoo/presentation/widgets/app_snackbar.dart';
 
 class TranslatorScreen extends ConsumerStatefulWidget {
   const TranslatorScreen({super.key});
@@ -41,6 +41,47 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   String _translationResult = '...';
+  String? _activeModelLabel;
+  bool _usingFallback = false;
+
+  Future<void> _runSignInference({bool start = true}) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!start) {
+      ref.read(translatorStateProvider.notifier).stop();
+      setState(() {
+        _translationResult = '...';
+        _usingFallback = false;
+      });
+      return;
+    }
+
+    ref.read(translatorStateProvider.notifier).start();
+    setState(() {
+      _translationResult = l10n.translatingInProgress;
+      _usingFallback = false;
+    });
+
+    final result = await ref.read(mlModelRepositoryProvider).infer();
+    if (!mounted) return;
+
+    if (result.ok && result.label != null && result.label!.isNotEmpty) {
+      setState(() {
+        _translationResult = result.label!;
+        _activeModelLabel = result.model?.displayLabel;
+        _usingFallback = false;
+      });
+    } else {
+      setState(() {
+        _translationResult = l10n.inferenceFallbackLabel;
+        _usingFallback = true;
+        _activeModelLabel = null;
+      });
+      AppSnackbar.showWarning(
+        context,
+        result.errorMessage ?? l10n.inferenceUnavailableMessage,
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -83,7 +124,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
 
   void _initVideo(XFile file) {
     if (kIsWeb) {
-      _videoController = VideoPlayerController.network(file.path);
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(file.path));
     } else {
       _videoController = VideoPlayerController.file(File(file.path));
     }
@@ -112,7 +153,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 900;
+    // The desktop shell already provides a navigation rail and header.
+    final isWide = context.hasSideNavigation;
     final isTranslating = ref.watch(translatorStateProvider);
     final translationMode = ref.watch(translationModeStateProvider);
     final isSignToText = translationMode == TranslationMode.signToText;
@@ -125,10 +167,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
+      body: PageContainer(
+        width: ContentWidth.dashboard,
+        padding: 0,
+        child: Column(
             children: [
               // 
               Padding(
@@ -139,8 +181,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: theme.brightness == Brightness.light 
-                          ? AppColors.neutralLight.withOpacity(0.5)
-                          : AppColors.neutralDark.withOpacity(0.5),
+                          ? AppColors.neutralLight.withValues(alpha: 0.5)
+                          : AppColors.neutralDark.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -195,17 +237,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                           selectedFile: _selectedFile,
                           isImage: _isImage,
                           chewieController: _chewieController,
+                          modelLabel: _activeModelLabel,
+                          usingFallback: _usingFallback,
                           onPickFile: _pickFile,
                           onClearFile: _clearFile,
-                          onToggleTranslation: (val) {
-                            if (val) {
-                              ref.read(translatorStateProvider.notifier).start();
-                              setState(() => _translationResult = 'Bonjour');
-                            } else {
-                              ref.read(translatorStateProvider.notifier).stop();
-                              setState(() => _translationResult = '...');
-                            }
-                          },
+                          onToggleTranslation: (val) => _runSignInference(start: val),
                         )
                       : _TextToSignTab(
                           key: const ValueKey('text_to_sign'),
@@ -216,7 +252,6 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                 ),
               ),
             ],
-          ),
         ),
       ),
     );
@@ -250,7 +285,7 @@ class _ToggleButton extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: isActive
-              ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
               : [],
         ),
         child: Text(
@@ -274,6 +309,8 @@ class _SignToTextTab extends ConsumerWidget {
   final XFile? selectedFile;
   final bool isImage;
   final ChewieController? chewieController;
+  final String? modelLabel;
+  final bool usingFallback;
   final Function(bool isVideo) onPickFile;
   final VoidCallback onClearFile;
   final Function(bool) onToggleTranslation;
@@ -285,6 +322,8 @@ class _SignToTextTab extends ConsumerWidget {
     this.selectedFile,
     this.isImage = false,
     this.chewieController,
+    this.modelLabel,
+    this.usingFallback = false,
     required this.onPickFile,
     required this.onClearFile,
     required this.onToggleTranslation,
@@ -292,9 +331,10 @@ class _SignToTextTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWide = MediaQuery.of(context).size.width > 900;
+    final isWide = context.isAtLeastTablet;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -307,7 +347,7 @@ class _SignToTextTab extends ConsumerWidget {
               color: Colors.black,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -384,7 +424,7 @@ class _SignToTextTab extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.m),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.neutralDark.withOpacity(0.3) : AppColors.neutralLight.withOpacity(0.3),
+                  color: isDark ? AppColors.neutralDark.withValues(alpha: 0.3) : AppColors.neutralLight.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -397,19 +437,35 @@ class _SignToTextTab extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            isTranslating ? 'Traduction en cours...' : 'Prêt à traduire',
+                            isTranslating
+                                ? l10n.translatingInProgress
+                                : (usingFallback
+                                    ? l10n.inferenceUnavailable
+                                    : l10n.readyToTranslate),
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              color: usingFallback
+                                  ? AppColors.warning
+                                  : (isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondaryLight),
                             ),
                           ),
                           Text(
                             translationResult,
                             style: AppTextStyles.h3,
                           ),
+                          if (modelLabel != null)
+                            Text(
+                              modelLabel!,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                              ),
+                            ),
                         ],
                       ),
                     ),
                     IconButton(
+                      tooltip: l10n.textAudio,
                       icon: const Icon(Icons.volume_up, color: AppColors.primary),
                       onPressed: () {
                         if (translationResult != '...') {
@@ -544,7 +600,6 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
 
     final threeDSettingsAsync = ref.watch(threeDSettingsProvider);
     final viewModeAsync = ref.watch(signViewModeProvider);
-    final profileAsync = ref.watch(userProfileProvider);
     final isListening = ref.watch(speechControllerProvider);
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -583,7 +638,7 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
               ),
             ),
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
         ),
 
@@ -600,12 +655,12 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
               color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -675,7 +730,7 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
                 if (isListening)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -726,7 +781,7 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
                       decoration: InputDecoration(
                         hintText: l10n.typeWordPhrase,
                         filled: true,
-                        fillColor: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withOpacity(0.3),
+                        fillColor: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.3),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
@@ -744,7 +799,7 @@ class _TextToSignTabState extends ConsumerState<_TextToSignTab> {
                   ),
                   const SizedBox(width: AppSpacing.m),
                   // Only show send button on Wide screens
-                  if (MediaQuery.of(context).size.width > 900)
+                  if (context.isAtLeastTablet)
                     FloatingActionButton.small(
                       onPressed: () => widget.onSearch(widget.controller.text),
                       backgroundColor: AppColors.primary,

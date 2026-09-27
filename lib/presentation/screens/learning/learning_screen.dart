@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -14,11 +15,10 @@ class LearningScreen extends StatelessWidget {
     
     return Scaffold(
       appBar: AppBar(title: Text(l10n.learning)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.l),
+      body: PageContainer(
+        width: ContentWidth.reading,
+        verticalPadding: AppSpacing.l,
+        child: ListView(
             children: [
               Text(l10n.yourProgress, style: AppTextStyles.h3),
               const SizedBox(height: AppSpacing.m),
@@ -45,7 +45,6 @@ class LearningScreen extends StatelessWidget {
                 progress: 0.0,
               ),
             ],
-          ),
         ),
       ),
     );
@@ -82,7 +81,7 @@ class _ProgressCard extends StatelessWidget {
               value: 0.26,
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
-              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             ),
           ],
         ),

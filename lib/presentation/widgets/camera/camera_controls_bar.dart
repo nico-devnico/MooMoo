@@ -12,9 +12,6 @@ class CameraControlsBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(cameraSettingsProvider);
-    final isRecording = settings['isRecording'] ?? false;
-
     return ClipRRect(
       borderRadius: AppRadius.radiusXL,
       child: BackdropFilter(
@@ -22,9 +19,9 @@ class CameraControlsBar extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             borderRadius: AppRadius.radiusXL,
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -46,17 +43,6 @@ class CameraControlsBar extends ConsumerWidget {
     );
   }
 
-  void _showMediaPreview(BuildContext context, String path, {required bool isVideo}) {
-    // Miniature animée en bas à gauche (V1 placeholder)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(isVideo ? 'Vidéo enregistrée' : 'Photo capturée'),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(label: 'Voir', onPressed: () {}),
-      ),
-    );
-  }
-
   void _showSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -69,61 +55,19 @@ class CameraControlsBar extends ConsumerWidget {
 class _ControlButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  final Color color;
   final double size;
 
   const _ControlButton({
     required this.icon,
     required this.onTap,
-    this.color = Colors.white,
     this.size = 24,
   });
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon, color: color, size: size),
+      icon: Icon(icon, color: Colors.white, size: size),
       onPressed: onTap,
-    );
-  }
-}
-
-class _CaptureButton extends StatelessWidget {
-  final bool isRecording;
-  final VoidCallback onTap;
-  final VoidCallback? onLongPress;
-
-  const _CaptureButton({
-    required this.isRecording,
-    required this.onTap,
-    this.onLongPress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isRecording ? AppColors.error : Colors.white,
-            width: 3,
-          ),
-        ),
-        padding: const EdgeInsets.all(4),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isRecording ? AppColors.error : Colors.white,
-            borderRadius: BorderRadius.circular(isRecording ? 6 : 28),
-          ),
-        ),
-      ),
     );
   }
 }

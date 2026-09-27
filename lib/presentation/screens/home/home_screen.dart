@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -44,7 +45,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasWelcome = notifications.any((n) => n.type == 'welcome');
     
     if (!hasWelcome) {
-      final l10n = AppLocalizations.of(context)!;
       final welcomeNotif = model.Notification(
         id: const Uuid().v4(),
         userId: user.id,
@@ -74,10 +74,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: CustomScrollView(
+      body: PageContainer(
+        // The slivers below carry their own gutter, so only the max width and
+        // the centering come from the container here.
+        padding: 0,
+        child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
@@ -94,7 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: AppTextStyles.h3,
                     ),
                     loading: () => const AppLoader(width: 150, height: 20),
-                    error: (_, __) => Text(l10n.hello, style: AppTextStyles.h3),
+                    error: (_, _) => Text(l10n.hello, style: AppTextStyles.h3),
                   ),
                   background: Container(color: Theme.of(context).scaffoldBackgroundColor),
                 ),
@@ -110,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onPressed: () => context.pushNamed(AppRoutes.notificationsName),
                     ),
                     loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
                   ),
                   IconButton(
                     icon: const Icon(Icons.settings_outlined),
@@ -127,36 +128,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     
                     // Main Actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MainActionCard(
-                            title: l10n.signToText,
-                            subtitle: l10n.viaCamera,
-                            icon: Icons.videocam_outlined,
-                            gradient: const LinearGradient(
-                              colors: [AppColors.primary, Color(0xFF6366F1)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _MainActionCard(
+                                title: l10n.signToText,
+                                subtitle: l10n.viaCamera,
+                                icon: Icons.videocam_outlined,
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.primary, Color(0xFF6366F1)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                onTap: () => context.goNamed(AppRoutes.translatorName),
+                              ),
                             ),
-                            onTap: () => context.goNamed(AppRoutes.translatorName),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.m),
-                        Expanded(
-                          child: _MainActionCard(
-                            title: l10n.textToSign,
-                            subtitle: l10n.viaKeyboard,
-                            icon: Icons.keyboard_alt_outlined,
-                            gradient: const LinearGradient(
-                              colors: [AppColors.secondary, Color(0xFF10B981)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                            const SizedBox(width: AppSpacing.m),
+                            Expanded(
+                              child: _MainActionCard(
+                                title: l10n.textToSign,
+                                subtitle: l10n.viaKeyboard,
+                                icon: Icons.keyboard_alt_outlined,
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.secondary, Color(0xFF10B981)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                onTap: () => context.goNamed(AppRoutes.translatorName),
+                              ),
                             ),
-                            onTap: () => context.goNamed(AppRoutes.translatorName),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                     
                     const SizedBox(height: AppSpacing.xxl),
@@ -180,8 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ]),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -244,7 +250,7 @@ class _LanguageSelector extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -317,7 +323,7 @@ class _MainActionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: Colors.white, size: 28),
@@ -333,7 +339,7 @@ class _MainActionCard extends StatelessWidget {
             Text(
               subtitle,
               style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -453,17 +459,17 @@ class _CategoriesSection extends ConsumerWidget {
             loading: () => ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 3,
-              itemBuilder: (_, __) => const Padding(
+              itemBuilder: (_, _) => const Padding(
                 padding: EdgeInsets.only(right: AppSpacing.m),
                 child: AppLoader(width: 120, height: 140, borderRadius: 20),
               ),
             ),
-            error: (_, __) => Center(child: Text(l10n.errorLoadingCategories)),
+            error: (_, _) => Center(child: Text(l10n.errorLoadingCategories)),
           ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Center(child: Text(l10n.errorLoadingLanguages)),
+      error: (_, _) => Center(child: Text(l10n.errorLoadingLanguages)),
     );
   }
 
@@ -501,7 +507,7 @@ class _RecentSignTile extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.history, color: AppColors.primary),

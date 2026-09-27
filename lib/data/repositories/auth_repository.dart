@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/api_client.dart';
 
 abstract class AuthRepository {
   Stream<AuthState> watchAuthState();
   User? get currentUser;
   Session? get currentSession;
-  
+
   Future<AuthResponse> signInWithEmailPassword(String email, String password);
-  Future<AuthResponse> signUpWithEmailPassword(String email, String password, String displayName);
+  Future<AuthResponse> signUpWithEmailPassword(
+    String email,
+    String password,
+    String displayName, {
+    bool isDeaf = false,
+  });
   Future<void> signInWithGoogle();
   Future<void> signOut();
   Future<void> resetPassword(String email);
@@ -17,8 +23,10 @@ abstract class AuthRepository {
 
 class AuthRepositoryImpl implements AuthRepository {
   final SupabaseClient _supabase;
+  final ApiClient _api;
 
-  AuthRepositoryImpl(this._supabase);
+  AuthRepositoryImpl(this._supabase, {ApiClient? api})
+      : _api = api ?? ApiClient();
 
   @override
   Stream<AuthState> watchAuthState() => _supabase.auth.onAuthStateChange;
@@ -30,38 +38,128 @@ class AuthRepositoryImpl implements AuthRepository {
   Session? get currentSession => _supabase.auth.currentSession;
 
   @override
-  Future<AuthResponse> signInWithEmailPassword(String email, String password) async {
-    return await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+  Future<AuthResponse> signInWithEmailPassword(
+    String email,
+    String password,
+  ) async {
+    // Prefer Node API (ensure-profile + clearer errors), fall back to direct Auth
+    try {
+      final res = await _api.postJson('/api/auth/login', body: {
+        'email': email,
+        'password': password,
+      });
+      final sessionJson = res['session'];
+      if (sessionJson is Map && sessionJson['access_token'] != null) {
+        final restored = await _supabase.auth.setSession(
+          sessionJson['refresh_token'] as String? ?? '',
+        );
+        if (restored.session != null) return restored;
+        // setSession may need access+refresh — use signIn as fallback
+      }
+    } on ApiException catch (e) {
+      // Re-throw API validation / auth errors so UI shows the real message
+      if (e.status == 400 || e.status == 401) {
+        throw AuthException(e.message, statusCode: e.status.toString());
+      }
+      // Network / 503 → fall through to direct Supabase Auth
+      debugPrint('API login fallback: $e');
+    } catch (e) {
+      debugPrint('API login fallback: $e');
+    }
+
+    return _supabase.auth.signInWithPassword(email: email, password: password);
   }
 
   @override
   Future<AuthResponse> signUpWithEmailPassword(
-    String email, 
-    String password, 
-    String displayName,
-  ) async {
-    return await _supabase.auth.signUp(
+    String email,
+    String password,
+    String displayName, {
+    bool isDeaf = false,
+  }) async {
+    try {
+      final res = await _api.postJson('/api/auth/signup', body: {
+        'email': email,
+        'password': password,
+        'displayName': displayName,
+        'isDeaf': isDeaf,
+      });
+      final sessionJson = res['session'];
+      final refresh = sessionJson is Map ? sessionJson['refresh_token'] as String? : null;
+      if (refresh != null && refresh.isNotEmpty) {
+        final restored = await _supabase.auth.setSession(refresh);
+        if (restored.session != null) return restored;
+      }
+      // If email confirmation required, session may be null — still OK
+      if (res['ok'] == true) {
+        // Establish local session via direct sign-in when possible
+        try {
+          return await _supabase.auth.signInWithPassword(
+            email: email,
+            password: password,
+          );
+        } catch (_) {
+          return AuthResponse(
+            user: null,
+            session: null,
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      if (e.status == 400 || e.status == 401 || e.status == 422) {
+        throw AuthException(e.message, statusCode: e.status.toString());
+      }
+      debugPrint('API signup fallback: $e');
+    } catch (e) {
+      debugPrint('API signup fallback: $e');
+    }
+
+    final response = await _supabase.auth.signUp(
       email: email,
       password: password,
       data: {'display_name': displayName},
     );
+
+    final user = response.user;
+    final session = response.session;
+    if (user != null) {
+      try {
+        if (session != null) {
+          await _api.postJson(
+            '/api/auth/ensure-profile',
+            accessToken: session.accessToken,
+            body: {
+              'displayName': displayName,
+              'isDeaf': isDeaf,
+              'email': email,
+            },
+          );
+        } else {
+          await _supabase.from('profiles').upsert({
+            'id': user.id,
+            'email': email,
+            'display_name': displayName,
+            'is_deaf': isDeaf,
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        }
+      } catch (e) {
+        debugPrint('ensure profile after signup: $e');
+      }
+    }
+    return response;
   }
 
   @override
   Future<void> signInWithGoogle() async {
-  await _supabase.auth.signInWithOAuth(
-    OAuthProvider.google,
-    redirectTo: kIsWeb 
-        ? Uri.base.origin  // http://localhost:8080 automatique
-        : 'moomoo://login-callback',
-    authScreenLaunchMode: kIsWeb
-        ? LaunchMode.platformDefault
-        : LaunchMode.externalApplication,
-  );
-}
+    await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? Uri.base.origin : 'moomoo://login-callback',
+      authScreenLaunchMode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
+    );
+  }
 
   @override
   Future<void> signOut() async {
@@ -75,8 +173,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> updatePassword(String newPassword) async {
-    await _supabase.auth.updateUser(
-      UserAttributes(password: newPassword),
-    );
+    await _supabase.auth.updateUser(UserAttributes(password: newPassword));
   }
 }

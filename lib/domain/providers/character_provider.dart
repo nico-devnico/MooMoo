@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:moomoo/core/constants/character_constants.dart';
 import 'package:moomoo/data/models/character.dart';
 
 part 'character_provider.g.dart';

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/services/onboarding_preferences.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -16,25 +18,14 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final OnboardingPreferences _prefs = OnboardingPreferences();
   int _currentPage = 0;
 
-  final List<OnboardingData> _pages = [
-    const OnboardingData(
-      title: 'MooMoo, parlez avec vos mains',
-      description: 'Découvrez une nouvelle façon de communiquer grâce à la langue des signes.',
-      image: 'assets/images/onboarding/onboarding_1.gif',
-    ),
-    const OnboardingData(
-      title: 'Votre caméra, votre pont',
-      description: 'Pointez la caméra sur vos mains — la traduction arrive bientôt en V2 !',
-      image: 'assets/images/onboarding/onboarding_2.gif',
-    ),
-    const OnboardingData(
-      title: 'Explorez, apprenez, contribuez',
-      description: 'Accédez à un dictionnaire interactif et participez à la communauté.',
-      image: 'assets/images/onboarding/onboarding_3.gif',
-    ),
-  ];
+  Future<void> _completeAndGo() async {
+    await _prefs.setCompleted(true);
+    if (!mounted) return;
+    context.goNamed(AppRoutes.loginName);
+  }
 
   @override
   void dispose() {
@@ -44,31 +35,64 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pages = [
+      OnboardingData(
+        title: l10n.onboardingTitle1,
+        description: l10n.onboardingDesc1,
+        image: 'assets/images/onboarding/onboarding_1.gif',
+        semanticsLabel: l10n.onboardingSemantics1,
+      ),
+      OnboardingData(
+        title: l10n.onboardingTitle2,
+        description: l10n.onboardingDesc2,
+        image: 'assets/images/onboarding/onboarding_2.gif',
+        semanticsLabel: l10n.onboardingSemantics2,
+      ),
+      OnboardingData(
+        title: l10n.onboardingTitle3,
+        description: l10n.onboardingDesc3,
+        image: 'assets/images/onboarding/onboarding_3.gif',
+        semanticsLabel: l10n.onboardingSemantics3,
+      ),
+    ];
+
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: PageContainer(
+          width: ContentWidth.reading,
+          padding: 0,
+          child: Column(
           children: [
             Align(
               alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: () => context.go(AppRoutes.login),
-                child: Text('Passer', style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                )),
+              child: Semantics(
+                button: true,
+                label: l10n.onboardingSkip,
+                child: TextButton(
+                  onPressed: _completeAndGo,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
+                  child: Text(
+                    l10n.onboardingSkip,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
+                  setState(() => _currentPage = index);
                 },
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 itemBuilder: (context, index) {
-                  return OnboardingPage(data: _pages[index]);
+                  return OnboardingPage(data: pages[index]);
                 },
               ),
             ),
@@ -76,44 +100,51 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.all(AppSpacing.l),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => _buildDot(index),
+                  Semantics(
+                    label: l10n.onboardingPageIndicator(_currentPage + 1, pages.length),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        pages.length,
+                        (index) => _buildDot(index),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   AppButton(
-                  label: _currentPage == _pages.length - 1 ? 'Commencer' : 'Suivant',
-                  onPressed: () {
-                    if (_currentPage < _pages.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      context.goNamed(AppRoutes.loginName);
-                    }
-                  },
-                ),
+                    label: _currentPage == pages.length - 1
+                        ? l10n.onboardingStart
+                        : l10n.onboardingNext,
+                    onPressed: () {
+                      if (_currentPage < pages.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        _completeAndGo();
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
           ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildDot(int index) {
+    final selected = _currentPage == index;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(right: 8),
       height: 8,
-      width: _currentPage == index ? 24 : 8,
+      width: selected ? 24 : 8,
       decoration: BoxDecoration(
-        color: _currentPage == index ? AppColors.primary : AppColors.primary.withOpacity(0.2),
+        color: selected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -124,11 +155,13 @@ class OnboardingData {
   final String title;
   final String description;
   final String image;
+  final String semanticsLabel;
 
   const OnboardingData({
     required this.title,
     required this.description,
     required this.image,
+    required this.semanticsLabel,
   });
 }
 
@@ -146,17 +179,21 @@ class OnboardingPage extends StatelessWidget {
         children: [
           Expanded(
             flex: 3,
-            child: Image.asset(
-              data.image,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
+            child: Semantics(
+              image: true,
+              label: data.semanticsLabel,
+              child: Image.asset(
+                data.image,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Icon(Icons.sign_language, color: Colors.white, size: 64),
                 ),
-                child: const Icon(Icons.image_outlined, color: AppColors.primary, size: 40),
               ),
             ),
           ),
@@ -170,7 +207,9 @@ class OnboardingPage extends StatelessWidget {
           Text(
             data.description,
             textAlign: TextAlign.center,
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondaryLight),
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondaryLight,
+            ),
           ),
           const Spacer(),
         ],

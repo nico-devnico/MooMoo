@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -9,6 +10,7 @@ import '../../../domain/providers/sign_provider.dart';
 import '../../../domain/providers/favorite_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../widgets/app_loader.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/sign_card.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -46,16 +48,13 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
             categoryId: _selectedCategoryId,
           ));
 
-    final isWide = MediaQuery.of(context).size.width > 800;
-
     return Scaffold(
       appBar: widget.showOnlyFavorites 
           ? AppBar(title: Text(l10n.myFavorites))
           : null,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: SafeArea(
+      body: PageContainer(
+        padding: 0,
+        child: SafeArea(
             child: CustomScrollView(
               slivers: [
                 if (!widget.showOnlyFavorites)
@@ -83,7 +82,7 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark 
                             ? AppColors.surfaceDark 
-                            : AppColors.neutralLight.withOpacity(0.5),
+                            : AppColors.neutralLight.withValues(alpha: 0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -101,7 +100,7 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).brightness == Brightness.dark 
                             ? AppColors.surfaceDark 
-                            : AppColors.neutralLight.withOpacity(0.3),
+                            : AppColors.neutralLight.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
@@ -114,7 +113,7 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                               child: Row(
                                 children: [
                                   ChoiceChip(
-                                    label: const Text('Tout'),
+                                    label: Text(l10n.filterAll),
                                     selected: _selectedCategoryId == null,
                                     onSelected: (val) => setState(() => _selectedCategoryId = null),
                                   ),
@@ -131,14 +130,14 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                               ),
                             ),
                             loading: () => const SizedBox(height: 50),
-                            error: (_, __) => const SizedBox.shrink(),
+                            error: (_, _) => const SizedBox.shrink(),
                           ),
                           Padding(
                             padding: const EdgeInsets.only(left: AppSpacing.m, right: AppSpacing.m, bottom: AppSpacing.m),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Résultats', style: AppTextStyles.h3),
+                                Text(l10n.results, style: AppTextStyles.h3),
                                 Row(
                                   children: [
                                     IconButton(
@@ -166,16 +165,29 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                     data: (signs) {
                       if (signs.isEmpty) {
                         return SliverToBoxAdapter(
-                          child: Center(child: Text(widget.showOnlyFavorites ? 'Aucun favori pour le moment' : 'Aucun signe trouvé')),
+                          child: AppEmptyState(
+                            title: widget.showOnlyFavorites
+                                ? l10n.noFavoritesYet
+                                : l10n.noSignsFound,
+                            message: widget.showOnlyFavorites
+                                ? l10n.noFavoritesYet
+                                : l10n.noSignsFound,
+                            imagePath: null,
+                            icon: widget.showOnlyFavorites
+                                ? Icons.favorite_border
+                                : Icons.search_off,
+                          ),
                         );
                       }
 
+                      final isGrid = _viewMode == SignCardVariant.grid;
                       return SliverGrid(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: isWide ? 4 : (_viewMode == SignCardVariant.grid ? 2 : 1),
-                          mainAxisSpacing: AppSpacing.m,
-                          crossAxisSpacing: AppSpacing.m,
-                          childAspectRatio: _viewMode == SignCardVariant.grid ? 0.8 : 3.5,
+                        // Column count follows the available width instead of
+                        // a hardcoded value, so cards keep a sane size from a
+                        // 390 px phone to a 1280 px desktop column.
+                        gridDelegate: adaptiveGridDelegate(
+                          maxItemWidth: isGrid ? 220 : 520,
+                          childAspectRatio: isGrid ? 0.8 : 3.5,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -207,12 +219,30 @@ class _DictionaryScreenState extends ConsumerState<DictionaryScreen> {
                       );
                     },
                     loading: () => const SliverToBoxAdapter(child: Center(child: AppLoader())),
-                    error: (err, _) => SliverToBoxAdapter(child: Center(child: Text('Erreur: $err'))),
+                    error: (err, _) => SliverToBoxAdapter(
+                      child: AppEmptyState(
+                        title: l10n.errorGeneric,
+                        message: '$err',
+                        imagePath: null,
+                        icon: Icons.error_outline,
+                        actionLabel: l10n.retry,
+                        onAction: () {
+                          if (widget.showOnlyFavorites) {
+                            ref.invalidate(userFavoritesProvider);
+                          } else {
+                            ref.invalidate(signSearchProvider(
+                              query: _searchQuery,
+                              languageId: 1,
+                              categoryId: _selectedCategoryId,
+                            ));
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
         ),
       ),
     );

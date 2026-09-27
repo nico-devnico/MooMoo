@@ -38,7 +38,7 @@ class SkeletonPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final glowPaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.3)
+      ..color = AppColors.primary.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     // Draw bones

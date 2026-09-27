@@ -91,7 +91,7 @@ class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProvid
                 icon: const Icon(Icons.upload_file),
                 label: const Text('Ou importer une vidéo'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary.withOpacity(0.2),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                   foregroundColor: Colors.white,
                 ),
               ),

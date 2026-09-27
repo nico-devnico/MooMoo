@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/layout/responsive.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -6,12 +7,25 @@ import '../../core/theme/app_text_styles.dart';
 enum AppButtonVariant { primary, secondary, outline, ghost }
 
 class AppButton extends StatelessWidget {
+  /// Height of every variant. Comfortably above the 48 px touch target floor.
+  static const double height = 56;
+
+  /// Beyond this, a single action button reads as a banner rather than a button.
+  static const double desktopMaxWidth = 280;
+
   final String label;
   final VoidCallback? onPressed;
   final AppButtonVariant variant;
   final bool isLoading;
   final IconData? icon;
+
+  /// Stretch to the parent width. Honoured on mobile only; from the tablet
+  /// breakpoint up the button is capped at [desktopMaxWidth].
   final bool fullWidth;
+
+  /// Lifts the [desktopMaxWidth] cap. For buttons already inside a narrow
+  /// container, such as an auth card, where the cap would leave a stray gap.
+  final bool stretchOnLargeScreens;
 
   const AppButton({
     super.key,
@@ -21,6 +35,7 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
     this.fullWidth = true,
+    this.stretchOnLargeScreens = false,
   });
 
   @override
@@ -52,10 +67,29 @@ class AppButton extends StatelessWidget {
       ],
     );
 
-    return SizedBox(
-      width: fullWidth ? double.infinity : null,
-      height: 56,
+    final button = Semantics(
+      button: true,
+      enabled: !isLoading && onPressed != null,
+      label: label,
       child: _buildButton(context, buttonContent),
+    );
+
+    if (!fullWidth) {
+      return SizedBox(height: height, child: button);
+    }
+
+    if (context.isMobile || stretchOnLargeScreens) {
+      return SizedBox(width: double.infinity, height: height, child: button);
+    }
+
+    // Large screens: fill the column, but never past a width where the button
+    // stops reading as a button.
+    return ConstrainedBox(
+      constraints: const BoxConstraints.tightFor(
+        width: desktopMaxWidth,
+        height: height,
+      ),
+      child: button,
     );
   }
 

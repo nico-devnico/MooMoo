@@ -45,9 +45,11 @@ class SpeechController extends _$SpeechController {
           // Also update a global provider for the result
           ref.read(sttResultProvider.notifier).state = result.recognizedWords;
         },
-        cancelOnError: true,
-        partialResults: true,
-        listenMode: ListenMode.confirmation,
+        listenOptions: SpeechListenOptions(
+          cancelOnError: true,
+          partialResults: true,
+          listenMode: ListenMode.confirmation,
+        ),
       );
     }
   }
@@ -63,5 +65,6 @@ class SttResult extends _$SttResult {
   @override
   String build() => '';
 
+  @override
   set state(String value) => super.state = value;
 }

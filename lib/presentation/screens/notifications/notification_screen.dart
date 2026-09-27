@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/notification_provider.dart';
 import '../../../data/models/notification.dart' as model;
-import '../../widgets/app_loader.dart';
 import '../../../l10n/app_localizations.dart';
 
 class NotificationScreen extends ConsumerWidget {
@@ -24,14 +24,17 @@ class NotificationScreen extends ConsumerWidget {
         title: Text(l10n.notifications),
         centerTitle: true,
       ),
-      body: notificationsAsync.when(
+      body: PageContainer(
+        width: ContentWidth.reading,
+        verticalPadding: AppSpacing.l,
+        child: notificationsAsync.when(
         data: (notifications) {
           if (notifications.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none, size: 64, color: AppColors.neutralDark.withOpacity(0.2)),
+                  Icon(Icons.notifications_none, size: 64, color: AppColors.neutralDark.withValues(alpha: 0.2)),
                   const SizedBox(height: AppSpacing.m),
                   Text(l10n.noNotifications, style: AppTextStyles.bodyLarge),
                 ],
@@ -40,7 +43,6 @@ class NotificationScreen extends ConsumerWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(AppSpacing.l),
             itemCount: notifications.length,
             separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
@@ -51,6 +53,7 @@ class NotificationScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Erreur: $err')),
+        ),
       ),
     );
   }
@@ -70,7 +73,7 @@ class _NotificationTile extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: _getNotificationColor(notification.type).withOpacity(0.1),
+          color: _getNotificationColor(notification.type).withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(

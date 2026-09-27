@@ -1,4 +1,3 @@
-import '../../data/models/character.dart';
 
 class CharacterConstants {
   CharacterConstants._();

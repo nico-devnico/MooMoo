@@ -49,7 +49,7 @@ class _LandmarkViewerState extends State<LandmarkViewer> {
                         center: Alignment.center,
                         radius: 1.0,
                         colors: [
-                          AppColors.primary.withOpacity(isDark ? 0.05 : 0.02),
+                          AppColors.primary.withValues(alpha: isDark ? 0.05 : 0.02),
                           Colors.transparent,
                         ],
                       ),
@@ -104,7 +104,7 @@ class _LandmarkViewerState extends State<LandmarkViewer> {
                 Icon(
                   Icons.gesture_outlined,
                   size: 48,
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: AppSpacing.m),
                 Text(
@@ -131,9 +131,9 @@ class _LandmarkViewerState extends State<LandmarkViewer> {
       label: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
       selected: isSelected,
       onSelected: onSelected,
-      selectedColor: AppColors.primary.withOpacity(0.2),
+      selectedColor: AppColors.primary.withValues(alpha: 0.2),
       checkmarkColor: AppColors.primary,
-      backgroundColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+      backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       side: BorderSide(
         color: isSelected ? AppColors.primary : Colors.transparent,
@@ -165,7 +165,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (isDark ? Colors.white : Colors.black).withOpacity(0.03)
+      ..color = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 

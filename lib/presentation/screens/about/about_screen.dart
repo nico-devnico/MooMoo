@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -19,8 +20,9 @@ class AboutScreen extends ConsumerWidget {
         title: Text(l10n.about),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.l),
+      body: PageContainer.reading(
+        verticalPadding: AppSpacing.l,
+        child: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: AppSpacing.xl),
@@ -80,6 +82,7 @@ class AboutScreen extends ConsumerWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -94,7 +97,7 @@ class AboutScreen extends ConsumerWidget {
   }) {
     return Card(
       elevation: 0,
-      color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withOpacity(0.3),
+      color: isDark ? AppColors.surfaceDark : AppColors.neutralLight.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
@@ -106,7 +109,7 @@ class AboutScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 24),
