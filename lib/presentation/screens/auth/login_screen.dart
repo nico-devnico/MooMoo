@@ -10,6 +10,7 @@ import '../../../domain/providers/auth_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
+import 'widgets/auth_error_message.dart';
 import 'widgets/auth_form_error.dart';
 import 'widgets/auth_layout.dart';
 import 'widgets/oauth_button.dart';
@@ -64,7 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .signInWithEmailPassword(_emailController.text.trim(), _passwordController.text);
       if (mounted) context.go(AppRoutes.home);
     } catch (e) {
-      if (mounted) setState(() => _formError = _friendlyAuthError(e, l10n));
+      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -80,24 +81,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await method();
       if (mounted) context.go(AppRoutes.home);
     } catch (e) {
-      if (mounted) setState(() => _formError = _friendlyAuthError(e, l10n));
+      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  String _friendlyAuthError(Object e, AppLocalizations l10n) {
-    final raw = e.toString().toLowerCase();
-    if (raw.contains('invalid login') || raw.contains('invalid_credentials')) {
-      return l10n.authInvalidCredentials;
-    }
-    if (raw.contains('email not confirmed')) {
-      return l10n.authEmailNotConfirmed;
-    }
-    if (raw.contains('network') || raw.contains('socket')) {
-      return l10n.authNetworkError;
-    }
-    return '${l10n.errorGeneric}: $e';
   }
 
   @override

@@ -5,13 +5,16 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/password_policy.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
+import 'widgets/auth_error_message.dart';
 import 'widgets/auth_form_error.dart';
 import 'widgets/auth_layout.dart';
+import 'widgets/password_requirements.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -29,7 +32,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isPasswordVisible = false;
   bool _isDeaf = false;
   bool _isLoading = false;
-  double _passwordStrength = 0;
+  String _password = '';
   String? _formError;
 
   @override
@@ -41,26 +44,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _onPasswordChanged(String value) {
-    setState(() {
-      if (value.isEmpty) {
-        _passwordStrength = 0;
-      } else if (value.length < 6) {
-        _passwordStrength = 0.25;
-      } else if (value.length < 8) {
-        _passwordStrength = 0.5;
-      } else if (RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$').hasMatch(value)) {
-        _passwordStrength = 1.0;
-      } else {
-        _passwordStrength = 0.75;
-      }
-    });
-  }
-
-  Color _strengthColor() {
-    if (_passwordStrength <= 0.25) return AppColors.error;
-    if (_passwordStrength <= 0.5) return AppColors.warning;
-    if (_passwordStrength <= 0.75) return AppColors.info;
+  Color _strengthColor(double strength) {
+    if (strength <= 0.25) return AppColors.error;
+    if (strength <= 0.5) return AppColors.warning;
+    if (strength < 1) return AppColors.info;
     return AppColors.success;
   }
 
@@ -83,7 +70,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      if (mounted) setState(() => _formError = '${l10n.registerError} : $e');
+      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -150,10 +137,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               controller: _passwordController,
               obscureText: !_isPasswordVisible,
               prefixIcon: Icons.lock_outline,
-              onChanged: _onPasswordChanged,
+              onChanged: (v) => setState(() => _password = v),
               validator: (v) {
-                if (v == null || v.isEmpty) return l10n.requiredField;
-                if (v.length < 6) return l10n.passwordTooShort;
+                final value = v ?? '';
+                if (value.isEmpty) return l10n.requiredField;
+                if (!PasswordPolicy.hasMinLength(value)) return l10n.passwordTooShort;
+                if (!PasswordPolicy.isValid(value)) {
+                  return l10n.passwordDoesNotMeetPolicy;
+                }
                 return null;
               },
               suffixIcon: IconButton(
@@ -168,17 +159,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const SizedBox(height: AppSpacing.s),
             Semantics(
               label: l10n.passwordStrength,
-              value: '${(_passwordStrength * 100).round()}%',
+              value: '${(PasswordPolicy.strength(_password) * 100).round()}%',
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: _passwordStrength,
+                  value: PasswordPolicy.strength(_password),
                   backgroundColor: AppColors.neutralLight,
-                  valueColor: AlwaysStoppedAnimation<Color>(_strengthColor()),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _strengthColor(PasswordPolicy.strength(_password)),
+                  ),
                   minHeight: 6,
                 ),
               ),
             ),
+            const SizedBox(height: AppSpacing.s),
+            PasswordRequirements(password: _password),
             const SizedBox(height: AppSpacing.m),
             AppTextField(
               label: l10n.confirmPassword,

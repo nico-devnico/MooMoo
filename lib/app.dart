@@ -17,9 +17,14 @@ class MooMooApp extends ConsumerWidget {
     
     final localeCode = profile?.locale ?? 'fr';
     
-    ThemeMode themeMode = ThemeMode.system;
-    if (profile?.theme == 'light') themeMode = ThemeMode.light;
-    if (profile?.theme == 'dark') themeMode = ThemeMode.dark;
+    // The white and blue identity is the default; following the OS is opt-in
+    // through the settings screen, otherwise the light theme never shows on a
+    // machine that prefers dark.
+    final themeMode = switch (profile?.theme) {
+      'dark' => ThemeMode.dark,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.light,
+    };
 
     return MaterialApp.router(
       key: ValueKey('app_locale_$localeCode'),

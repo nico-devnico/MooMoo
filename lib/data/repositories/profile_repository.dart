@@ -26,6 +26,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
       'preferred_output,preferred_view,is_deaf,theme,locale,created_at,updated_at,'
       'three_d_auto_rotate';
 
+  /// Colonnes présentes dans toutes les versions du schéma : sert de repli si
+  /// une colonne optionnelle manque, sans repasser par un `select('*')`.
+  static const _minimalSelect =
+      'id,email,display_name,avatar_url,bio,preferred_sign_language,'
+      'preferred_output,preferred_view,is_deaf,theme,locale,created_at,updated_at';
+
   @override
   Future<UserProfile?> getProfile(String id) async {
     try {
@@ -37,10 +43,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
       if (response == null) return null;
       return UserProfile.fromJson(_normalize(response));
     } catch (_) {
-      // Fallback: select * if some columns missing from safe list
       final response = await _supabase
           .from('profiles')
-          .select()
+          .select(_minimalSelect)
           .eq('id', id)
           .maybeSingle();
       if (response == null) return null;

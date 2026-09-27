@@ -189,7 +189,7 @@ class OnboardingPage extends StatelessWidget {
                   width: 160,
                   height: 160,
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Icon(Icons.sign_language, color: Colors.white, size: 64),

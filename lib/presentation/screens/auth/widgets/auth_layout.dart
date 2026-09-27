@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/layout/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -140,7 +141,7 @@ class _FormCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: onBack,
-              icon: const Icon(Icons.arrow_back, size: 18),
+              icon: const Icon(AppIcons.back, size: 18),
               label: Text(l10n.back),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
@@ -176,15 +177,8 @@ class _FormCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? AppColors.neutralDark : AppColors.neutralLight,
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.06),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-          ),
-        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -194,7 +188,7 @@ class _FormCard extends StatelessWidget {
   }
 }
 
-/// Gradient column shown next to the form from the desktop breakpoint up.
+/// Solid brand column shown next to the form from the desktop breakpoint up.
 class _BrandPanel extends StatelessWidget {
   const _BrandPanel();
 
@@ -202,59 +196,52 @@ class _BrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const Positioned(top: -80, right: -60, child: _Bubble(size: 260)),
-          const Positioned(bottom: -100, left: -80, child: _Bubble(size: 320)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _BrandMark(size: 64, onGradient: true),
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    l10n.authBrandHeadline,
-                    style: AppTextStyles.h1.copyWith(
-                      color: Colors.white,
-                      fontSize: 36,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: Text(
-                      l10n.authBrandTagline,
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  _Feature(
-                    icon: Icons.sign_language_outlined,
-                    label: l10n.authFeatureTranslate,
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  _Feature(
-                    icon: Icons.menu_book_outlined,
-                    label: l10n.authFeatureLearn,
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  _Feature(
-                    icon: Icons.groups_outlined,
-                    label: l10n.authFeatureCommunity,
-                  ),
-                ],
+    return ColoredBox(
+      color: AppColors.primaryDeep,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _BrandMark(size: 64, onDark: true),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                l10n.authBrandHeadline,
+                style: AppTextStyles.h1.copyWith(
+                  color: Colors.white,
+                  fontSize: 36,
+                ),
               ),
-            ),
+              const SizedBox(height: AppSpacing.m),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Text(
+                  l10n.authBrandTagline,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              _Feature(
+                icon: AppIcons.signLanguage,
+                label: l10n.authFeatureTranslate,
+              ),
+              const SizedBox(height: AppSpacing.l),
+              _Feature(
+                icon: AppIcons.dictionary,
+                label: l10n.authFeatureLearn,
+              ),
+              const SizedBox(height: AppSpacing.l),
+              _Feature(
+                icon: AppIcons.users,
+                label: l10n.authFeatureCommunity,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -287,10 +274,10 @@ class _CompactBrandHeader extends StatelessWidget {
 }
 
 class _BrandMark extends StatelessWidget {
-  const _BrandMark({required this.size, this.onGradient = false});
+  const _BrandMark({required this.size, this.onDark = false});
 
   final double size;
-  final bool onGradient;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -302,8 +289,8 @@ class _BrandMark extends StatelessWidget {
         height: size,
         padding: EdgeInsets.all(size * 0.14),
         decoration: BoxDecoration(
-          color: onGradient
-              ? Colors.white.withValues(alpha: 0.18)
+          color: onDark
+              ? Colors.white.withValues(alpha: 0.12)
               : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(size * 0.3),
         ),
@@ -311,9 +298,9 @@ class _BrandMark extends StatelessWidget {
           'assets/images/logo.png',
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) => Icon(
-            Icons.sign_language,
+            AppIcons.signLanguage,
             size: size * 0.5,
-            color: onGradient ? Colors.white : AppColors.primary,
+            color: onDark ? Colors.white : AppColors.primary,
           ),
         ),
       ),
@@ -335,7 +322,7 @@ class _Feature extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.18),
+            color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: Colors.white, size: 20),
@@ -351,27 +338,6 @@ class _Feature extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Soft decorative circle behind the brand panel content.
-class _Bubble extends StatelessWidget {
-  const _Bubble({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
-      ),
     );
   }
 }

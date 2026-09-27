@@ -1,38 +1,49 @@
 import 'package:flutter/material.dart';
 
+/// White and deep blue palette.
+///
+/// One hue family carries the whole interface: a sapphire primary for actions,
+/// a navy for text, and blue-tinted neutrals instead of grey so surfaces read
+/// as intentional rather than washed out. Colours are applied flat — no
+/// gradients anywhere in the product.
 class AppColors {
   AppColors._();
 
-  // Primary Palette
-  static const Color primary = Color(0xFF5B6BF8);
-  static const Color secondary = Color(0xFF00C6AE);
-  
-  // Status Colors
-  static const Color error = Color(0xFFE53935);
-  static const Color success = Color(0xFF43A047);
-  static const Color warning = Color(0xFFFFA000);
-  static const Color info = Color(0xFF1976D2);
+  // Brand
+  static const Color primary = Color(0xFF1A56DB);
+  static const Color primaryDeep = Color(0xFF0A2540);
+  static const Color primarySoft = Color(0xFFEAF0FE);
+  static const Color secondary = Color(0xFF4C8DFF);
 
-  // Neutral Palette - Light
+  // Status
+  static const Color error = Color(0xFFD92D20);
+  static const Color success = Color(0xFF0E9F6E);
+  static const Color warning = Color(0xFFD9820A);
+  static const Color info = Color(0xFF1A56DB);
+
+  // Light
   static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color backgroundLight = Color(0xFFF4F4F8);
-  static const Color neutralLight = Color(0xFFF4F4F8);
-  static const Color textPrimaryLight = Color(0xFF1C1C2E);
-  static const Color textSecondaryLight = Color(0xFF6E6E80);
+  static const Color backgroundLight = Color(0xFFF7F9FD);
+  static const Color neutralLight = Color(0xFFEEF3FC);
+  static const Color borderLight = Color(0xFFE1E8F5);
+  static const Color textPrimaryLight = Color(0xFF0A2540);
+  static const Color textSecondaryLight = Color(0xFF5B6B85);
 
-  // Neutral Palette - Dark
-  static const Color backgroundDark = Color(0xFF09090B); // Zinc 950
-  static const Color surfaceDark = Color(0xFF121217);    // Zinc 900 custom
-  static const Color neutralDark = Color(0xFF1E1E24);    // Zinc 800 custom
-  static const Color textPrimaryDark = Color(0xFFFAFAFA); // Zinc 50
-  static const Color textSecondaryDark = Color(0xFFA1A1AA); // Zinc 400
+  // Dark
+  static const Color backgroundDark = Color(0xFF070B14);
+  static const Color surfaceDark = Color(0xFF0E1524);
+  static const Color neutralDark = Color(0xFF182132);
+  static const Color borderDark = Color(0xFF24304A);
+  static const Color textPrimaryDark = Color(0xFFF5F8FF);
+  static const Color textSecondaryDark = Color(0xFF9BABC7);
 
-  // Gradients
-  static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primary, secondary],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  static const Color overlay = Color(0x330A2540);
 
-  static const Color overlay = Color(0x33000000); // 20% semi-transparent
+  static Color border(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? borderDark : borderLight;
+
+  static Color textSecondary(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? textSecondaryDark
+          : textSecondaryLight;
 }

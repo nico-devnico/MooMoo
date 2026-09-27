@@ -4,7 +4,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/layout/responsive.dart';
+import '../../core/theme/app_icons.dart';
 import '../../data/models/sign.dart';
+import '../../l10n/app_localizations.dart';
 import 'app_card.dart';
 
 enum SignCardVariant { grid, list }
@@ -33,95 +36,111 @@ class SignCard extends StatelessWidget {
     return _buildGridVariant(context);
   }
 
+  /// Media on top, text underneath. Nothing floats over the thumbnail: the
+  /// favourite control and the difficulty chip live in the caption, where they
+  /// stay legible whatever the image behind them looks like.
   Widget _buildGridVariant(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _buildThumbnail(),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _FavoriteButton(
-                    isFavorite: isFavorite,
-                    onTap: onFavoriteTap,
+    return Semantics(
+      button: true,
+      label: sign.word,
+      child: AppCard(
+        onTap: onTap,
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildThumbnail()),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          sign.word,
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      _FavoriteButton(
+                        isFavorite: isFavorite,
+                        onTap: onFavoriteTap,
+                        small: true,
+                      ),
+                    ],
                   ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: _DifficultyBadge(level: sign.difficultyLevel),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.xs),
+                  _DifficultyBadge(level: sign.difficultyLevel),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.s),
-            child: Text(
-              sign.word,
-              style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildListVariant(BuildContext context) {
-    return AppCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.s),
-      child: Row(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.radiusM,
+    return Semantics(
+      button: true,
+      label: sign.word,
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.all(AppSpacing.s),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: ClipRRect(
+                borderRadius: AppRadius.radiusM,
+                child: _buildThumbnail(),
+              ),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: _buildThumbnail(),
-          ),
-          const SizedBox(width: AppSpacing.m),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      sign.word,
-                      style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    _FavoriteButton(
-                      isFavorite: isFavorite,
-                      onTap: onFavoriteTap,
-                      small: true,
-                    ),
-                  ],
-                ),
-                if (sign.description != null)
-                  Text(
-                    sign.description!,
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondaryLight),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+            const SizedBox(width: AppSpacing.m),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          sign.word,
+                          style: AppTextStyles.bodyLarge
+                              .copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      _FavoriteButton(
+                        isFavorite: isFavorite,
+                        onTap: onFavoriteTap,
+                        small: true,
+                      ),
+                    ],
                   ),
-                const SizedBox(height: AppSpacing.s),
-                _DifficultyBadge(level: sign.difficultyLevel),
-              ],
+                  if (sign.description != null)
+                    Text(
+                      sign.description!,
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textSecondaryLight),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  const SizedBox(height: AppSpacing.s),
+                  _DifficultyBadge(level: sign.difficultyLevel),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -141,7 +160,7 @@ class SignCard extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       color: AppColors.neutralLight,
-      child: const Icon(Icons.image_outlined, color: AppColors.textSecondaryLight),
+      child: const Icon(AppIcons.image, color: AppColors.textSecondaryLight),
     );
   }
 }
@@ -159,19 +178,18 @@ class _FavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(small ? 4 : 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          isFavorite ? Icons.favorite : Icons.favorite_border,
-          color: isFavorite ? AppColors.error : AppColors.textSecondaryLight,
-          size: small ? 16 : 20,
-        ),
+    return IconButton(
+      onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(
+        minWidth: kMinTouchTarget,
+        minHeight: kMinTouchTarget,
+      ),
+      padding: EdgeInsets.zero,
+      icon: Icon(
+        isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
+        color: isFavorite ? AppColors.error : AppColors.textSecondaryLight,
+        size: small ? 18 : 22,
       ),
     );
   }
@@ -187,34 +205,33 @@ class _DifficultyBadge extends StatelessWidget {
     Color color;
     String label;
 
+    final l10n = AppLocalizations.of(context)!;
+
     switch (level) {
-      case 1:
-        color = AppColors.secondary;
-        label = 'Facile';
-        break;
       case 2:
         color = AppColors.warning;
-        label = 'Moyen';
-        break;
+        label = l10n.difficultyMedium;
       case 3:
         color = AppColors.error;
-        label = 'Difficile';
-        break;
+        label = l10n.difficultyHard;
       default:
-        color = AppColors.secondary;
-        label = 'Facile';
+        color = AppColors.success;
+        label = l10n.difficultyEasy;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: color.withValues(alpha: 0.10),
+        borderRadius: AppRadius.radiusCircular,
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

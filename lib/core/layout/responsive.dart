@@ -5,7 +5,7 @@ import '../theme/app_spacing.dart';
 /// Layout breakpoints in logical pixels.
 ///
 /// `mobile < 600 <= tablet < 1024 <= desktop`, with [wide] marking the point
-/// where an extended navigation rail becomes comfortable.
+/// where generous multi-column layouts become comfortable.
 class Breakpoints {
   Breakpoints._();
 
@@ -61,11 +61,13 @@ extension ResponsiveContext on BuildContext {
   /// True from the tablet breakpoint upwards.
   bool get isAtLeastTablet => !isMobile;
 
-  /// True once a permanent side navigation fits comfortably.
-  bool get hasSideNavigation => screenWidth >= Breakpoints.desktop;
+  /// True once a horizontal top navigation bar fits, i.e. the app is browsed
+  /// like a website rather than through a bottom bar.
+  bool get hasTopNavigation => screenWidth >= Breakpoints.tablet;
 
-  /// True once that side navigation can show labels next to the icons.
-  bool get hasExtendedSideNavigation => screenWidth >= Breakpoints.wide;
+  /// True once there is room for the full desktop treatment: split layouts,
+  /// icons next to navigation labels, side-by-side panels.
+  bool get hasSideNavigation => screenWidth >= Breakpoints.desktop;
 
   /// Picks a value per form factor, falling back to the next smaller one.
   T responsive<T>({required T mobile, T? tablet, T? desktop}) {

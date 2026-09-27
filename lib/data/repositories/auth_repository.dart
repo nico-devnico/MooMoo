@@ -56,12 +56,13 @@ class AuthRepositoryImpl implements AuthRepository {
         if (restored.session != null) return restored;
         // setSession may need access+refresh — use signIn as fallback
       }
+    } on ApiUnreachableException {
+      // Backend not running: Supabase Auth below handles it on its own.
     } on ApiException catch (e) {
       // Re-throw API validation / auth errors so UI shows the real message
       if (e.status == 400 || e.status == 401) {
         throw AuthException(e.message, statusCode: e.status.toString());
       }
-      // Network / 503 → fall through to direct Supabase Auth
       debugPrint('API login fallback: $e');
     } catch (e) {
       debugPrint('API login fallback: $e');
@@ -105,6 +106,8 @@ class AuthRepositoryImpl implements AuthRepository {
           );
         }
       }
+    } on ApiUnreachableException {
+      // Backend not running: sign up straight through Supabase Auth below.
     } on ApiException catch (e) {
       if (e.status == 400 || e.status == 401 || e.status == 422) {
         throw AuthException(e.message, statusCode: e.status.toString());
@@ -143,6 +146,14 @@ class AuthRepositoryImpl implements AuthRepository {
             'updated_at': DateTime.now().toIso8601String(),
           });
         }
+      } on ApiUnreachableException {
+        await _supabase.from('profiles').upsert({
+          'id': user.id,
+          'email': email,
+          'display_name': displayName,
+          'is_deaf': isDeaf,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
       } catch (e) {
         debugPrint('ensure profile after signup: $e');
       }

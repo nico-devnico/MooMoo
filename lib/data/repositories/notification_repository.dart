@@ -1,8 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/notification.dart' as model;
 
+const notificationColumns =
+    'id,user_id,type,title,body,is_read,payload,created_at';
+
 abstract class NotificationRepository {
-  Future<List<model.Notification>> getNotifications(String userId);
+  Future<List<model.Notification>> getNotifications(
+    String userId, {
+    int limit = 50,
+    int offset = 0,
+  });
   Future<void> markAsRead(String notificationId);
   Stream<List<model.Notification>> watchNotifications(String userId);
 }
@@ -13,14 +20,22 @@ class NotificationRepositoryImpl implements NotificationRepository {
   NotificationRepositoryImpl(this._supabase);
 
   @override
-  Future<List<model.Notification>> getNotifications(String userId) async {
+  Future<List<model.Notification>> getNotifications(
+    String userId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
     final response = await _supabase
         .from('notifications')
-        .select()
+        .select(notificationColumns)
         .eq('user_id', userId)
-        .order('created_at', ascending: false);
-    
-    return (response as List).map((json) => model.Notification.fromJson(json)).toList();
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    return (response as List)
+        .map((json) =>
+            model.Notification.fromJson(json as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   @override
@@ -38,6 +53,9 @@ class NotificationRepositoryImpl implements NotificationRepository {
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
-        .map((data) => data.map((json) => model.Notification.fromJson(json)).toList());
+        .limit(50)
+        .map((data) => data
+            .map((json) => model.Notification.fromJson(json))
+            .toList(growable: false));
   }
 }

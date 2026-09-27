@@ -41,21 +41,6 @@ class _LandmarkViewerState extends State<LandmarkViewer> {
             child: Stack(
               children: [
                 const _GridViewerBackground(),
-                // Radial gradient for depth
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment.center,
-                        radius: 1.0,
-                        colors: [
-                          AppColors.primary.withValues(alpha: isDark ? 0.05 : 0.02),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
                 
                 // Skeleton Painter
                 Positioned.fill(

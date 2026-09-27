@@ -32,7 +32,7 @@ class SkeletonPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final paintBone = Paint()
-      ..shader = AppColors.primaryGradient.createShader(Offset.zero & size)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;

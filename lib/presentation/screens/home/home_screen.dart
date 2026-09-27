@@ -124,9 +124,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    const _LanguageSelector(),
-                    const SizedBox(height: AppSpacing.xl),
-                    
                     // Main Actions
                     Align(
                       alignment: Alignment.centerLeft,
@@ -139,11 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 title: l10n.signToText,
                                 subtitle: l10n.viaCamera,
                                 icon: Icons.videocam_outlined,
-                                gradient: const LinearGradient(
-                                  colors: [AppColors.primary, Color(0xFF6366F1)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                color: AppColors.primary,
                                 onTap: () => context.goNamed(AppRoutes.translatorName),
                               ),
                             ),
@@ -153,11 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 title: l10n.textToSign,
                                 subtitle: l10n.viaKeyboard,
                                 icon: Icons.keyboard_alt_outlined,
-                                gradient: const LinearGradient(
-                                  colors: [AppColors.secondary, Color(0xFF10B981)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                color: AppColors.primaryDeep,
                                 onTap: () => context.goNamed(AppRoutes.translatorName),
                               ),
                             ),
@@ -194,115 +183,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _LanguageSelector extends ConsumerWidget {
-  const _LanguageSelector();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileProvider).value;
-    final languagesAsync = ref.watch(signLanguagesProvider);
-    final l10n = AppLocalizations.of(context)!;
-    
-    final currentLangCode = profile?.preferredSignLanguage ?? 'LSF';
-    
-    // Find current language object to get its flag if possible
-    final currentLang = languagesAsync.value?.firstWhere(
-      (l) => l.code == currentLangCode,
-      orElse: () => const SignLanguage(id: 0, code: 'LSF', name: 'LSF'),
-    );
-    
-    final flag = currentLang?.flagEmoji ?? _getFlagForLanguage(currentLangCode);
-
-    return InkWell(
-      onTap: () {
-        languagesAsync.whenData((languages) {
-          showModalBottomSheet(
-            context: context,
-            builder: (context) => Container(
-              padding: const EdgeInsets.all(AppSpacing.l),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l10n.signLanguage, style: AppTextStyles.h3),
-                  const SizedBox(height: AppSpacing.l),
-                  ...languages.map((lang) => ListTile(
-                    leading: Text(lang.flagEmoji ?? _getFlagForLanguage(lang.code), style: const TextStyle(fontSize: 24)),
-                    title: Text(lang.name),
-                    trailing: lang.code == currentLangCode ? const Icon(Icons.check, color: AppColors.primary) : null,
-                    onTap: () async {
-                      if (profile != null) {
-                        await ref.read(profileRepositoryProvider).updateProfile(
-                          profile.copyWith(preferredSignLanguage: lang.code),
-                        );
-                        ref.invalidate(userProfileProvider);
-                      }
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                  )),
-                  const SizedBox(height: AppSpacing.xl),
-                ],
-              ),
-            ),
-          );
-        });
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(flag, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 10),
-            Text(
-              currentLangCode,
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.keyboard_arrow_down, size: 20, color: AppColors.primary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getFlagForLanguage(String language) {
-    switch (language.toUpperCase()) {
-      case 'LSF':
-        return '🇫🇷';
-      case 'ASL':
-        return '🇺🇸';
-      case 'BSL':
-        return '🇬🇧';
-      case 'LSC':
-      case 'CAM':
-      case 'CMR':
-        return '🇨🇲';
-      default:
-        return '🌎';
-    }
-  }
-}
-
 class _MainActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Gradient gradient;
+  final Color color;
   final VoidCallback onTap;
 
   const _MainActionCard({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.gradient,
+    required this.color,
     required this.onTap,
   });
 
@@ -314,7 +206,7 @@ class _MainActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.l),
         decoration: BoxDecoration(
-          gradient: gradient,
+          color: color,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(

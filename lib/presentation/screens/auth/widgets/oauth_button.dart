@@ -39,7 +39,7 @@ class OAuthButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? AppColors.neutralDark : const Color(0xFFE2E2EA),
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
               ),
             ),
             child: Center(

@@ -113,7 +113,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get deleteAccount => 'Delete Account';
+  String get deleteAccount => 'Delete account';
 
   @override
   String get signs => 'Signs';
@@ -528,6 +528,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get difficultyLevel => 'Difficulty level';
 
   @override
+  String get difficultyEasy => 'Easy';
+
+  @override
+  String get difficultyMedium => 'Medium';
+
+  @override
+  String get difficultyHard => 'Hard';
+
+  @override
   String get views => 'Views';
 
   @override
@@ -591,6 +600,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminRole => 'Administrator';
 
   @override
+  String get roleTeacher => 'Teacher';
+
+  @override
+  String get roleExpert => 'Sign language expert';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusSuspended => 'Suspended';
+
+  @override
+  String get addUser => 'Add a user';
+
+  @override
+  String get editUser => 'Edit';
+
+  @override
+  String get manageRoles => 'Roles';
+
+  @override
+  String get suspendAccount => 'Suspend';
+
+  @override
+  String get unsuspendAccount => 'Reactivate';
+
+  @override
+  String deleteAccountConfirm(String name) {
+    return 'Permanently delete $name\'s account? This cannot be undone.';
+  }
+
+  @override
+  String get suspendReason => 'Reason for the suspension';
+
+  @override
+  String suspendConfirm(String name) {
+    return 'Suspend $name';
+  }
+
+  @override
+  String get userCreated => 'User created';
+
+  @override
+  String get userDeleted => 'Account deleted';
+
+  @override
+  String get userSuspended => 'Account suspended';
+
+  @override
+  String get userReactivated => 'Account reactivated';
+
+  @override
   String get deafUser => 'Deaf / Hard of hearing';
 
   @override
@@ -607,11 +668,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Admin actions need matching RLS policies (read/write on profiles, signs and contributions for is_admin accounts). Without them, some client operations will fail.';
 
   @override
-  String get adminHowToGrant => 'How to become admin';
+  String get adminHowToGrant => 'Account management';
 
   @override
   String get adminHowToGrantBody =>
-      'Set is_admin = true on the profile in Supabase, or role = admin in user metadata. An admin can then promote other accounts from this screen.';
+      'From Users, open an account menu to grant the administrator, teacher or expert role, suspend the account or delete it. An admin cannot remove their own role or the last remaining admin.';
 
   @override
   String get contributeFormTitle => 'Propose a sign';
@@ -710,6 +771,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordStrength => 'Password strength';
+
+  @override
+  String get authEmailAlreadyUsed =>
+      'This email address already has an account. Sign in, or use another address.';
+
+  @override
+  String get authWeakPassword =>
+      'Password too weak. Meet every requirement listed under the field.';
+
+  @override
+  String get authRateLimited =>
+      'Too many attempts. Wait a few minutes before trying again.';
+
+  @override
+  String get authSignupDisabled => 'Sign-ups are disabled on this server.';
+
+  @override
+  String get passwordRequirementsTitle => 'Password must contain:';
+
+  @override
+  String get passwordRuleLength => '6 characters';
+
+  @override
+  String get passwordRuleLowercase => 'a lowercase letter';
+
+  @override
+  String get passwordRuleUppercase => 'an uppercase letter';
+
+  @override
+  String get passwordRuleDigit => 'a digit';
+
+  @override
+  String get passwordRuleSymbol => 'a symbol';
+
+  @override
+  String get passwordDoesNotMeetPolicy =>
+      'Password does not meet every requirement';
 
   @override
   String get authBrandHeadline => 'Speak with your hands';

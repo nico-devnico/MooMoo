@@ -13,17 +13,62 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Raised when the API host cannot be reached at all.
+///
+/// Callers use this to fall back to Supabase directly instead of surfacing a
+/// connection error to the user.
+class ApiUnreachableException implements Exception {
+  ApiUnreachableException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
   final http.Client _client;
   final String baseUrl;
+  final Duration timeout;
 
-  ApiClient({http.Client? client, String? baseUrl})
+  ApiClient({http.Client? client, String? baseUrl, Duration? timeout})
       : _client = client ?? http.Client(),
-        baseUrl = baseUrl ?? ApiConfig.baseUrl;
+        baseUrl = baseUrl ?? ApiConfig.baseUrl,
+        timeout = timeout ?? const Duration(seconds: 5);
+
+  /// How long the API is considered down after a failed connection, so a
+  /// stopped backend costs one failed request instead of one per action.
+  static const Duration _unreachableCooldown = Duration(seconds: 30);
+
+  static DateTime? _unreachableUntil;
+
+  static bool get isProbablyUnreachable {
+    final until = _unreachableUntil;
+    return until != null && DateTime.now().isBefore(until);
+  }
+
+  /// Clears the cooldown, e.g. after the user starts the backend.
+  static void resetAvailability() => _unreachableUntil = null;
 
   Uri _uri(String path, [Map<String, String>? query]) {
     final normalized = path.startsWith('/') ? path : '/$path';
     return Uri.parse('$baseUrl$normalized').replace(queryParameters: query);
+  }
+
+  Future<T> _send<T>(Future<T> Function() request) async {
+    if (isProbablyUnreachable) {
+      throw ApiUnreachableException('API $baseUrl marquée injoignable');
+    }
+    try {
+      final result = await request().timeout(timeout);
+      _unreachableUntil = null;
+      return result;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      _unreachableUntil = DateTime.now().add(_unreachableCooldown);
+      throw ApiUnreachableException('API $baseUrl injoignable : $e');
+    }
   }
 
   Future<Map<String, dynamic>> get(
@@ -31,11 +76,13 @@ class ApiClient {
     String? accessToken,
     Map<String, String>? query,
   }) async {
-    final res = await _client.get(
-      _uri(path, query),
-      headers: _headers(accessToken),
-    );
-    return _decode(res);
+    return _send(() async {
+      final res = await _client.get(
+        _uri(path, query),
+        headers: _headers(accessToken),
+      );
+      return _decode(res);
+    });
   }
 
   Future<Map<String, dynamic>> postJson(
@@ -43,15 +90,30 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? accessToken,
   }) async {
-    final res = await _client.post(
-      _uri(path),
-      headers: {
-        ..._headers(accessToken),
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body ?? {}),
-    );
-    return _decode(res);
+    return _send(() async {
+      final res = await _client.post(
+        _uri(path),
+        headers: {
+          ..._headers(accessToken),
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body ?? {}),
+      );
+      return _decode(res);
+    });
+  }
+
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    String? accessToken,
+  }) async {
+    return _send(() async {
+      final res = await _client.delete(
+        _uri(path),
+        headers: _headers(accessToken),
+      );
+      return _decode(res);
+    });
   }
 
   Future<Map<String, dynamic>> postMultipart(
@@ -62,19 +124,21 @@ class ApiClient {
     Map<String, String>? fields,
     String? accessToken,
   }) async {
-    final req = http.MultipartRequest('POST', _uri(path));
-    if (accessToken != null && accessToken.isNotEmpty) {
-      req.headers['Authorization'] = 'Bearer $accessToken';
-    }
-    if (fields != null) {
-      req.fields.addAll(fields);
-    }
-    req.files.add(
-      http.MultipartFile.fromBytes(fieldName, fileBytes, filename: filename),
-    );
-    final streamed = await _client.send(req);
-    final res = await http.Response.fromStream(streamed);
-    return _decode(res);
+    return _send(() async {
+      final req = http.MultipartRequest('POST', _uri(path));
+      if (accessToken != null && accessToken.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $accessToken';
+      }
+      if (fields != null) {
+        req.fields.addAll(fields);
+      }
+      req.files.add(
+        http.MultipartFile.fromBytes(fieldName, fileBytes, filename: filename),
+      );
+      final streamed = await _client.send(req);
+      final res = await http.Response.fromStream(streamed);
+      return _decode(res);
+    });
   }
 
   Map<String, String> _headers(String? accessToken) {

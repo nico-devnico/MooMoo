@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_nav_bar.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Branch indices of the [StatefulShellRoute] declared in the router.
@@ -58,7 +59,6 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isTranslating = ref.watch(translatorStateProvider);
     final isListening = ref.watch(speechControllerProvider);
@@ -67,25 +67,18 @@ class MainShell extends ConsumerWidget {
     // Watch profile to force rebuild on locale/theme change
     ref.watch(userProfileProvider);
 
-    if (context.hasSideNavigation) {
+    if (context.hasTopNavigation) {
       return Scaffold(
-        body: Row(
+        body: Column(
           children: [
-            _MainNavigationRail(
+            _MainNavBar(
               currentIndex: navigationShell.currentIndex,
-              extended: context.hasExtendedSideNavigation,
               isActive: isActive,
               onDestinationSelected: navigationShell.goBranch,
               onTranslateAction: () =>
                   _handleTranslateAction(ref, isActive: isActive),
             ),
-            const VerticalDivider(width: 1, thickness: 1),
-            Expanded(
-              child: IconTheme(
-                data: const IconThemeData(color: AppColors.primary, size: 24),
-                child: navigationShell,
-              ),
-            ),
+            Expanded(child: navigationShell),
           ],
         ),
       );
@@ -93,68 +86,301 @@ class MainShell extends ConsumerWidget {
 
     return Scaffold(
       body: navigationShell,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
-        width: 70,
-        height: 70,
-        child: FloatingActionButton(
-          tooltip: l10n.translate,
-          onPressed: () => _handleTranslateAction(ref, isActive: isActive),
-          backgroundColor: isActive ? AppColors.error : AppColors.primary,
-          elevation: 4,
-          shape: const CircleBorder(),
-          child: isActive
-              ? const Icon(Icons.stop, color: Colors.white, size: 32)
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.15, 1.15),
-                    duration: 600.ms,
-                  )
-              : const Icon(Icons.translate, color: Colors.white, size: 32),
+      bottomNavigationBar: _FloatingBottomBar(
+        currentIndex: navigationShell.currentIndex,
+        isActive: isActive,
+        onDestinationSelected: navigationShell.goBranch,
+        onTranslateAction: () => _handleTranslateAction(ref, isActive: isActive),
+        translateLabel: l10n.translate,
+      ),
+    );
+  }
+}
+
+/// Horizontal navigation used from the tablet breakpoint up.
+class _MainNavBar extends ConsumerWidget {
+  const _MainNavBar({
+    required this.currentIndex,
+    required this.isActive,
+    required this.onDestinationSelected,
+    required this.onTranslateAction,
+  });
+
+  final int currentIndex;
+  final bool isActive;
+  final ValueChanged<int> onDestinationSelected;
+  final VoidCallback onTranslateAction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final profileAsync = ref.watch(userProfileProvider);
+
+    return AppNavBar(
+      semanticLabel: l10n.navigationMenu,
+      brand: AppNavBrand(
+        title: 'MooMoo',
+        onTap: () => onDestinationSelected(_Branch.home),
+      ),
+      selectedIndex: currentIndex,
+      onDestinationSelected: onDestinationSelected,
+      destinations: [
+        NavBarDestination(
+          icon: AppIcons.home,
+          selectedIcon: AppIcons.homeActive,
+          label: l10n.home,
+        ),
+        NavBarDestination(
+          icon: AppIcons.translate,
+          selectedIcon: AppIcons.translateActive,
+          label: l10n.translate,
+        ),
+        NavBarDestination(
+          icon: AppIcons.dictionary,
+          selectedIcon: AppIcons.dictionaryActive,
+          label: l10n.dictionary,
+        ),
+        NavBarDestination(
+          icon: AppIcons.learning,
+          selectedIcon: AppIcons.learningActive,
+          label: l10n.learning,
+        ),
+        NavBarDestination(
+          icon: AppIcons.profile,
+          selectedIcon: AppIcons.profileActive,
+          label: l10n.profile,
+        ),
+      ],
+      actions: [
+        FilledButton.icon(
+          onPressed: onTranslateAction,
+          style: FilledButton.styleFrom(
+            backgroundColor: isActive ? AppColors.error : AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.l,
+              vertical: AppSpacing.m,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.radiusCircular,
+            ),
+          ),
+          icon: Icon(isActive ? AppIcons.stop : AppIcons.translate, size: 20),
+          label: Text(isActive ? l10n.stopTranslation : l10n.translate),
+        ),
+        Tooltip(
+          message: l10n.profile,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => onDestinationSelected(_Branch.profile),
+            child: profileAsync.when(
+              data: (profile) => AppAvatar(
+                imageUrl: profile?.avatarUrl,
+                name: profile?.displayName,
+                radius: 18,
+              ),
+              loading: () => const CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primarySoft,
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (_, _) => const CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primarySoft,
+                child: Icon(AppIcons.profile, color: AppColors.primary, size: 20),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Detached pill-shaped bottom bar. The translate action is a circle that
+/// rises a few pixels above the bar, but it shares the bar's colour, border
+/// and shadow, so the lift reads as part of the same surface rather than as a
+/// separate floating control. The mark on it is the app logo.
+class _FloatingBottomBar extends StatelessWidget {
+  const _FloatingBottomBar({
+    required this.currentIndex,
+    required this.isActive,
+    required this.onDestinationSelected,
+    required this.onTranslateAction,
+    required this.translateLabel,
+  });
+
+  final int currentIndex;
+  final bool isActive;
+  final ValueChanged<int> onDestinationSelected;
+  final VoidCallback onTranslateAction;
+  final String translateLabel;
+
+  static const double _barHeight = 64;
+  static const double _buttonSize = 62;
+
+  /// How far the button rises above the bar. Small on purpose: enough to be
+  /// raised, not enough to read as a control breaking out of the bar.
+  static const double _lift = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.m,
+          0,
+          AppSpacing.m,
+          AppSpacing.m,
+        ),
+        child: SizedBox(
+          height: _barHeight + _lift,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Container(
+                height: _barHeight,
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(_barHeight / 2),
+                  border: Border.all(color: border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryDeep.withValues(
+                        alpha: isDark ? 0.40 : 0.08,
+                      ),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    _BottomNavItem(
+                      icon: AppIcons.home,
+                      selectedIcon: AppIcons.homeActive,
+                      label: l10n.home,
+                      isSelected: currentIndex == _Branch.home,
+                      onTap: () => onDestinationSelected(_Branch.home),
+                    ),
+                    _BottomNavItem(
+                      icon: AppIcons.dictionary,
+                      selectedIcon: AppIcons.dictionaryActive,
+                      label: l10n.dictionary,
+                      isSelected: currentIndex == _Branch.dictionary,
+                      onTap: () => onDestinationSelected(_Branch.dictionary),
+                    ),
+                    const SizedBox(width: _buttonSize),
+                    _BottomNavItem(
+                      icon: AppIcons.learning,
+                      selectedIcon: AppIcons.learningActive,
+                      label: l10n.learning,
+                      isSelected: currentIndex == _Branch.learning,
+                      onTap: () => onDestinationSelected(_Branch.learning),
+                    ),
+                    _BottomNavItem(
+                      icon: AppIcons.profile,
+                      selectedIcon: AppIcons.profileActive,
+                      label: l10n.profile,
+                      isSelected: currentIndex == _Branch.profile,
+                      onTap: () => onDestinationSelected(_Branch.profile),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 0,
+                child: _TranslateButton(
+                  size: _buttonSize,
+                  isActive: isActive,
+                  label: translateLabel,
+                  onTap: onTranslateAction,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        elevation: 8,
-        height: 70,
-        color: theme.brightness == Brightness.light
-            ? AppColors.surfaceLight
-            : AppColors.surfaceDark,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _BottomNavItem(
-              icon: Icons.home_outlined,
-              selectedIcon: Icons.home,
-              label: l10n.home,
-              isSelected: navigationShell.currentIndex == _Branch.home,
-              onTap: () => navigationShell.goBranch(_Branch.home),
+    );
+  }
+}
+
+class _TranslateButton extends StatelessWidget {
+  const _TranslateButton({
+    required this.size,
+    required this.isActive,
+    required this.label,
+    required this.onTap,
+  });
+
+  final double size;
+  final bool isActive;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: surface,
+            // Idle, the circle is the same colour as the bar and carries the
+            // same shadow, so the few pixels it rises go unnoticed. While a
+            // capture is running the ring is the only signal, and it has to
+            // stand on its own because nothing is announced by sound.
+            border: isActive
+                ? Border.all(color: AppColors.error, width: 2)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDeep.withValues(
+                  alpha: isDark ? 0.40 : 0.06,
+                ),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: Padding(
+                  padding: const EdgeInsets.all(5),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            _BottomNavItem(
-              icon: Icons.menu_book_outlined,
-              selectedIcon: Icons.menu_book,
-              label: l10n.dictionary,
-              isSelected: navigationShell.currentIndex == _Branch.dictionary,
-              onTap: () => navigationShell.goBranch(_Branch.dictionary),
-            ),
-            const SizedBox(width: 48), // Space for notched FAB
-            _BottomNavItem(
-              icon: Icons.school_outlined,
-              selectedIcon: Icons.school,
-              label: l10n.learning,
-              isSelected: navigationShell.currentIndex == _Branch.learning,
-              onTap: () => navigationShell.goBranch(_Branch.learning),
-            ),
-            _BottomNavItem(
-              icon: Icons.person_outline,
-              selectedIcon: Icons.person,
-              label: l10n.profile,
-              isSelected: navigationShell.currentIndex == _Branch.profile,
-              onTap: () => navigationShell.goBranch(_Branch.profile),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -182,182 +408,39 @@ class _BottomNavItem extends StatelessWidget {
     final unselectedColor = theme.brightness == Brightness.light
         ? AppColors.textSecondaryLight
         : AppColors.textSecondaryDark;
+    final color = isSelected ? AppColors.primary : unselectedColor;
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: kMinTouchTarget,
-            minHeight: kMinTouchTarget,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? selectedIcon : icon,
-                color: isSelected ? AppColors.primary : unselectedColor,
-              ),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? AppColors.primary : unselectedColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Side navigation used from the desktop breakpoint up. Replaces the bottom
-/// bar and the floating action button without changing any route.
-class _MainNavigationRail extends ConsumerWidget {
-  final int currentIndex;
-  final bool extended;
-  final bool isActive;
-  final ValueChanged<int> onDestinationSelected;
-  final VoidCallback onTranslateAction;
-
-  const _MainNavigationRail({
-    required this.currentIndex,
-    required this.extended,
-    required this.isActive,
-    required this.onDestinationSelected,
-    required this.onTranslateAction,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final profileAsync = ref.watch(userProfileProvider);
-
-    final destinations = <NavigationRailDestination>[
-      NavigationRailDestination(
-        icon: const Icon(Icons.home_outlined),
-        selectedIcon: const Icon(Icons.home),
-        label: Text(l10n.home),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.translate_outlined),
-        selectedIcon: const Icon(Icons.translate),
-        label: Text(l10n.translate),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.menu_book_outlined),
-        selectedIcon: const Icon(Icons.menu_book),
-        label: Text(l10n.dictionary),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.school_outlined),
-        selectedIcon: const Icon(Icons.school),
-        label: Text(l10n.learning),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.person_outline),
-        selectedIcon: const Icon(Icons.person),
-        label: Text(l10n.profile),
-      ),
-    ];
-
-    return Semantics(
-      container: true,
-      label: l10n.navigationMenu,
-      child: NavigationRail(
-        selectedIndex: currentIndex,
-        onDestinationSelected: onDestinationSelected,
-        extended: extended,
-        minWidth: 80,
-        minExtendedWidth: 220,
-        labelType: extended ? null : NavigationRailLabelType.all,
-        backgroundColor: theme.colorScheme.surface,
-        destinations: destinations,
-        leading: Padding(
-          padding: const EdgeInsets.only(
-            top: AppSpacing.l,
-            bottom: AppSpacing.m,
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset('assets/images/logo.png', width: 32, height: 32),
-                  if (extended) ...[
-                    const SizedBox(width: AppSpacing.s),
-                    Text(
-                      'MooMoo',
-                      style: AppTextStyles.h3.copyWith(color: AppColors.primary),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSpacing.l),
-              if (extended)
-                FloatingActionButton.extended(
-                  heroTag: 'rail_translate',
-                  onPressed: onTranslateAction,
-                  backgroundColor:
-                      isActive ? AppColors.error : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  icon: Icon(isActive ? Icons.stop : Icons.translate),
-                  label: Text(isActive ? l10n.stopTranslation : l10n.translate),
-                )
-              else
-                FloatingActionButton(
-                  heroTag: 'rail_translate',
-                  tooltip: l10n.translate,
-                  onPressed: onTranslateAction,
-                  backgroundColor:
-                      isActive ? AppColors.error : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  child: Icon(isActive ? Icons.stop : Icons.translate),
-                ),
-            ],
-          ),
-        ),
-        trailing: Expanded(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.l),
-              child: profileAsync.when(
-                data: (profile) => AppAvatar(
-                  imageUrl: profile?.avatarUrl,
-                  name: profile?.displayName,
-                  radius: 18,
-                ),
-                loading: () => CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: label,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.radiusCircular,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: kMinTouchTarget,
+              minHeight: kMinTouchTarget,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(isSelected ? selectedIcon : icon, size: 22, color: color),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: color,
                   ),
                 ),
-                error: (_, _) => CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: const Icon(
-                    Icons.person,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
         ),

@@ -6,6 +6,7 @@ import 'package:moomoo/data/models/user_profile.dart';
 import 'package:moomoo/data/repositories/admin_repository.dart';
 import 'package:moomoo/domain/providers/auth_provider.dart';
 import 'package:moomoo/domain/providers/profile_provider.dart';
+import 'package:moomoo/domain/providers/provider_debounce.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) {
@@ -30,9 +31,45 @@ final adminStatsProvider = FutureProvider.autoDispose<AdminStats>((ref) {
   return ref.watch(adminRepositoryProvider).getStats();
 });
 
-final adminUsersProvider =
-    FutureProvider.autoDispose.family<List<UserProfile>, String?>((ref, query) {
-  return ref.watch(adminRepositoryProvider).getUsers(query: query);
+/// Filtre de la liste admin des utilisateurs : recherche libre + statut.
+class AdminUsersFilter {
+  final String? query;
+
+  /// `active`, `suspended`, ou null pour ne pas filtrer.
+  final String? status;
+
+  const AdminUsersFilter({this.query, this.status});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AdminUsersFilter &&
+          query == other.query &&
+          status == other.status;
+
+  @override
+  int get hashCode => Object.hash(query, status);
+}
+
+final adminUsersProvider = FutureProvider.autoDispose
+    .family<List<UserProfile>, AdminUsersFilter>((ref, filter) async {
+  final repository = ref.watch(adminRepositoryProvider);
+  if ((filter.query ?? '').trim().isNotEmpty) {
+    await debounce(ref);
+    if (!ref.mounted) return const [];
+  }
+  return repository.getUsers(query: filter.query, status: filter.status);
+});
+
+/// Comptage serveur, pour afficher « n résultats » sans rapatrier les lignes.
+final adminUsersCountProvider = FutureProvider.autoDispose
+    .family<int, AdminUsersFilter>((ref, filter) async {
+  final repository = ref.watch(adminRepositoryProvider);
+  if ((filter.query ?? '').trim().isNotEmpty) {
+    await debounce(ref);
+    if (!ref.mounted) return 0;
+  }
+  return repository.countUsers(query: filter.query, status: filter.status);
 });
 
 final adminContributionsProvider =
@@ -57,10 +94,15 @@ class AdminSignsFilter {
   int get hashCode => Object.hash(query, isValidated);
 }
 
-final adminSignsProvider =
-    FutureProvider.autoDispose.family<List<Sign>, AdminSignsFilter>((ref, filter) {
-  return ref.watch(adminRepositoryProvider).getSigns(
-        query: filter.query,
-        isValidated: filter.isValidated,
-      );
+final adminSignsProvider = FutureProvider.autoDispose
+    .family<List<Sign>, AdminSignsFilter>((ref, filter) async {
+  final repository = ref.watch(adminRepositoryProvider);
+  if ((filter.query ?? '').trim().isNotEmpty) {
+    await debounce(ref);
+    if (!ref.mounted) return const [];
+  }
+  return repository.getSigns(
+    query: filter.query,
+    isValidated: filter.isValidated,
+  );
 });

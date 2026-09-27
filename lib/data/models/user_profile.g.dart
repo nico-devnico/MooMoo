@@ -17,10 +17,18 @@ _UserProfile _$UserProfileFromJson(Map<String, dynamic> json) => _UserProfile(
   preferredView: json['preferred_view'] as String? ?? '3d',
   isDeaf: json['is_deaf'] as bool? ?? false,
   isAdmin: json['is_admin'] as bool? ?? false,
+  status: json['status'] as String? ?? 'active',
+  suspendedAt: json['suspended_at'] == null
+      ? null
+      : DateTime.parse(json['suspended_at'] as String),
+  suspendedReason: json['suspended_reason'] as String?,
+  roles:
+      (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
   threeDAutoRotate: json['three_d_auto_rotate'] as bool? ?? false,
   threeDZoomEnabled: json['three_d_zoom_enabled'] as bool? ?? true,
   selectedCharacterId: json['selected_character_id'] as String? ?? 'alex',
-  theme: json['theme'] as String? ?? 'system',
+  theme: json['theme'] as String? ?? 'light',
   locale: json['locale'] as String? ?? 'fr',
   createdAt: json['created_at'] == null
       ? null

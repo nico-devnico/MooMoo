@@ -113,7 +113,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get deleteAccount => 'Supprimer mon compte';
+  String get deleteAccount => 'Supprimer le compte';
 
   @override
   String get signs => 'Signes';
@@ -531,6 +531,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get difficultyLevel => 'Niveau de difficulté';
 
   @override
+  String get difficultyEasy => 'Facile';
+
+  @override
+  String get difficultyMedium => 'Moyen';
+
+  @override
+  String get difficultyHard => 'Difficile';
+
+  @override
   String get views => 'Vues';
 
   @override
@@ -595,6 +604,58 @@ class AppLocalizationsFr extends AppLocalizations {
   String get adminRole => 'Administrateur';
 
   @override
+  String get roleTeacher => 'Enseignant';
+
+  @override
+  String get roleExpert => 'Expert en langue des signes';
+
+  @override
+  String get statusActive => 'Actif';
+
+  @override
+  String get statusSuspended => 'Suspendu';
+
+  @override
+  String get addUser => 'Ajouter un utilisateur';
+
+  @override
+  String get editUser => 'Modifier';
+
+  @override
+  String get manageRoles => 'Rôles';
+
+  @override
+  String get suspendAccount => 'Suspendre';
+
+  @override
+  String get unsuspendAccount => 'Réactiver';
+
+  @override
+  String deleteAccountConfirm(String name) {
+    return 'Supprimer définitivement le compte de $name ? Cette action est irréversible.';
+  }
+
+  @override
+  String get suspendReason => 'Motif de la suspension';
+
+  @override
+  String suspendConfirm(String name) {
+    return 'Suspendre $name';
+  }
+
+  @override
+  String get userCreated => 'Utilisateur créé';
+
+  @override
+  String get userDeleted => 'Compte supprimé';
+
+  @override
+  String get userSuspended => 'Compte suspendu';
+
+  @override
+  String get userReactivated => 'Compte réactivé';
+
+  @override
   String get deafUser => 'Sourd / Malentendant';
 
   @override
@@ -611,11 +672,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les actions admin nécessitent des politiques RLS adaptées (lecture/écriture sur profiles, signs et contributions pour les comptes is_admin). Sans ces politiques, certaines opérations échoueront côté client.';
 
   @override
-  String get adminHowToGrant => 'Comment devenir admin';
+  String get adminHowToGrant => 'Gestion des comptes';
 
   @override
   String get adminHowToGrantBody =>
-      'Définissez is_admin = true sur le profil dans Supabase, ou role = admin dans les métadonnées utilisateur. Un admin peut ensuite promouvoir d\'autres comptes depuis cet écran.';
+      'Depuis Utilisateurs, ouvrez le menu d\'un compte pour lui accorder les rôles administrateur, enseignant ou expert, le suspendre ou le supprimer. Un admin ne peut ni se retirer lui-même ni retirer le dernier admin.';
 
   @override
   String get contributeFormTitle => 'Proposer un signe';
@@ -714,6 +775,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get passwordStrength => 'Force du mot de passe';
+
+  @override
+  String get authEmailAlreadyUsed =>
+      'Cette adresse e-mail est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.';
+
+  @override
+  String get authWeakPassword =>
+      'Mot de passe trop faible. Respectez tous les critères indiqués sous le champ.';
+
+  @override
+  String get authRateLimited =>
+      'Trop de tentatives. Patientez quelques minutes avant de réessayer.';
+
+  @override
+  String get authSignupDisabled =>
+      'Les inscriptions sont désactivées sur ce serveur.';
+
+  @override
+  String get passwordRequirementsTitle => 'Le mot de passe doit contenir :';
+
+  @override
+  String get passwordRuleLength => '6 caractères';
+
+  @override
+  String get passwordRuleLowercase => 'une minuscule';
+
+  @override
+  String get passwordRuleUppercase => 'une majuscule';
+
+  @override
+  String get passwordRuleDigit => 'un chiffre';
+
+  @override
+  String get passwordRuleSymbol => 'un symbole';
+
+  @override
+  String get passwordDoesNotMeetPolicy =>
+      'Le mot de passe ne respecte pas tous les critères';
 
   @override
   String get authBrandHeadline => 'Parlez avec vos mains';

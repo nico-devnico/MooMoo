@@ -18,8 +18,8 @@ for (const p of [resolve(root, '.env'), resolve(root, 'backend', '.env')]) {
   }
 }
 
-const TEST_EMAIL = 'moomoo_(smoke|api|admin|user|test|diag)_<digits>@example.com';
-const TEST_PATTERN = '^moomoo_(smoke|api|admin|user|test|diag)_[0-9]+@example\\.com$';
+const TEST_EMAIL = '(moomoo_(smoke|api|admin|user|test|diag)|probe)_<digits>@example.com';
+const TEST_PATTERN = '^(moomoo_(smoke|api|admin|user|test|diag)|probe)_[0-9]+@example\\.com$';
 
 const client = new pg.Client({
   connectionString: process.env.SUPABASE_DB_URL,

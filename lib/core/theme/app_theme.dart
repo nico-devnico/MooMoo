@@ -58,15 +58,15 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.neutralLight.withValues(alpha: 0.7),
+        fillColor: AppColors.surfaceLight,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.borderLight),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
@@ -74,12 +74,12 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        selectedColor: AppColors.primary.withValues(alpha: 0.15),
-        backgroundColor: AppColors.neutralLight,
+        selectedColor: AppColors.primarySoft,
+        backgroundColor: AppColors.surfaceLight,
         labelStyle: AppTextStyles.bodySmall,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusCircular),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        side: const BorderSide(color: AppColors.borderLight),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
       navigationBarTheme: NavigationBarThemeData(
         indicatorColor: AppColors.primary.withValues(alpha: 0.12),
@@ -93,8 +93,8 @@ class AppTheme {
           return AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondaryLight);
         }),
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.black.withValues(alpha: 0.06),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.borderLight,
         thickness: 1,
         space: 1,
       ),
@@ -107,12 +107,12 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radiusL,
-          side: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+          side: const BorderSide(color: AppColors.borderLight),
         ),
       ),
       bottomAppBarTheme: const BottomAppBarThemeData(
         color: AppColors.surfaceLight,
-        elevation: 8,
+        elevation: 0,
       ),
     );
   }
@@ -166,11 +166,11 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.radiusL,
@@ -188,8 +188,8 @@ class AppTheme {
         indicatorColor: AppColors.primary.withValues(alpha: 0.2),
         backgroundColor: AppColors.surfaceDark,
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.08),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.borderDark,
         thickness: 1,
         space: 1,
       ),
@@ -202,12 +202,12 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radiusL,
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          side: const BorderSide(color: AppColors.borderDark),
         ),
       ),
       bottomAppBarTheme: const BottomAppBarThemeData(
         color: AppColors.surfaceDark,
-        elevation: 8,
+        elevation: 0,
       ),
     );
   }

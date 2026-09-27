@@ -305,7 +305,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccount.
   ///
   /// In fr, this message translates to:
-  /// **'Supprimer mon compte'**
+  /// **'Supprimer le compte'**
   String get deleteAccount;
 
   /// No description provided for @signs.
@@ -1112,6 +1112,24 @@ abstract class AppLocalizations {
   /// **'Niveau de difficulté'**
   String get difficultyLevel;
 
+  /// No description provided for @difficultyEasy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facile'**
+  String get difficultyEasy;
+
+  /// No description provided for @difficultyMedium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get difficultyMedium;
+
+  /// No description provided for @difficultyHard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Difficile'**
+  String get difficultyHard;
+
   /// No description provided for @views.
   ///
   /// In fr, this message translates to:
@@ -1226,6 +1244,102 @@ abstract class AppLocalizations {
   /// **'Administrateur'**
   String get adminRole;
 
+  /// No description provided for @roleTeacher.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enseignant'**
+  String get roleTeacher;
+
+  /// No description provided for @roleExpert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expert en langue des signes'**
+  String get roleExpert;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get statusActive;
+
+  /// No description provided for @statusSuspended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suspendu'**
+  String get statusSuspended;
+
+  /// No description provided for @addUser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un utilisateur'**
+  String get addUser;
+
+  /// No description provided for @editUser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get editUser;
+
+  /// No description provided for @manageRoles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rôles'**
+  String get manageRoles;
+
+  /// No description provided for @suspendAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suspendre'**
+  String get suspendAccount;
+
+  /// No description provided for @unsuspendAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réactiver'**
+  String get unsuspendAccount;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer définitivement le compte de {name} ? Cette action est irréversible.'**
+  String deleteAccountConfirm(String name);
+
+  /// No description provided for @suspendReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif de la suspension'**
+  String get suspendReason;
+
+  /// No description provided for @suspendConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suspendre {name}'**
+  String suspendConfirm(String name);
+
+  /// No description provided for @userCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur créé'**
+  String get userCreated;
+
+  /// No description provided for @userDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte supprimé'**
+  String get userDeleted;
+
+  /// No description provided for @userSuspended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte suspendu'**
+  String get userSuspended;
+
+  /// No description provided for @userReactivated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte réactivé'**
+  String get userReactivated;
+
   /// No description provided for @deafUser.
   ///
   /// In fr, this message translates to:
@@ -1259,13 +1373,13 @@ abstract class AppLocalizations {
   /// No description provided for @adminHowToGrant.
   ///
   /// In fr, this message translates to:
-  /// **'Comment devenir admin'**
+  /// **'Gestion des comptes'**
   String get adminHowToGrant;
 
   /// No description provided for @adminHowToGrantBody.
   ///
   /// In fr, this message translates to:
-  /// **'Définissez is_admin = true sur le profil dans Supabase, ou role = admin dans les métadonnées utilisateur. Un admin peut ensuite promouvoir d\'autres comptes depuis cet écran.'**
+  /// **'Depuis Utilisateurs, ouvrez le menu d\'un compte pour lui accorder les rôles administrateur, enseignant ou expert, le suspendre ou le supprimer. Un admin ne peut ni se retirer lui-même ni retirer le dernier admin.'**
   String get adminHowToGrantBody;
 
   /// No description provided for @contributeFormTitle.
@@ -1453,6 +1567,72 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Force du mot de passe'**
   String get passwordStrength;
+
+  /// No description provided for @authEmailAlreadyUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette adresse e-mail est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.'**
+  String get authEmailAlreadyUsed;
+
+  /// No description provided for @authWeakPassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe trop faible. Respectez tous les critères indiqués sous le champ.'**
+  String get authWeakPassword;
+
+  /// No description provided for @authRateLimited.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Patientez quelques minutes avant de réessayer.'**
+  String get authRateLimited;
+
+  /// No description provided for @authSignupDisabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les inscriptions sont désactivées sur ce serveur.'**
+  String get authSignupDisabled;
+
+  /// No description provided for @passwordRequirementsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot de passe doit contenir :'**
+  String get passwordRequirementsTitle;
+
+  /// No description provided for @passwordRuleLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'6 caractères'**
+  String get passwordRuleLength;
+
+  /// No description provided for @passwordRuleLowercase.
+  ///
+  /// In fr, this message translates to:
+  /// **'une minuscule'**
+  String get passwordRuleLowercase;
+
+  /// No description provided for @passwordRuleUppercase.
+  ///
+  /// In fr, this message translates to:
+  /// **'une majuscule'**
+  String get passwordRuleUppercase;
+
+  /// No description provided for @passwordRuleDigit.
+  ///
+  /// In fr, this message translates to:
+  /// **'un chiffre'**
+  String get passwordRuleDigit;
+
+  /// No description provided for @passwordRuleSymbol.
+  ///
+  /// In fr, this message translates to:
+  /// **'un symbole'**
+  String get passwordRuleSymbol;
+
+  /// No description provided for @passwordDoesNotMeetPolicy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot de passe ne respecte pas tous les critères'**
+  String get passwordDoesNotMeetPolicy;
 
   /// No description provided for @authBrandHeadline.
   ///

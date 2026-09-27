@@ -26,7 +26,7 @@ final class DictionaryRepositoryProvider
         argument: null,
         retry: null,
         name: r'dictionaryRepositoryProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -55,10 +55,16 @@ final class DictionaryRepositoryProvider
 }
 
 String _$dictionaryRepositoryHash() =>
-    r'10b9f5be9e17c5f34d9fb79e2b1c092218ef9504';
+    r'f385c7a6988c65ff19ea52fe74c7d36f5010d114';
+
+/// Table de référence quasi immuable : gardée pour toute la session au lieu
+/// d'être rechargée à chaque navigation vers l'accueil ou le dictionnaire.
 
 @ProviderFor(signLanguages)
 final signLanguagesProvider = SignLanguagesProvider._();
+
+/// Table de référence quasi immuable : gardée pour toute la session au lieu
+/// d'être rechargée à chaque navigation vers l'accueil ou le dictionnaire.
 
 final class SignLanguagesProvider
     extends
@@ -70,13 +76,15 @@ final class SignLanguagesProvider
     with
         $FutureModifier<List<SignLanguage>>,
         $FutureProvider<List<SignLanguage>> {
+  /// Table de référence quasi immuable : gardée pour toute la session au lieu
+  /// d'être rechargée à chaque navigation vers l'accueil ou le dictionnaire.
   SignLanguagesProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'signLanguagesProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -96,10 +104,14 @@ final class SignLanguagesProvider
   }
 }
 
-String _$signLanguagesHash() => r'6f2074e32604bd6cd11fcd9ad89424ab15c2597b';
+String _$signLanguagesHash() => r'8ab521ed9070edbdcfe2871fa25133975872562f';
+
+/// Idem pour les catégories, mises en cache par langue.
 
 @ProviderFor(signCategories)
 final signCategoriesProvider = SignCategoriesFamily._();
+
+/// Idem pour les catégories, mises en cache par langue.
 
 final class SignCategoriesProvider
     extends
@@ -111,13 +123,14 @@ final class SignCategoriesProvider
     with
         $FutureModifier<List<SignCategory>>,
         $FutureProvider<List<SignCategory>> {
+  /// Idem pour les catégories, mises en cache par langue.
   SignCategoriesProvider._({
     required SignCategoriesFamily super.from,
     required int super.argument,
   }) : super(
          retry: null,
          name: r'signCategoriesProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -155,7 +168,9 @@ final class SignCategoriesProvider
   }
 }
 
-String _$signCategoriesHash() => r'604efef44cdba8d9ed894715dd033a301ccbf5d1';
+String _$signCategoriesHash() => r'c63fc6f7af38e71fef420a03293f92b483371f96';
+
+/// Idem pour les catégories, mises en cache par langue.
 
 final class SignCategoriesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<SignCategory>>, int> {
@@ -165,8 +180,10 @@ final class SignCategoriesFamily extends $Family
         name: r'signCategoriesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
+
+  /// Idem pour les catégories, mises en cache par langue.
 
   SignCategoriesProvider call(int languageId) =>
       SignCategoriesProvider._(argument: languageId, from: this);
@@ -222,7 +239,7 @@ final class SignSearchProvider
   }
 }
 
-String _$signSearchHash() => r'952c8ce51953a36b999ee8d64cbcde1f0791fdce';
+String _$signSearchHash() => r'cb0f9af31c3185e178dd0216908dd7cd0a9c46ce';
 
 final class SignSearchFamily extends $Family
     with

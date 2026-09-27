@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/providers/admin_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_nav_bar.dart';
 
 class AdminShell extends ConsumerWidget {
   final Widget child;
@@ -86,51 +87,32 @@ class AdminShell extends ConsumerWidget {
 
     if (isWide) {
       return Scaffold(
-        body: Row(
+        body: Column(
           children: [
-            NavigationRail(
+            AppNavBar(
+              semanticLabel: l10n.adminPanel,
+              brand: AppNavBrand(
+                title: l10n.adminPanel,
+                icon: Icons.admin_panel_settings,
+              ),
               selectedIndex: selectedIndex,
               onDestinationSelected: (i) => _go(context, i),
-              extended: context.hasExtendedSideNavigation,
-              minWidth: 80,
-              minExtendedWidth: 220,
-              labelType: context.hasExtendedSideNavigation
-                  ? null
-                  : NavigationRailLabelType.all,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
-                child: Column(
-                  children: [
-                    const Icon(Icons.admin_panel_settings, color: AppColors.primary, size: 32),
-                    const SizedBox(height: AppSpacing.s),
-                    Text(l10n.adminPanel, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              trailing: Expanded(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.l),
-                    child: IconButton(
-                      tooltip: l10n.backToApp,
-                      onPressed: () => context.goNamed(AppRoutes.homeName),
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                  ),
-                ),
-              ),
               destinations: [
                 for (final d in destinations)
-                  NavigationRailDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.selectedIcon),
-                    label: Text(d.label),
+                  NavBarDestination(
+                    icon: d.icon,
+                    selectedIcon: d.selectedIcon,
+                    label: d.label,
                   ),
               ],
+              actions: [
+                TextButton.icon(
+                  onPressed: () => context.goNamed(AppRoutes.homeName),
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: Text(l10n.backToApp),
+                ),
+              ],
             ),
-            const VerticalDivider(width: 1),
             // Admin screens are data-dense: cap them so tables and card
             // columns stay readable on very wide monitors.
             Expanded(child: PageContainer(padding: 0, child: child)),

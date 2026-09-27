@@ -55,14 +55,18 @@ class AppTextField extends StatelessWidget {
             prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primary) : null,
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: isDark ? AppColors.neutralDark : AppColors.neutralLight,
+            fillColor: isDark ? AppColors.neutralDark : AppColors.surfaceLight,
             border: OutlineInputBorder(
               borderRadius: AppRadius.radiusL,
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.radiusL,
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.radiusL,
