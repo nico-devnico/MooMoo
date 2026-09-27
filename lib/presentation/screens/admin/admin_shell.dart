@@ -29,54 +29,110 @@ class AdminShell extends ConsumerWidget {
     this.workspace = Workspace.admin,
   });
 
-  static List<_AdminDest> _destinationsFor(Workspace workspace, AppLocalizations l10n) {
+  static List<_AdminDest> _destinationsFor(
+    Workspace workspace,
+    AppLocalizations l10n,
+  ) {
     return switch (workspace) {
       Workspace.admin => [
-          _AdminDest(AppIcons.dashboard, PhosphorIconsFill.chartBar, l10n.adminDashboard,
-              AppRoutes.adminDashboardName),
-          _AdminDest(AppIcons.moderation, PhosphorIconsFill.notePencil, l10n.adminModeration,
-              AppRoutes.adminContributionsName),
-          _AdminDest(AppIcons.dictionary, AppIcons.dictionaryActive, l10n.adminSigns,
-              AppRoutes.adminSignsName),
-          _AdminDest(AppIcons.learning, AppIcons.learningActive, l10n.adminLearning,
-              AppRoutes.adminLearningName),
-          _AdminDest(AppIcons.users, PhosphorIconsFill.users, l10n.adminUsers,
-              AppRoutes.adminUsersName),
-          _AdminDest(AppIcons.model, PhosphorIconsFill.cpu, l10n.adminModels,
-              AppRoutes.adminModelsName),
-          _AdminDest(AppIcons.settings, PhosphorIconsFill.gear, l10n.adminSettings,
-              AppRoutes.adminSettingsName),
-        ],
+        _AdminDest(
+          AppIcons.dashboard,
+          PhosphorIconsFill.chartBar,
+          l10n.adminDashboard,
+          AppRoutes.adminDashboardName,
+        ),
+        _AdminDest(
+          AppIcons.moderation,
+          PhosphorIconsFill.notePencil,
+          l10n.adminModeration,
+          AppRoutes.adminContributionsName,
+        ),
+        _AdminDest(
+          AppIcons.dictionary,
+          AppIcons.dictionaryActive,
+          l10n.adminSigns,
+          AppRoutes.adminSignsName,
+        ),
+        _AdminDest(
+          AppIcons.learning,
+          AppIcons.learningActive,
+          l10n.adminLearning,
+          AppRoutes.adminLearningName,
+        ),
+        _AdminDest(
+          AppIcons.users,
+          PhosphorIconsFill.users,
+          l10n.adminUsers,
+          AppRoutes.adminUsersName,
+        ),
+        _AdminDest(
+          AppIcons.model,
+          PhosphorIconsFill.cpu,
+          l10n.adminModels,
+          AppRoutes.adminModelsName,
+        ),
+        _AdminDest(
+          AppIcons.settings,
+          PhosphorIconsFill.gear,
+          l10n.adminSettings,
+          AppRoutes.adminSettingsName,
+        ),
+      ],
       Workspace.teacher => [
-          _AdminDest(AppIcons.dashboard, PhosphorIconsFill.chartBar, l10n.adminDashboard,
-              AppRoutes.teacherDashboardName),
-          _AdminDest(AppIcons.learning, AppIcons.learningActive, l10n.adminLearning,
-              AppRoutes.teacherLearningName),
-        ],
+        _AdminDest(
+          AppIcons.dashboard,
+          PhosphorIconsFill.chartBar,
+          l10n.adminDashboard,
+          AppRoutes.teacherDashboardName,
+        ),
+        _AdminDest(
+          AppIcons.learning,
+          AppIcons.learningActive,
+          l10n.adminLearning,
+          AppRoutes.teacherLearningName,
+        ),
+      ],
       Workspace.expert => [
-          _AdminDest(AppIcons.dashboard, PhosphorIconsFill.chartBar, l10n.adminDashboard,
-              AppRoutes.expertDashboardName),
-          _AdminDest(AppIcons.moderation, PhosphorIconsFill.notePencil, l10n.adminModeration,
-              AppRoutes.expertContributionsName),
-          _AdminDest(AppIcons.dictionary, AppIcons.dictionaryActive, l10n.adminSigns,
-              AppRoutes.expertSignsName),
-          _AdminDest(AppIcons.learning, AppIcons.learningActive, l10n.adminLearning,
-              AppRoutes.expertLearningName),
-        ],
+        _AdminDest(
+          AppIcons.dashboard,
+          PhosphorIconsFill.chartBar,
+          l10n.adminDashboard,
+          AppRoutes.expertDashboardName,
+        ),
+        _AdminDest(
+          AppIcons.moderation,
+          PhosphorIconsFill.notePencil,
+          l10n.adminModeration,
+          AppRoutes.expertContributionsName,
+        ),
+        _AdminDest(
+          AppIcons.dictionary,
+          AppIcons.dictionaryActive,
+          l10n.adminSigns,
+          AppRoutes.expertSignsName,
+        ),
+        _AdminDest(
+          AppIcons.learning,
+          AppIcons.learningActive,
+          l10n.adminLearning,
+          AppRoutes.expertLearningName,
+        ),
+      ],
     };
   }
 
-  static String titleFor(Workspace workspace, AppLocalizations l10n) => switch (workspace) {
+  static String titleFor(Workspace workspace, AppLocalizations l10n) =>
+      switch (workspace) {
         Workspace.admin => l10n.adminPanel,
         Workspace.teacher => l10n.teacherSpace,
         Workspace.expert => l10n.expertSpace,
       };
 
   static IconData iconFor(Workspace workspace) => switch (workspace) {
-        Workspace.admin => AppIcons.admin,
-        Workspace.teacher => PhosphorIconsRegular.chalkboardTeacher,
-        Workspace.expert => PhosphorIconsRegular.sealCheck,
-      };
+    Workspace.admin => AppIcons.admin,
+    Workspace.teacher => PhosphorIconsRegular.chalkboardTeacher,
+    Workspace.expert => PhosphorIconsRegular.sealCheck,
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -99,10 +155,17 @@ class AdminShell extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(AppIcons.locked, size: 56, color: AppColors.warning),
+                    const Icon(
+                      AppIcons.locked,
+                      size: 56,
+                      color: AppColors.warning,
+                    ),
                     const SizedBox(height: AppSpacing.m),
-                    Text(l10n.adminAccessDenied,
-                        style: AppTextStyles.h3, textAlign: TextAlign.center),
+                    Text(
+                      l10n.adminAccessDenied,
+                      style: AppTextStyles.h3,
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: AppSpacing.s),
                     Text(
                       workspace == Workspace.admin
@@ -168,22 +231,102 @@ class AdminShell extends ConsumerWidget {
         ),
       ),
       body: PageContainer(padding: 0, child: child),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _MobileBottomBar(
+        destinations: destinations,
         selectedIndex: selectedIndex,
-        onDestinationSelected: go,
-        // Seven destinations do not fit side by side on a phone with all labels
-        // visible; showing only the active one keeps them legible.
-        labelBehavior: destinations.length > 4
-            ? NavigationDestinationLabelBehavior.onlyShowSelected
-            : NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          for (final d in destinations)
-            NavigationDestination(
-              icon: Icon(d.icon),
-              selectedIcon: Icon(d.selectedIcon),
-              label: d.label,
+        onSelected: go,
+      ),
+    );
+  }
+}
+
+/// Phones show at most [_maxVisible] items; beyond that the first ones stay in
+/// the bar and the rest move to a "Menu" item opening a sheet.
+class _MobileBottomBar extends StatelessWidget {
+  const _MobileBottomBar({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  static const int _maxVisible = 4;
+
+  final List<_AdminDest> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final overflows = destinations.length > _maxVisible;
+    final visibleCount = overflows ? _maxVisible - 1 : destinations.length;
+    final menuIndex = visibleCount;
+    final inMenu = overflows && selectedIndex >= visibleCount;
+
+    return NavigationBar(
+      selectedIndex: inMenu
+          ? menuIndex
+          : selectedIndex.clamp(0, visibleCount - 1),
+      onDestinationSelected: (i) {
+        if (overflows && i == menuIndex) {
+          _openMenu(context, visibleCount);
+        } else {
+          onSelected(i);
+        }
+      },
+      destinations: [
+        for (final d in destinations.take(visibleCount))
+          NavigationDestination(
+            icon: Icon(d.icon),
+            selectedIcon: Icon(d.selectedIcon),
+            label: d.label,
+          ),
+        if (overflows)
+          NavigationDestination(
+            icon: const Icon(AppIcons.list),
+            selectedIcon: Icon(
+              inMenu ? destinations[selectedIndex].selectedIcon : AppIcons.list,
             ),
-        ],
+            label: inMenu ? destinations[selectedIndex].label : l10n.navMenu,
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openMenu(BuildContext context, int firstHidden) {
+    final l10n = AppLocalizations.of(context)!;
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (var i = firstHidden; i < destinations.length; i++)
+              ListTile(
+                leading: Icon(
+                  i == selectedIndex
+                      ? destinations[i].selectedIcon
+                      : destinations[i].icon,
+                ),
+                title: Text(destinations[i].label),
+                selected: i == selectedIndex,
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  onSelected(i);
+                },
+              ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(AppIcons.back),
+              title: Text(l10n.backToApp),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.goNamed(AppRoutes.homeName);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

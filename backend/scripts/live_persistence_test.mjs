@@ -268,7 +268,44 @@ async function run() {
     return 'RLS OK';
   });
 
+  await avatarChecks({ user, userId, other: admin });
   await roleSpaceChecks({ admin, adminId, user, userId, lang });
+}
+
+// Smallest valid JPEG (1×1), enough for the bucket's MIME and signature checks.
+const TINY_JPEG = Buffer.from(
+  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=',
+  'base64');
+
+async function avatarChecks({ user, userId, other }) {
+  const bucket = () => user.client.storage.from('avatars');
+  const path = `${userId}/avatar.jpg`;
+  cleanup.unshift(() => bucket().remove([path]).catch(() => {}));
+
+  await check('photo de profil : envoi, remplacement, lecture publique, suppression', async () => {
+    for (let i = 0; i < 2; i++) {
+      const { error } = await bucket().upload(path, TINY_JPEG, { contentType: 'image/jpeg', upsert: true });
+      assert(!error, `envoi ${i + 1} : ${error?.message}`);
+    }
+    const url = bucket().getPublicUrl(path).data.publicUrl;
+    const { error: profileError } = await user.client.from('profiles')
+      .update({ avatar_url: `${url}?v=1` }).eq('id', userId);
+    assert(!profileError, profileError?.message);
+    const r = await fetch(url);
+    assert(r.ok && r.headers.get('content-type')?.startsWith('image/'), `lecture publique ${r.status}`);
+
+    const { error: foreign } = await other.client.storage.from('avatars')
+      .upload(path, TINY_JPEG, { contentType: 'image/jpeg', upsert: true });
+    assert(foreign, "un autre compte a pu remplacer la photo");
+    const { error: badType } = await bucket()
+      .upload(`${userId}/avatar.txt`, Buffer.from('hello'), { contentType: 'text/plain' });
+    assert(badType, 'un fichier non image a été accepté');
+
+    const { data: removed, error: removeError } = await bucket().remove([path]);
+    assert(!removeError && removed?.length === 1, removeError?.message || 'suppression sans effet');
+    await user.client.from('profiles').update({ avatar_url: null }).eq('id', userId);
+    return 'RLS + bucket OK';
+  });
 }
 
 async function withRole(role, label) {

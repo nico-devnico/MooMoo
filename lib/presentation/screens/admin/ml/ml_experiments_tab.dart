@@ -262,7 +262,7 @@ class _ExperimentCard extends StatelessWidget {
                     MlMetricChip(
                       label: l10n.mlColEpochs,
                       value:
-                          '${e.currentEpoch} / ${e.totalEpochs ?? e.budgetEpochs ?? 'â€”'}',
+                          '${e.currentEpoch} / ${e.totalEpochs ?? e.budgetEpochs ?? '—'}',
                     ),
                     MlMetricChip(
                       label: l10n.mlColBestValAcc,

@@ -6,7 +6,7 @@ export const authRouter = Router();
 
 /**
  * Supabase Auth messages ("Invalid login credentials", "User already
- * registered"â€¦) are user-level and the app maps them to translated text, so
+ * registered"…) are user-level and the app maps them to translated text, so
  * they are passed through. The raw error object is not.
  */
 function mapAuthError(error) {
@@ -83,8 +83,8 @@ authRouter.post('/signup', async (req, res, next) => {
       user,
       session,
       message: session
-        ? 'Compte crÃ©Ã© et session active'
-        : 'Compte crÃ©Ã© â€” confirmez votre e-mail si requis',
+        ? 'Compte créé et session active'
+        : 'Compte créé — confirmez votre e-mail si requis',
     });
   } catch (e) {
     next(e);
@@ -132,7 +132,7 @@ authRouter.post('/login', async (req, res, next) => {
   }
 });
 
-/** POST /api/auth/ensure-profile â€” Bearer JWT */
+/** POST /api/auth/ensure-profile — Bearer JWT */
 authRouter.post('/ensure-profile', async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';
@@ -170,7 +170,7 @@ authRouter.post('/ensure-profile', async (req, res, next) => {
       return res.status(400).json({
         ok: false,
         error: 'profile_upsert_failed',
-        message: 'Votre profil n\'a pas pu Ãªtre enregistrÃ©. RÃ©essayez plus tard.',
+        message: 'Votre profil n\'a pas pu être enregistré. Réessayez plus tard.',
       });
     }
 
@@ -180,7 +180,7 @@ authRouter.post('/ensure-profile', async (req, res, next) => {
   }
 });
 
-/** GET /api/auth/me â€” Bearer JWT */
+/** GET /api/auth/me — Bearer JWT */
 authRouter.get('/me', async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';

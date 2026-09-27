@@ -125,7 +125,7 @@ class _MlExperimentDetailViewState
           children: [
             MlMetricChip(
               label: l10n.mlColEpochs,
-              value: '${exp.currentEpoch} / ${exp.totalEpochs ?? exp.budgetEpochs ?? 'â€”'}',
+              value: '${exp.currentEpoch} / ${exp.totalEpochs ?? exp.budgetEpochs ?? '—'}',
             ),
             MlMetricChip(label: l10n.mlColBestValAcc, value: mlPercent(exp.bestValAccuracy)),
             MlMetricChip(label: l10n.mlColBestValLoss, value: mlNumber(exp.bestValLoss)),
@@ -423,7 +423,7 @@ class _PerClassTable extends StatelessWidget {
                         ),
                       ),
                     ),
-                    DataCell(Text('${r['support'] ?? 'â€”'}')),
+                    DataCell(Text('${r['support'] ?? '—'}')),
                   ],
                 ),
             ],

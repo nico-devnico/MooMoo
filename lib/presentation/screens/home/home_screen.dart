@@ -20,7 +20,6 @@ import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_panel.dart';
-import '../../widgets/profile_avatar_button.dart';
 import '../../widgets/skeletons.dart';
 import '../learning/widgets/learning_widgets.dart';
 
@@ -114,10 +113,7 @@ class _HomeTopBar extends ConsumerWidget {
           tooltip: l10n.settings,
           onPressed: () => context.pushNamed(AppRoutes.settingsName),
           icon: const Icon(AppIcons.settings),
-        ),
-        // From the tablet breakpoint up the navigation bar carries the avatar.
-        if (!context.hasTopNavigation) const ProfileAvatarButton(),
-      ],
+        ),      ],
     );
   }
 }

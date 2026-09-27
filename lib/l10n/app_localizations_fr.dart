@@ -408,6 +408,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backToApp => 'Retour à l\'application';
 
   @override
+  String get navMenu => 'Menu';
+
+  @override
   String get adminStatUsers => 'Utilisateurs';
 
   @override
@@ -3627,7 +3630,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountAddPhoto => 'Ajouter une photo';
 
   @override
-  String get accountPhotoRules => 'JPG, PNG ou WebP, 2 Mo maximum.';
+  String get accountPhotoRules =>
+      'JPG, PNG, WebP, GIF ou BMP. La photo est redimensionnée automatiquement.';
 
   @override
   String get accountPhotoSending => 'Envoi de la photo…';
@@ -3638,11 +3642,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountPhotoTooLarge =>
-      'Cette image dépasse 2 Mo. Choisissez une image plus légère.';
+      'Cette image dépasse 25 Mo. Choisissez une image plus légère.';
 
   @override
   String get accountPhotoBadFormat =>
-      'Format non pris en charge. Utilisez une image JPG, PNG ou WebP.';
+      'Cette image n\'a pas pu être lue. Utilisez une photo JPG, PNG, WebP, GIF ou BMP.';
 
   @override
   String get accountPhotoUpdated => 'Photo de profil mise à jour.';
@@ -3723,7 +3727,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get guideNavigationSteps =>
-      'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nVotre photo de profil, en haut de l\'écran, ouvre votre profil et vos paramètres.';
+      'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nProfil : sur téléphone, le dernier onglet de la barre du bas ; sur ordinateur et tablette, votre photo en haut à droite.\nSur téléphone, le bouton rond au centre de la barre du bas ouvre la traduction ; touchez-le à nouveau pour démarrer ou arrêter la capture.';
 
   @override
   String get guideTranslateTitle => 'Traduire';
@@ -3767,7 +3771,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get guideProfileSteps =>
-      'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image JPG, PNG ou WebP de 2 Mo maximum.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.';
+      'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image (JPG, PNG, WebP, GIF ou BMP).\nElle est recadrée à la bonne taille automatiquement, même s\'il s\'agit d\'une grande photo d\'appareil.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.';
 
   @override
   String get guideHistoryTitle => 'Historique';

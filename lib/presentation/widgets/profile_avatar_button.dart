@@ -9,12 +9,11 @@ import '../../domain/providers/profile_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_avatar.dart';
 
-/// The user's photo, opening the profile. The main navigation has no profile
-/// link: this button is the entry to it.
+/// The user's photo, opening the profile. Sits on the far right of the top
+/// navigation bar, which has no profile link.
 class ProfileAvatarButton extends ConsumerWidget {
-  const ProfileAvatarButton({super.key, this.selected = false, this.onTap});
+  const ProfileAvatarButton({super.key, this.onTap});
 
-  final bool selected;
   final VoidCallback? onTap;
 
   static const double _radius = 18;
@@ -24,45 +23,30 @@ class ProfileAvatarButton extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final profileAsync = ref.watch(userProfileProvider);
 
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: l10n.profile,
-      child: Tooltip(
-        message: l10n.profile,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap ?? () => context.goNamed(AppRoutes.profileName),
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? AppColors.primary : Colors.transparent,
-                width: 2,
-              ),
+    return Tooltip(
+      message: l10n.profile,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap ?? () => context.goNamed(AppRoutes.profileName),
+        child: profileAsync.when(
+          data: (profile) => AppAvatar(
+            imageUrl: profile?.avatarUrl,
+            name: profile?.displayName,
+            radius: _radius,
+          ),
+          loading: () => const CircleAvatar(
+            radius: _radius,
+            backgroundColor: AppColors.primarySoft,
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            child: profileAsync.when(
-              data: (profile) => AppAvatar(
-                imageUrl: profile?.avatarUrl,
-                name: profile?.displayName,
-                radius: _radius,
-              ),
-              loading: () => const CircleAvatar(
-                radius: _radius,
-                backgroundColor: AppColors.primarySoft,
-                child: SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              error: (_, _) => const CircleAvatar(
-                radius: _radius,
-                backgroundColor: AppColors.primarySoft,
-                child: Icon(AppIcons.profile, color: AppColors.primary, size: 20),
-              ),
-            ),
+          ),
+          error: (_, _) => const CircleAvatar(
+            radius: _radius,
+            backgroundColor: AppColors.primarySoft,
+            child: Icon(AppIcons.profile, color: AppColors.primary, size: 20),
           ),
         ),
       ),

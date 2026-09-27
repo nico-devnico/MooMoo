@@ -406,6 +406,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backToApp => 'Back to app';
 
   @override
+  String get navMenu => 'Menu';
+
+  @override
   String get adminStatUsers => 'Users';
 
   @override
@@ -3600,7 +3603,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountAddPhoto => 'Add a photo';
 
   @override
-  String get accountPhotoRules => 'JPG, PNG or WebP, 2 MB max.';
+  String get accountPhotoRules =>
+      'JPG, PNG, WebP, GIF or BMP. The photo is resized automatically.';
 
   @override
   String get accountPhotoSending => 'Uploading photo…';
@@ -3611,11 +3615,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPhotoTooLarge =>
-      'This image is larger than 2 MB. Choose a smaller one.';
+      'This image is larger than 25 MB. Choose a smaller one.';
 
   @override
   String get accountPhotoBadFormat =>
-      'Unsupported format. Use a JPG, PNG or WebP image.';
+      'This image could not be read. Use a JPG, PNG, WebP, GIF or BMP photo.';
 
   @override
   String get accountPhotoUpdated => 'Profile photo updated.';
@@ -3696,7 +3700,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideNavigationSteps =>
-      'Home: shortcuts and daily suggestions.\nDictionary: the sign dictionary.\nLearn: your lesson path.\nTranslate: translation between signs and text.\nYour profile picture, at the top of the screen, opens your profile and settings.';
+      'Home: shortcuts and daily suggestions.\nDictionary: the sign dictionary.\nLearn: your lesson path.\nTranslate: translation between signs and text.\nProfile: on phones, the last tab of the bottom bar; on computers and tablets, your photo at the top right.\nOn phones, the round button in the middle of the bottom bar opens translation; tap it again to start or stop the capture.';
 
   @override
   String get guideTranslateTitle => 'Translate';
@@ -3739,7 +3743,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideProfileSteps =>
-      'Open your profile, then \"Edit profile\".\nTap \"Add a photo\" or \"Change photo\" and pick a JPG, PNG or WebP image of up to 2 MB.\nThe photo is saved and shown right away.\nTo remove it, tap \"Remove photo\" and confirm.\nRemember to save your other changes.';
+      'Open your profile, then \"Edit profile\".\nTap \"Add a photo\" or \"Change photo\" and pick an image (JPG, PNG, WebP, GIF or BMP).\nIt is resized automatically, even if it is a large camera photo.\nThe photo is saved and shown right away.\nTo remove it, tap \"Remove photo\" and confirm.\nRemember to save your other changes.';
 
   @override
   String get guideHistoryTitle => 'History';

@@ -11,6 +11,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/avatar_image.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/repositories/storage_repository.dart';
 import '../../../domain/providers/error_text.dart';
@@ -28,6 +29,10 @@ import '../../widgets/skeletons.dart';
 import '../settings/settings_screen.dart';
 
 const double _avatarRadius = 40;
+
+/// Largest picked file we try to shrink; beyond that decoding would stall
+/// the device for a profile picture.
+const int _maxSourcePhotoBytes = 25 * 1024 * 1024;
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -81,28 +86,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     if (image == null || !mounted) return;
 
-    Uint8List bytes;
+    Uint8List original;
     try {
-      bytes = await image.readAsBytes();
+      original = await image.readAsBytes();
     } catch (_) {
       if (mounted) AppSnackbar.showError(context, l10n.accountPhotoPickError);
       return;
     }
     if (!mounted) return;
-    // Checked before sending so the user gets the precise reason at once.
-    if (bytes.length > kMaxAvatarBytes) {
+    if (original.length > _maxSourcePhotoBytes) {
       AppSnackbar.showError(context, l10n.accountPhotoTooLarge);
       return;
     }
-    if (StorageRepositoryImpl.detectImageType(bytes) == null) {
+
+    setState(() => _photoBusy = true);
+    // Resized and re-encoded here, so a big camera photo or a GIF/BMP/TIFF
+    // still meets the storage rules instead of being refused.
+    Uint8List? bytes;
+    try {
+      bytes = await prepareAvatar(original);
+    } catch (_) {
+      bytes = null;
+    }
+    if (!mounted) return;
+    if (bytes == null ||
+        bytes.length > kMaxAvatarBytes ||
+        StorageRepositoryImpl.detectImageType(bytes) == null) {
+      setState(() => _photoBusy = false);
       AppSnackbar.showError(context, l10n.accountPhotoBadFormat);
       return;
     }
 
-    setState(() {
-      _previewBytes = bytes;
-      _photoBusy = true;
-    });
+    setState(() => _previewBytes = bytes);
     try {
       final url = await ref
           .read(storageRepositoryProvider)

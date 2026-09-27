@@ -184,7 +184,11 @@ MooMoo/
 
 ### Navigation
 
-Barre centrée **Accueil | Dico | Apprendre | Traduire** : en haut à partir de 600 px de large, flottante en bas sur mobile. Le profil s'ouvre via l'avatar (dans la barre sur tablette et bureau, en haut de l'accueil sur mobile). Les routes sont définies dans `lib/core/router/`.
+- **Web, tablette et bureau** (à partir de 600 px de large) : barre en haut avec le logo à gauche, les liens **Accueil | Dico | Apprendre | Traduire** centrés, et la photo de l'utilisateur à l'extrême droite, qui ouvre le profil.
+- **Mobile** : barre flottante en bas avec **Accueil, Dico, [bouton Traduire], Apprendre, Profil**. Le bouton rond central (logo de l'app) ouvre la traduction ; un second appui démarre ou arrête la capture.
+- **Espaces admin / enseignant / expert sur mobile** : la barre du bas affiche au plus 4 éléments. Au-delà (espace admin), les 3 premières rubriques restent visibles et les autres sont regroupées dans **Menu** (icône hamburger), avec le retour à l'application.
+
+Les routes sont définies dans `lib/core/router/`.
 
 ### Traduction
 
@@ -202,8 +206,8 @@ Unités → leçons → signes. La fin d'une leçon passe par la fonction SQL `c
 
 ### Photo de profil
 
-1. L'utilisateur choisit une image, redimensionnée à 512 px.
-2. Le client vérifie la taille (2 Mo maximum) et le format réel du fichier d'après ses premiers octets (JPG, PNG ou WebP).
+1. L'utilisateur choisit une image (JPG, PNG, WebP, GIF, BMP ou TIFF, 25 Mo maximum).
+2. Le client la décode, applique l'orientation EXIF, la réduit à 512 px de côté, pose un fond blanc sous la transparence et la ré-encode en JPEG (`lib/core/utils/avatar_image.dart`, dans un isolate). Une grande photo d'appareil ou un format refusé par le bucket passe donc sans erreur. Le résultat est revérifié : moins de 2 Mo et format réel correct d'après les premiers octets.
 3. L'image est envoyée dans le bucket `avatars` sous `<id utilisateur>/avatar.<ext>`, puis les anciens fichiers de l'utilisateur sont supprimés.
 4. `profiles.avatar_url` est mis à jour, avec un paramètre anti-cache, et la photo s'affiche partout aussitôt.
 5. Pour supprimer la photo, l'URL du profil est effacée d'abord, puis les fichiers.
@@ -311,7 +315,7 @@ flutter test
 
 cd backend
 npm run test:import    # import du dictionnaire (hors ligne)
-npm run test:live      # parcours réels sur le projet Supabase : crée puis supprime des comptes de test
+npm run test:live      # parcours réels sur le projet Supabase (rôles, RLS, photo de profil, import, maintenance) : crée puis supprime des comptes de test
 npm run test:api       # test rapide d'une API démarrée
 
 cd ml

@@ -878,6 +878,12 @@ abstract class AppLocalizations {
   /// **'Retour à l\'application'**
   String get backToApp;
 
+  /// No description provided for @navMenu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Menu'**
+  String get navMenu;
+
   /// No description provided for @adminStatUsers.
   ///
   /// In fr, this message translates to:
@@ -6370,7 +6376,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountPhotoRules.
   ///
   /// In fr, this message translates to:
-  /// **'JPG, PNG ou WebP, 2 Mo maximum.'**
+  /// **'JPG, PNG, WebP, GIF ou BMP. La photo est redimensionnée automatiquement.'**
   String get accountPhotoRules;
 
   /// No description provided for @accountPhotoSending.
@@ -6388,13 +6394,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountPhotoTooLarge.
   ///
   /// In fr, this message translates to:
-  /// **'Cette image dépasse 2 Mo. Choisissez une image plus légère.'**
+  /// **'Cette image dépasse 25 Mo. Choisissez une image plus légère.'**
   String get accountPhotoTooLarge;
 
   /// No description provided for @accountPhotoBadFormat.
   ///
   /// In fr, this message translates to:
-  /// **'Format non pris en charge. Utilisez une image JPG, PNG ou WebP.'**
+  /// **'Cette image n\'a pas pu être lue. Utilisez une photo JPG, PNG, WebP, GIF ou BMP.'**
   String get accountPhotoBadFormat;
 
   /// No description provided for @accountPhotoUpdated.
@@ -6532,7 +6538,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideNavigationSteps.
   ///
   /// In fr, this message translates to:
-  /// **'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nVotre photo de profil, en haut de l\'écran, ouvre votre profil et vos paramètres.'**
+  /// **'Accueil : raccourcis et suggestions du jour.\nDico : le dictionnaire des signes.\nApprendre : votre parcours de leçons.\nTraduire : la traduction entre signes et texte.\nProfil : sur téléphone, le dernier onglet de la barre du bas ; sur ordinateur et tablette, votre photo en haut à droite.\nSur téléphone, le bouton rond au centre de la barre du bas ouvre la traduction ; touchez-le à nouveau pour démarrer ou arrêter la capture.'**
   String get guideNavigationSteps;
 
   /// No description provided for @guideTranslateTitle.
@@ -6604,7 +6610,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideProfileSteps.
   ///
   /// In fr, this message translates to:
-  /// **'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image JPG, PNG ou WebP de 2 Mo maximum.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.'**
+  /// **'Ouvrez votre profil puis « Modifier le profil ».\nTouchez « Ajouter une photo » ou « Changer la photo » et choisissez une image (JPG, PNG, WebP, GIF ou BMP).\nElle est recadrée à la bonne taille automatiquement, même s\'il s\'agit d\'une grande photo d\'appareil.\nLa photo est enregistrée et affichée immédiatement.\nPour la retirer, touchez « Supprimer la photo » puis confirmez.\nN\'oubliez pas d\'enregistrer vos autres modifications.'**
   String get guideProfileSteps;
 
   /// No description provided for @guideHistoryTitle.

@@ -67,6 +67,7 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
       child: Material(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         child: Container(
+          width: double.infinity,
           height: height,
           decoration: BoxDecoration(
             border: Border(
@@ -138,24 +139,62 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  /// Brand and actions take equal flexible sides so the links sit at the true
-  /// centre of the bar; the links scroll if the window is too narrow.
+  /// Brand pinned to the left edge, actions to the right edge, links centred
+  /// on the full width of the bar.
   Widget _centeredLayout(bool showIcons) {
-    return Row(
+    return CustomMultiChildLayout(
+      delegate: _CenteredNavLayout(),
       children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FittedBox(fit: BoxFit.scaleDown, child: brand),
-          ),
-        ),
-        Flexible(flex: 3, fit: FlexFit.loose, child: _links(showIcons)),
-        Expanded(
-          child: Align(alignment: Alignment.centerRight, child: _actionsRow()),
-        ),
+        LayoutId(id: _NavSlot.brand, child: brand),
+        LayoutId(id: _NavSlot.links, child: _links(showIcons)),
+        LayoutId(id: _NavSlot.actions, child: _actionsRow()),
       ],
     );
   }
+}
+
+enum _NavSlot { brand, links, actions }
+
+/// When the window is too narrow to centre the links between the brand and
+/// the actions, they slide next to the brand and scroll instead of
+/// overlapping either side.
+class _CenteredNavLayout extends MultiChildLayoutDelegate {
+  static const double _gap = AppSpacing.l;
+
+  @override
+  void performLayout(Size size) {
+    final loose = BoxConstraints.loose(size);
+    final actions = layoutChild(_NavSlot.actions, loose);
+    final brand = layoutChild(
+      _NavSlot.brand,
+      BoxConstraints(
+        maxWidth: (size.width - actions.width - _gap).clamp(0.0, size.width),
+        maxHeight: size.height,
+      ),
+    );
+
+    final available = (size.width - brand.width - actions.width - 2 * _gap)
+        .clamp(0.0, size.width);
+    final links = layoutChild(
+      _NavSlot.links,
+      BoxConstraints(maxWidth: available, maxHeight: size.height),
+    );
+
+    final minX = brand.width + _gap;
+    final maxX = size.width - actions.width - _gap - links.width;
+    final centered = (size.width - links.width) / 2;
+    final x = maxX < minX ? minX : centered.clamp(minX, maxX);
+
+    positionChild(_NavSlot.brand, Offset(0, (size.height - brand.height) / 2));
+    positionChild(_NavSlot.links, Offset(x, (size.height - links.height) / 2));
+    positionChild(
+      _NavSlot.actions,
+      Offset(size.width - actions.width, (size.height - actions.height) / 2),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_CenteredNavLayout oldDelegate) => false;
 }
 
 class _NavLink extends StatelessWidget {
@@ -192,8 +231,8 @@ class _NavLink extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark
-                    ? AppColors.primary.withValues(alpha: 0.16)
-                    : AppColors.primarySoft)
+                      ? AppColors.primary.withValues(alpha: 0.16)
+                      : AppColors.primarySoft)
                 : Colors.transparent,
             borderRadius: AppRadius.radiusCircular,
           ),
@@ -225,12 +264,7 @@ class _NavLink extends StatelessWidget {
 
 /// Logo plus wordmark, shared by the app and admin navigation bars.
 class AppNavBrand extends StatelessWidget {
-  const AppNavBrand({
-    super.key,
-    required this.title,
-    this.icon,
-    this.onTap,
-  });
+  const AppNavBrand({super.key, required this.title, this.icon, this.onTap});
 
   final String title;
 
