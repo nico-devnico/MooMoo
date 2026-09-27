@@ -36,6 +36,9 @@ import '../../presentation/screens/admin/admin_signs_screen.dart';
 import '../../presentation/screens/admin/admin_users_screen.dart';
 import '../../presentation/screens/admin/admin_models_screen.dart';
 import '../../presentation/screens/admin/admin_settings_screen.dart';
+import '../../presentation/screens/admin/admin_shell.dart';
+import '../../presentation/screens/workspace/expert_dashboard_screen.dart';
+import '../../presentation/screens/workspace/teacher_dashboard_screen.dart';
 
 import '../../presentation/screens/home/main_shell.dart';
 import '../../presentation/widgets/app_empty_state.dart';
@@ -290,6 +293,44 @@ GoRouter appRouter(Ref ref) {
             path: 'settings',
             name: AppRoutes.adminSettingsName,
             builder: (context, state) => const AdminSettingsScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.teacherDashboard,
+        name: AppRoutes.teacherDashboardName,
+        builder: (context, state) => const TeacherDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'learning',
+            name: AppRoutes.teacherLearningName,
+            builder: (context, state) =>
+                const AdminLearningScreen(workspace: Workspace.teacher),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.expertDashboard,
+        name: AppRoutes.expertDashboardName,
+        builder: (context, state) => const ExpertDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'contributions',
+            name: AppRoutes.expertContributionsName,
+            builder: (context, state) =>
+                const AdminContributionsScreen(workspace: Workspace.expert),
+          ),
+          GoRoute(
+            path: 'signs',
+            name: AppRoutes.expertSignsName,
+            builder: (context, state) =>
+                const AdminSignsScreen(workspace: Workspace.expert),
+          ),
+          GoRoute(
+            path: 'learning',
+            name: AppRoutes.expertLearningName,
+            builder: (context, state) =>
+                const AdminLearningScreen(workspace: Workspace.expert),
           ),
         ],
       ),

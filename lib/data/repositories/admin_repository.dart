@@ -96,6 +96,8 @@ abstract class AdminRepository {
   Future<List<Sign>> getSigns({
     String? query,
     bool? isValidated,
+    int? languageId,
+    int? categoryId,
     int limit = 50,
     int offset = 0,
   });
@@ -435,7 +437,13 @@ class AdminRepositoryImpl implements AdminRepository {
         .select(needsRow ? contributionDetailColumns : 'id')
         .maybeSingle();
 
-    if (!needsRow || updated == null) return;
+    if (updated == null) {
+      throw const PostgrestException(
+        message: 'Revue refusée : rôle administrateur ou expert requis',
+        code: '42501',
+      );
+    }
+    if (!needsRow) return;
 
     final contribution = Contribution.fromJson(updated);
     final sign = Sign(
@@ -459,6 +467,8 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<List<Sign>> getSigns({
     String? query,
     bool? isValidated,
+    int? languageId,
+    int? categoryId,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -467,6 +477,8 @@ class AdminRepositoryImpl implements AdminRepository {
     if (isValidated != null) {
       request = request.eq('is_validated', isValidated);
     }
+    if (languageId != null) request = request.eq('sign_language_id', languageId);
+    if (categoryId != null) request = request.eq('category_id', categoryId);
     final trimmed = query?.trim();
     if (trimmed != null && trimmed.isNotEmpty) {
       request = request.ilike('word', '%$trimmed%');
@@ -483,15 +495,24 @@ class AdminRepositoryImpl implements AdminRepository {
 
   @override
   Future<void> setSignValidated(String signId, bool isValidated) async {
-    await _supabase.from('signs').update({
+    final rows = await _supabase.from('signs').update({
       'is_validated': isValidated,
       'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', signId);
+    }).eq('id', signId).select('id');
+    if (rows.isEmpty) {
+      throw const PostgrestException(message: 'Modification refusée', code: '42501');
+    }
   }
 
   @override
   Future<void> deleteSign(String signId) async {
-    await _supabase.from('signs').delete().eq('id', signId);
+    final rows = await _supabase.from('signs').delete().eq('id', signId).select('id');
+    if (rows.isEmpty) {
+      throw const PostgrestException(
+        message: 'Suppression refusée : réservée aux administrateurs',
+        code: '42501',
+      );
+    }
   }
 
   @override

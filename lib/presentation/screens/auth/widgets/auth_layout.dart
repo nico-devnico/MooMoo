@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/layout/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../domain/providers/app_settings_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../widgets/app_logo.dart';
 
 /// Shared chrome for login, registration and password reset.
 ///
@@ -273,36 +276,46 @@ class _CompactBrandHeader extends StatelessWidget {
   }
 }
 
-class _BrandMark extends StatelessWidget {
+class _BrandMark extends ConsumerWidget {
   const _BrandMark({required this.size, this.onDark = false});
 
   final double size;
   final bool onDark;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appName = ref.watch(appNameProvider);
     return Semantics(
       image: true,
-      label: 'MooMoo',
-      child: Container(
-        width: size,
-        height: size,
-        padding: EdgeInsets.all(size * 0.14),
-        decoration: BoxDecoration(
-          color: onDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(size * 0.3),
-        ),
-        child: Image.asset(
-          'assets/images/logo.png',
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Icon(
-            AppIcons.signLanguage,
-            size: size * 0.5,
-            color: onDark ? Colors.white : AppColors.primary,
+      label: appName,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            padding: EdgeInsets.all(size * 0.14),
+            decoration: BoxDecoration(
+              color: onDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(size * 0.3),
+            ),
+            child: const AppLogo(excludeFromSemantics: true),
           ),
-        ),
+          const SizedBox(width: AppSpacing.m),
+          Flexible(
+            child: ExcludeSemantics(
+              child: Text(
+                appName,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.h2.copyWith(
+                  color: onDark ? Colors.white : AppColors.primaryDeep,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

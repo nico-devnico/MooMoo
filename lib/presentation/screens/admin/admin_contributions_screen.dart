@@ -12,6 +12,7 @@ import '../../../data/models/contribution.dart';
 import '../../../data/models/sign.dart';
 import '../../../domain/providers/admin_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../domain/providers/workspace_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_badge.dart';
 import '../../widgets/app_empty_state.dart';
@@ -25,7 +26,9 @@ const double _listMaxWidth = 820;
 const double _thumbSize = 88;
 
 class AdminContributionsScreen extends ConsumerStatefulWidget {
-  const AdminContributionsScreen({super.key});
+  const AdminContributionsScreen({super.key, this.workspace = Workspace.admin});
+
+  final Workspace workspace;
 
   @override
   ConsumerState<AdminContributionsScreen> createState() =>
@@ -52,6 +55,7 @@ class _AdminContributionsScreenState
     ];
 
     return AdminShell(
+      workspace: widget.workspace,
       selectedIndex: 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,7 +222,8 @@ class _AdminContributionsScreenState
       ref
         ..invalidate(adminContributionsProvider)
         ..invalidate(adminStatsProvider)
-        ..invalidate(adminSignsProvider);
+        ..invalidate(adminSignsProvider)
+        ..invalidate(expertOverviewProvider);
       if (mounted) {
         AppSnackbar.show(
           context,

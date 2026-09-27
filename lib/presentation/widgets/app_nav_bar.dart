@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import 'app_logo.dart';
 
 /// A single link of [AppNavBar].
 class NavBarDestination {
@@ -212,7 +213,7 @@ class AppNavBrand extends StatelessWidget {
         if (icon != null)
           Icon(icon, size: 28, color: AppColors.primary)
         else
-          Image.asset('assets/images/logo.png', width: 32, height: 32),
+          const AppLogo(width: 32, height: 32),
         const SizedBox(width: AppSpacing.s),
         Text(
           title,

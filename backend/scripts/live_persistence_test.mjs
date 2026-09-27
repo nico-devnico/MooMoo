@@ -267,6 +267,174 @@ async function run() {
     assert(stageError, 'un non-admin a pu promouvoir un modèle');
     return 'RLS OK';
   });
+
+  await roleSpaceChecks({ admin, adminId, user, userId, lang });
+}
+
+async function withRole(role, label) {
+  const email = `live_${label}_${stamp}@example.com`;
+  const id = await createAuthUser({ email, password, displayName: `Live ${label}` });
+  cleanup.push(() => deleteAuthUser(id).catch(() => {}));
+  await query('insert into public.user_roles (user_id, role) values ($1, $2)', [id, role]);
+  return { ...(await signIn(email)), userId: id };
+}
+
+async function roleSpaceChecks({ admin, adminId, user, userId, lang }) {
+  const teacher = await withRole('teacher', 'teacher');
+  const expert = await withRole('sign_expert', 'expert');
+
+  await check('rôles : current_user_roles', async () => {
+    const { data: e } = await expert.client.rpc('current_user_roles');
+    const { data: u } = await user.client.rpc('current_user_roles');
+    assert(e?.includes('sign_expert') && (u ?? []).length === 0, `expert=${e} user=${u}`);
+    return `expert=${e}`;
+  });
+
+  await check('espace enseignant : teacher_overview réservé', async () => {
+    const { data, error } = await teacher.client.rpc('teacher_overview');
+    assert(!error && typeof data?.lessons_total === 'number', error?.message || JSON.stringify(data));
+    const { error: denied } = await user.client.rpc('teacher_overview');
+    assert(denied?.code === '42501', `utilisateur : ${denied?.code || 'accepté'}`);
+    return `lessons_total=${data.lessons_total}`;
+  });
+
+  await check('espace expert : expert_overview réservé', async () => {
+    const { data, error } = await expert.client.rpc('expert_overview');
+    assert(!error && typeof data?.signs_total === 'number', error?.message || JSON.stringify(data));
+    const { error: denied } = await teacher.client.rpc('expert_overview');
+    assert(denied?.code === '42501', `enseignant : ${denied?.code || 'accepté'}`);
+    return `signs_total=${data.signs_total}`;
+  });
+
+  await check('dictionnaire : expert crée/modifie un brouillon, ne supprime pas', async () => {
+    const { data: s, error } = await expert.client.from('signs')
+      .insert({ sign_language_id: lang.id, word: `live-expert-${stamp}`, is_validated: false })
+      .select('id').single();
+    assert(!error, error?.message);
+    cleanup.unshift(() => query('delete from public.signs where id=$1', [s.id]));
+    const { data: upd, error: updError } = await expert.client.from('signs')
+      .update({ description: 'relu' }).eq('id', s.id).select('id');
+    assert(!updError && upd?.length === 1, updError?.message || 'mise à jour sans effet');
+    const { data: del } = await expert.client.from('signs').delete().eq('id', s.id).select('id');
+    assert((del ?? []).length === 0, "l'expert a pu supprimer un signe");
+    const { data: seen } = await user.client.from('signs').select('id').eq('id', s.id);
+    assert((seen ?? []).length === 0, 'un brouillon est visible des utilisateurs');
+    const { error: userInsert } = await user.client.from('signs')
+      .insert({ sign_language_id: lang.id, word: `live-forged-${stamp}` });
+    assert(userInsert, 'un utilisateur a pu créer un signe');
+    const { error: teacherInsert } = await teacher.client.from('signs')
+      .insert({ sign_language_id: lang.id, word: `live-teacher-${stamp}` });
+    assert(teacherInsert, 'un enseignant a pu créer un signe');
+    return 'RLS OK';
+  });
+
+  await check('modération : un expert relit une contribution', async () => {
+    const { data: c, error } = await user.client.from('contributions')
+      .insert({ contributor_id: userId, sign_language_id: lang.id, word: `live-rev-${stamp}`, video_url: `${userId}/r.mp4` })
+      .select('id').single();
+    assert(!error, error?.message);
+    cleanup.unshift(() => query('delete from public.contributions where id=$1', [c.id]));
+    const { data: rows, error: revError } = await expert.client.from('contributions')
+      .update({ status: 'approved', reviewer_id: expert.userId, reviewed_at: new Date().toISOString() })
+      .eq('id', c.id).select('id');
+    assert(!revError && rows?.length === 1, revError?.message || 'revue sans effet');
+    const { data: tRows } = await teacher.client.from('contributions')
+      .update({ status: 'rejected' }).eq('id', c.id).select('id');
+    assert((tRows ?? []).length === 0, 'un enseignant a pu relire une contribution');
+    return 'OK';
+  });
+
+  const { rows: [original] } = await query(
+    'select app_name, maintenance_enabled, maintenance_message, contributions_enabled from public.app_settings where id');
+  cleanup.unshift(() => query(
+    'update public.app_settings set app_name=$1, maintenance_enabled=$2, maintenance_message=$3, contributions_enabled=$4 where id',
+    [original.app_name, original.maintenance_enabled, original.maintenance_message, original.contributions_enabled]));
+
+  await check('configuration : seul un admin modifie app_settings', async () => {
+    const { data: denied } = await expert.client.from('app_settings')
+      .update({ app_name: 'Pirate' }).eq('id', true).select('id');
+    assert((denied ?? []).length === 0, 'un non-admin a modifié la configuration');
+    const { data, error } = await admin.client.from('app_settings')
+      .update({ app_name: `  ${original.app_name}  ` }).eq('id', true).select('app_name, updated_by');
+    assert(!error && data?.[0]?.app_name === original.app_name, error?.message || JSON.stringify(data));
+    assert(data[0].updated_by === adminId, `updated_by=${data[0].updated_by}`);
+    const { data: anon } = await createClient(SUPABASE_URL, SUPABASE_ANON_KEY).from('app_settings').select('app_name');
+    assert(anon?.length === 1, 'configuration illisible en anonyme');
+    return 'nom rogné, updated_by renseigné, lecture publique';
+  });
+
+  await check('contributions fermées : soumission refusée', async () => {
+    await admin.client.from('app_settings').update({ contributions_enabled: false }).eq('id', true);
+    const { error } = await user.client.from('contributions')
+      .insert({ contributor_id: userId, sign_language_id: lang.id, word: `live-closed-${stamp}`, video_url: `${userId}/c.mp4` });
+    await admin.client.from('app_settings').update({ contributions_enabled: original.contributions_enabled }).eq('id', true);
+    assert(error, 'contribution acceptée alors que fermées');
+    return error.code;
+  });
+
+  let server;
+  try {
+    server = await startApi(3093, {});
+    await check('import API : réservé aux admins', async () => {
+      const body = { filename: 'x.csv', content: 'mot\nbonjour' };
+      const r = await api(3093, 'POST', '/api/dictionary/import/preview', expert.token, body);
+      assert(r.status === 403, `expert : ${r.status}`);
+      return '403 pour un expert';
+    });
+
+    await check('import API : aperçu puis import CSV', async () => {
+      const word = `live-import-${stamp}`;
+      const { rows: [{ code }] } = await query('select code from public.sign_languages where id=$1', [lang.id]);
+      const content = `mot;description;langue;video\n${word};Import test;${code};\n${word};doublon;${code};\n;sans mot;${code};`;
+      const preview = await api(3093, 'POST', '/api/dictionary/import/preview', admin.token, {
+        filename: 'live.csv', content, options: { defaultLanguageId: lang.id },
+      });
+      assert(preview.status === 200, `${preview.status} ${JSON.stringify(preview.json)}`);
+      const s = preview.json.summary;
+      assert(s.valid === 1 && s.errors === 2, JSON.stringify(s));
+      const commit = await api(3093, 'POST', '/api/dictionary/import/commit', admin.token, {
+        filename: 'live.csv', content, mapping: preview.json.mapping,
+        options: { defaultLanguageId: lang.id, publish: false, duplicates: 'skip' },
+      });
+      assert(commit.status === 200, `${commit.status} ${JSON.stringify(commit.json)}`);
+      const { rows } = await query('select id, is_validated from public.signs where word=$1', [word]);
+      cleanup.unshift(() => query('delete from public.signs where word=$1', [word]));
+      const report = commit.json.report ?? {};
+      assert(report.imported === 1 && rows.length === 1 && rows[0].is_validated === false,
+        `${JSON.stringify(report)} rows=${rows.length}`);
+      return `importés=${report.imported} rejetés=${report.rejected}`;
+    });
+
+    await check('maintenance : écritures bloquées, admin épargné, API 503', async () => {
+      const { error: on } = await admin.client.from('app_settings')
+        .update({ maintenance_enabled: true, maintenance_message: 'Test live' }).eq('id', true);
+      assert(!on, on?.message);
+      try {
+        const { error: write } = await user.client.from('favorites').insert({ user_id: userId, sign_id: null });
+        const { data: pw, error: profileError } = await user.client.from('profiles')
+          .update({ theme: 'light' }).eq('id', userId).select('id');
+        assert(write && (profileError || (pw ?? []).length === 0), 'un utilisateur a écrit pendant la maintenance');
+        const { data: aw, error: adminError } = await admin.client.from('profiles')
+          .update({ theme: 'light' }).eq('id', adminId).select('id');
+        assert(!adminError && aw?.length === 1, adminError?.message || "l'admin est bloqué");
+        await new Promise((r) => setTimeout(r, 5500)); // cache de settings.js
+        const blocked = await api(3093, 'POST', '/api/dictionary/import/preview', expert.token, { filename: 'x.csv', content: 'a' });
+        assert(blocked.status === 503 && blocked.json.message === 'Test live', `${blocked.status} ${JSON.stringify(blocked.json)}`);
+        const allowed = await api(3093, 'POST', '/api/dictionary/import/preview', admin.token, { filename: 'x.csv', content: 'mot\nx' });
+        assert(allowed.status === 200, `admin : ${allowed.status}`);
+      } finally {
+        await admin.client.from('app_settings')
+          .update({ maintenance_enabled: original.maintenance_enabled, maintenance_message: original.maintenance_message })
+          .eq('id', true);
+      }
+      return 'RLS + API OK';
+    });
+  } catch (e) {
+    results.push(false);
+    console.log(`FAIL [import/maintenance] ${e.message}`);
+  } finally {
+    server?.child.kill();
+  }
 }
 
 try {
@@ -277,7 +445,7 @@ try {
 } finally {
   for (const fn of cleanup) await fn();
   // Also sweeps accounts left by an interrupted previous run of this script.
-  const ownAccounts = '^live_(admin|user|service|sql)_[0-9]+@example\\.com$';
+  const ownAccounts = '^live_(admin|user|service|sql|teacher|expert)_[0-9]+@example\\.com$';
   await query('delete from auth.users where email ~ $1', [ownAccounts]);
   const { rows } = await query(
     'select count(*)::int as n from auth.users where email ~ $1', [ownAccounts]);

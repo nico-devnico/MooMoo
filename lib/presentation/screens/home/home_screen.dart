@@ -18,6 +18,7 @@ import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/skeletons.dart';
 import '../learning/widgets/learning_widgets.dart';
@@ -220,7 +221,7 @@ class _HeroVisual extends StatelessWidget {
                   border: Border.all(color: AppColors.borderLight),
                 ),
                 padding: const EdgeInsets.all(AppSpacing.m),
-                child: ClipOval(child: Image.asset('assets/images/logo.png', fit: BoxFit.cover)),
+                child: const ClipOval(child: AppLogo(fit: BoxFit.cover)),
               ),
               const SizedBox(height: AppSpacing.xl),
               Wrap(

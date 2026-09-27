@@ -67,4 +67,14 @@ class AppRoutes {
   static const String adminUsersName = 'adminUsers';
   static const String adminModelsName = 'adminModels';
   static const String adminSettingsName = 'adminSettings';
+
+  // Role spaces
+  static const String teacherDashboard = '/teacher';
+  static const String expertDashboard = '/expert';
+  static const String teacherDashboardName = 'teacherDashboard';
+  static const String teacherLearningName = 'teacherLearning';
+  static const String expertDashboardName = 'expertDashboard';
+  static const String expertContributionsName = 'expertContributions';
+  static const String expertSignsName = 'expertSigns';
+  static const String expertLearningName = 'expertLearning';
 }

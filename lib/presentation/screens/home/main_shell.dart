@@ -9,7 +9,9 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
+import '../../../domain/providers/app_settings_provider.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/app_nav_bar.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -23,6 +25,14 @@ class _Branch {
   static const int learning = 3;
   static const int profile = 4;
 }
+
+/// Branches reachable from the top bar links, in display order.
+const _linkBranches = [
+  _Branch.home,
+  _Branch.dictionary,
+  _Branch.learning,
+  _Branch.profile,
+];
 
 class MainShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -115,25 +125,24 @@ class _MainNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final profileAsync = ref.watch(userProfileProvider);
+    final onTranslator = currentIndex == _Branch.translator;
 
     return AppNavBar(
       semanticLabel: l10n.navigationMenu,
       brand: AppNavBrand(
-        title: 'MooMoo',
+        title: ref.watch(appNameProvider),
         onTap: () => onDestinationSelected(_Branch.home),
       ),
-      selectedIndex: currentIndex,
-      onDestinationSelected: onDestinationSelected,
+      // The translator has a single entry, the action button below: a link
+      // with the same label next to it was a duplicate. No link is highlighted
+      // while it is open; the button carries the selected state instead.
+      selectedIndex: _linkBranches.indexOf(currentIndex),
+      onDestinationSelected: (i) => onDestinationSelected(_linkBranches[i]),
       destinations: [
         NavBarDestination(
           icon: AppIcons.home,
           selectedIcon: AppIcons.homeActive,
           label: l10n.home,
-        ),
-        NavBarDestination(
-          icon: AppIcons.translate,
-          selectedIcon: AppIcons.translateActive,
-          label: l10n.translate,
         ),
         NavBarDestination(
           icon: AppIcons.dictionary,
@@ -155,7 +164,9 @@ class _MainNavBar extends ConsumerWidget {
         FilledButton.icon(
           onPressed: onTranslateAction,
           style: FilledButton.styleFrom(
-            backgroundColor: isActive ? AppColors.error : AppColors.primary,
+            backgroundColor: isActive
+                ? AppColors.error
+                : (onTranslator ? AppColors.primaryDeep : AppColors.primary),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.l,
@@ -371,8 +382,7 @@ class _TranslateButton extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(5),
                   child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
+                    child: const AppLogo(
                       fit: BoxFit.cover,
                       excludeFromSemantics: true,
                     ),

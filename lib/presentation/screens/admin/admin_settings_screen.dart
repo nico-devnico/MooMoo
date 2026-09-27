@@ -13,6 +13,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
+import 'general_settings_panel.dart';
 
 class AdminSettingsScreen extends ConsumerWidget {
   const AdminSettingsScreen({super.key});
@@ -52,6 +53,8 @@ class AdminSettingsScreen extends ConsumerWidget {
                       color: AppColors.textSecondary(context),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xl),
+                  const GeneralSettingsPanel(),
                   const SizedBox(height: AppSpacing.xl),
                   _SettingsPanel(
                     icon: AppIcons.database,

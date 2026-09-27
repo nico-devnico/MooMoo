@@ -9,6 +9,7 @@
     "migrate": "node scripts/apply_migrations.mjs",
     "test:api": "node scripts/api_smoke_test.mjs",
     "test:live": "node scripts/live_persistence_test.mjs",
+    "test:import": "node scripts/dictionary_import_test.mjs",
     "test:supabase": "node ../scripts/supabase_smoke_test.mjs"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "fast-xml-parser": "^5.11.1",
     "multer": "^1.4.5-lts.1",
     "pg": "^8.23.0"
   }

@@ -16,6 +16,8 @@ import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/learning_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
+import '../../../domain/providers/workspace_provider.dart';
+import '../../../data/repositories/admin_repository.dart' show AppRole;
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_button.dart';
@@ -107,6 +109,9 @@ class _ProfileContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final isAdmin = ref.watch(isAdminProvider);
+    final roles = ref.watch(currentUserRolesProvider).value ?? const <String>[];
+    final isTeacher = roles.contains(AppRole.teacher);
+    final isExpert = roles.contains(AppRole.signExpert);
     final languages = ref.watch(signLanguagesProvider).value;
 
     final name = profile?.displayName?.trim();
@@ -124,7 +129,38 @@ class _ProfileContent extends ConsumerWidget {
           avatarUrl: profile?.avatarUrl,
           isDeaf: profile?.isDeaf ?? false,
           isAdmin: isAdmin,
+          isTeacher: isTeacher,
+          isExpert: isExpert,
         ),
+        if (isAdmin || isTeacher || isExpert) ...[
+          const SizedBox(height: _sectionGap),
+          SettingsGroup(
+            title: l10n.wsMySpaces,
+            children: [
+              if (isAdmin)
+                SettingsTile(
+                  icon: AppIcons.admin,
+                  title: l10n.adminPanel,
+                  subtitle: l10n.wsAdminSpaceHint,
+                  onTap: () => context.goNamed(AppRoutes.adminDashboardName),
+                ),
+              if (isTeacher)
+                SettingsTile(
+                  icon: PhosphorIconsRegular.chalkboardTeacher,
+                  title: l10n.teacherSpace,
+                  subtitle: l10n.wsTeacherSpaceHint,
+                  onTap: () => context.goNamed(AppRoutes.teacherDashboardName),
+                ),
+              if (isExpert)
+                SettingsTile(
+                  icon: PhosphorIconsRegular.sealCheck,
+                  title: l10n.expertSpace,
+                  subtitle: l10n.wsExpertSpaceHint,
+                  onTap: () => context.goNamed(AppRoutes.expertDashboardName),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: _sectionGap),
         const _LearningSection(),
         const SizedBox(height: _sectionGap),
@@ -183,12 +219,6 @@ class _ProfileContent extends ConsumerWidget {
               title: l10n.myContributions,
               onTap: () => context.pushNamed(AppRoutes.contributeName),
             ),
-            if (isAdmin)
-              SettingsTile(
-                icon: AppIcons.admin,
-                title: l10n.adminPanel,
-                onTap: () => context.goNamed(AppRoutes.adminDashboardName),
-              ),
           ],
         ),
         const SizedBox(height: _sectionGap),
@@ -214,6 +244,8 @@ class _ProfileHeader extends StatelessWidget {
     required this.avatarUrl,
     required this.isDeaf,
     required this.isAdmin,
+    required this.isTeacher,
+    required this.isExpert,
   });
 
   final String displayName;
@@ -221,6 +253,8 @@ class _ProfileHeader extends StatelessWidget {
   final String? avatarUrl;
   final bool isDeaf;
   final bool isAdmin;
+  final bool isTeacher;
+  final bool isExpert;
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +315,18 @@ class _ProfileHeader extends StatelessWidget {
                         icon: AppIcons.admin,
                         label: l10n.adminRole,
                         color: AppColors.success,
+                      ),
+                    if (isTeacher)
+                      _Tag(
+                        icon: PhosphorIconsRegular.chalkboardTeacher,
+                        label: l10n.roleTeacher,
+                        color: AppColors.warning,
+                      ),
+                    if (isExpert)
+                      _Tag(
+                        icon: PhosphorIconsRegular.sealCheck,
+                        label: l10n.roleExpert,
+                        color: AppColors.primary,
                       ),
                   ],
                 ),

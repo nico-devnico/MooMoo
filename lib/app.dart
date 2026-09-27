@@ -4,7 +4,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'domain/providers/app_settings_provider.dart';
 import 'domain/providers/profile_provider.dart';
+import 'presentation/screens/maintenance/maintenance_gate.dart';
 
 class MooMooApp extends ConsumerWidget {
   const MooMooApp({super.key});
@@ -28,8 +30,12 @@ class MooMooApp extends ConsumerWidget {
 
     return MaterialApp.router(
       key: ValueKey('app_locale_$localeCode'),
-      title: 'MooMoo',
+      title: ref.watch(appNameProvider),
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => MaintenanceGate(
+        router: router,
+        child: child ?? const SizedBox.shrink(),
+      ),
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,

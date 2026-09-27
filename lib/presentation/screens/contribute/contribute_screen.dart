@@ -11,6 +11,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/contribution.dart';
+import '../../../domain/providers/app_settings_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/contribution_provider.dart';
 import '../../../domain/providers/learning_provider.dart';
@@ -102,6 +103,8 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final language = ref.watch(learningLanguageProvider).value;
     final secondary = AppColors.textSecondary(context);
+    final contributionsOpen =
+        ref.watch(appSettingsProvider).value?.contributionsEnabled ?? true;
 
     return Scaffold(
       appBar: AppBar(
@@ -136,6 +139,22 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                     style: AppTextStyles.bodyMedium.copyWith(color: secondary),
                   ),
                   const SizedBox(height: AppSpacing.l),
+                  if (!contributionsOpen)
+                    AppPanel(
+                      child: Row(
+                        children: [
+                          Icon(AppIcons.info, color: secondary),
+                          const SizedBox(width: AppSpacing.m),
+                          Expanded(
+                            child: Text(
+                              l10n.contributionsClosed,
+                              style: AppTextStyles.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
                   AppPanel(
                     child: Form(
                       key: _formKey,

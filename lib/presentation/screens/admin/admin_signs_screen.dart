@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
@@ -14,6 +15,7 @@ import '../../../data/models/sign.dart';
 import '../../../data/models/sign_category.dart';
 import '../../../domain/providers/admin_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
+import '../../../domain/providers/workspace_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_badge.dart';
 import '../../widgets/app_button.dart';
@@ -23,12 +25,19 @@ import '../../widgets/app_snackbar.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/skeletons.dart';
 import 'admin_shell.dart';
+import 'dictionary/category_manager_dialog.dart';
+import 'dictionary/import_dialog.dart';
 
 const double _listMaxWidth = 820;
 const double _thumbSize = 64;
 
+/// Bounds of `signs_difficulty_level_check` in the database.
+const int kMaxDifficulty = 3;
+
 class AdminSignsScreen extends ConsumerStatefulWidget {
-  const AdminSignsScreen({super.key});
+  const AdminSignsScreen({super.key, this.workspace = Workspace.admin});
+
+  final Workspace workspace;
 
   @override
   ConsumerState<AdminSignsScreen> createState() => _AdminSignsScreenState();
@@ -38,6 +47,8 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
   final _searchController = TextEditingController();
   final Set<String> _busyIds = {};
   bool? _validatedFilter;
+  int? _languageFilter;
+  int? _categoryFilter;
   String _query = '';
 
   @override
@@ -46,8 +57,12 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
     super.dispose();
   }
 
-  AdminSignsFilter get _filter =>
-      AdminSignsFilter(query: _query, isValidated: _validatedFilter);
+  AdminSignsFilter get _filter => AdminSignsFilter(
+        query: _query,
+        isValidated: _validatedFilter,
+        languageId: _languageFilter,
+        categoryId: _categoryFilter,
+      );
 
   void _clearSearch() {
     _searchController.clear();
@@ -57,15 +72,21 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isAdmin = ref.watch(isAdminProvider);
     final signsAsync = ref.watch(adminSignsProvider(_filter));
+    final languages = ref.watch(signLanguagesProvider).value ?? const [];
+    final categories = _languageFilter == null
+        ? const <SignCategory>[]
+        : ref.watch(manageableCategoriesProvider(_languageFilter!)).value ?? const [];
 
     final filters = [
       (null, l10n.filterAll),
-      (true, l10n.statusValidated),
-      (false, l10n.statusNotValidated),
+      (true, l10n.dmPublished),
+      (false, l10n.dmDraft),
     ];
 
     return AdminShell(
+      workspace: widget.workspace,
       selectedIndex: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -80,7 +101,7 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
+                constraints: const BoxConstraints(maxWidth: _listMaxWidth),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -94,6 +115,34 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary(context),
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    Wrap(
+                      spacing: AppSpacing.s,
+                      runSpacing: AppSpacing.s,
+                      children: [
+                        AppButton(
+                          label: l10n.adminAddSign,
+                          icon: AppIcons.add,
+                          fullWidth: false,
+                          onPressed: () => _showSignEditor(),
+                        ),
+                        AppButton(
+                          label: l10n.dmCategories,
+                          icon: PhosphorIconsRegular.tag,
+                          variant: AppButtonVariant.outline,
+                          fullWidth: false,
+                          onPressed: _openCategories,
+                        ),
+                        if (isAdmin)
+                          AppButton(
+                            label: l10n.dmImport,
+                            icon: AppIcons.upload,
+                            variant: AppButtonVariant.outline,
+                            fullWidth: false,
+                            onPressed: _openImport,
+                          ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.m),
                     TextField(
@@ -125,12 +174,63 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
                             onSelected: (_) =>
                                 setState(() => _validatedFilter = f.$1),
                           ),
-                        AppButton(
-                          label: l10n.adminAddSign,
-                          icon: AppIcons.add,
-                          fullWidth: false,
-                          onPressed: () => _showSignEditor(),
+                        SizedBox(
+                          width: 220,
+                          child: DropdownButtonFormField<int?>(
+                            key: ValueKey('lang_filter_${languages.length}'),
+                            initialValue: _languageFilter,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: l10n.adminLanguage,
+                              isDense: true,
+                            ),
+                            items: [
+                              DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text(l10n.filterAll),
+                              ),
+                              for (final language in languages)
+                                DropdownMenuItem<int?>(
+                                  value: language.id,
+                                  child: Text(
+                                    language.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (v) => setState(() {
+                              _languageFilter = v;
+                              _categoryFilter = null;
+                            }),
+                          ),
                         ),
+                        if (_languageFilter != null)
+                          SizedBox(
+                            width: 200,
+                            child: DropdownButtonFormField<int?>(
+                              key: ValueKey('cat_filter_${_languageFilter}_${categories.length}'),
+                              initialValue: categories.any((c) => c.id == _categoryFilter)
+                                  ? _categoryFilter
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: l10n.admxCategory,
+                                isDense: true,
+                              ),
+                              items: [
+                                DropdownMenuItem<int?>(
+                                  value: null,
+                                  child: Text(l10n.filterAll),
+                                ),
+                                for (final c in categories)
+                                  DropdownMenuItem<int?>(
+                                    value: c.id,
+                                    child: Text(c.name, overflow: TextOverflow.ellipsis),
+                                  ),
+                              ],
+                              onChanged: (v) => setState(() => _categoryFilter = v),
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -178,6 +278,7 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
                           child: _SignAdminTile(
                             sign: sign,
                             busy: _busyIds.contains(sign.id),
+                            canDelete: isAdmin,
                             onEdit: () => _showSignEditor(sign: sign),
                             onToggleValidated: () => _toggleValidated(sign),
                             onDelete: () => _deleteSign(sign),
@@ -222,7 +323,35 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
   void _afterChange() {
     ref
       ..invalidate(adminSignsProvider)
-      ..invalidate(adminStatsProvider);
+      ..invalidate(adminStatsProvider)
+      ..invalidate(expertOverviewProvider)
+      ..invalidate(signSearchProvider);
+  }
+
+  Future<void> _openCategories() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => CategoryManagerDialog(initialLanguageId: _languageFilter),
+    );
+    if (!mounted) return;
+    ref
+      ..invalidate(manageableCategoriesProvider)
+      ..invalidate(signCategoriesProvider);
+    _afterChange();
+  }
+
+  Future<void> _openImport() async {
+    final imported = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const DictionaryImportDialog(),
+    );
+    if (imported == true && mounted) {
+      ref
+        ..invalidate(manageableCategoriesProvider)
+        ..invalidate(signCategoriesProvider);
+      _afterChange();
+    }
   }
 
   Future<void> _run(
@@ -255,14 +384,24 @@ class _AdminSignsScreenState extends ConsumerState<AdminSignsScreen> {
     }
   }
 
-  Future<void> _toggleValidated(Sign sign) {
+  Future<void> _toggleValidated(Sign sign) async {
     final l10n = AppLocalizations.of(context)!;
-    return _run(
+    if (sign.isValidated) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: l10n.dmUnpublish,
+        message: l10n.dmUnpublishConfirm(sign.word),
+        confirmLabel: l10n.dmUnpublish,
+        cancelLabel: l10n.cancel,
+      );
+      if (!confirmed || !mounted) return;
+    }
+    await _run(
       sign,
       () => ref
           .read(adminRepositoryProvider)
           .setSignValidated(sign.id, !sign.isValidated),
-      l10n.signUpdated,
+      sign.isValidated ? l10n.dmUnpublished : l10n.dmPublishedDone,
     );
   }
 
@@ -328,10 +467,15 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
   late final TextEditingController _word;
   late final TextEditingController _description;
   late final TextEditingController _videoUrl;
+  late final TextEditingController _thumbnailUrl;
+  late final TextEditingController _example;
+  late final TextEditingController _tags;
   late bool _validated;
   late int _difficulty;
   int? _languageId;
   int? _categoryId;
+  String? _uploading;
+  bool _checking = false;
 
   @override
   void initState() {
@@ -340,17 +484,21 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
     _word = TextEditingController(text: sign?.word ?? '');
     _description = TextEditingController(text: sign?.description ?? '');
     _videoUrl = TextEditingController(text: sign?.videoUrl ?? '');
-    _validated = sign?.isValidated ?? true;
-    _difficulty = (sign?.difficultyLevel ?? 1).clamp(1, 5);
+    _thumbnailUrl = TextEditingController(text: sign?.thumbnailUrl ?? '');
+    _example = TextEditingController(text: sign?.exampleSentence ?? '');
+    _tags = TextEditingController(text: (sign?.tags ?? const []).join(', '));
+    // New signs start as drafts: publishing is an explicit decision.
+    _validated = sign?.isValidated ?? false;
+    _difficulty = (sign?.difficultyLevel ?? 1).clamp(1, kMaxDifficulty);
     _languageId = sign?.signLanguageId;
     _categoryId = sign?.categoryId;
   }
 
   @override
   void dispose() {
-    _word.dispose();
-    _description.dispose();
-    _videoUrl.dispose();
+    for (final c in [_word, _description, _videoUrl, _thumbnailUrl, _example, _tags]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -359,18 +507,92 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
     return text.isEmpty ? null : text;
   }
 
-  void _submit() {
+  String? _validateUrl(String? value) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    final uri = Uri.tryParse(text);
+    final ok = uri != null && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+    return ok ? null : AppLocalizations.of(context)!.dmInvalidUrl;
+  }
+
+  Future<void> _upload({required bool video}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: video ? ['mp4', 'webm', 'mov'] : ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+      withData: true,
+    );
+    final file = picked?.files.single;
+    if (file == null || file.bytes == null || !mounted) return;
+    final limit = video ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > limit) {
+      AppSnackbar.showError(context, l10n.dmFileTooLarge(limit ~/ (1024 * 1024)));
+      return;
+    }
+    setState(() => _uploading = video ? 'video' : 'image');
+    try {
+      final url = await ref
+          .read(workspaceRepositoryProvider)
+          .uploadSignMedia(file.bytes!, file.name, video: video);
+      (video ? _videoUrl : _thumbnailUrl).text = url;
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, '${l10n.errorGeneric}: $e');
+    } finally {
+      if (mounted) setState(() => _uploading = null);
+    }
+  }
+
+  Future<void> _submit(int? languageId) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final l10n = AppLocalizations.of(context)!;
+    final word = _word.text.trim();
+
+    setState(() => _checking = true);
+    List<Sign> sameWord = const [];
+    try {
+      sameWord = await ref.read(adminRepositoryProvider).getSigns(
+            query: word,
+            languageId: languageId,
+            limit: 20,
+          );
+    } catch (_) {
+      // The duplicate check is advisory; saving still works without it.
+    }
+    if (!mounted) return;
+    setState(() => _checking = false);
+    final duplicate = sameWord.any(
+      (s) => s.id != widget.sign?.id && s.word.trim().toLowerCase() == word.toLowerCase(),
+    );
+    if (duplicate) {
+      final proceed = await showConfirmDialog(
+        context,
+        title: l10n.dmDuplicateTitle,
+        message: l10n.dmDuplicateMessage(word),
+        confirmLabel: l10n.save,
+        cancelLabel: l10n.cancel,
+      );
+      if (!proceed || !mounted) return;
+    }
+
+    final tags = _tags.text
+        .split(RegExp(r'[,;]'))
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toSet()
+        .toList();
     final sign = widget.sign;
     final now = DateTime.now();
     final base = sign ?? Sign(id: const Uuid().v4(), word: '', createdAt: now);
     Navigator.pop(
       context,
       base.copyWith(
-        word: _word.text.trim(),
+        word: word,
         description: _trimmedOrNull(_description),
         videoUrl: _trimmedOrNull(_videoUrl),
-        signLanguageId: _languageId,
+        thumbnailUrl: _trimmedOrNull(_thumbnailUrl),
+        exampleSentence: _trimmedOrNull(_example),
+        tags: tags.isEmpty ? null : tags,
+        signLanguageId: languageId,
         categoryId: _categoryId,
         difficultyLevel: _difficulty,
         isValidated: _validated,
@@ -379,22 +601,37 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
     );
   }
 
+  Widget _uploadButton({required bool video}) {
+    final l10n = AppLocalizations.of(context)!;
+    final busy = _uploading == (video ? 'video' : 'image');
+    return IconButton(
+      tooltip: video ? l10n.dmUploadVideo : l10n.dmUploadImage,
+      onPressed: _uploading != null ? null : () => _upload(video: video),
+      icon: busy
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(AppIcons.upload),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final languagesAsync = ref.watch(signLanguagesProvider);
     final languages = languagesAsync.value ?? const [];
-    // Langue par défaut : la première renvoyée par Supabase, jamais un id en dur.
     final languageId =
         _languageId ?? (languages.isNotEmpty ? languages.first.id : null);
     final List<SignCategory> categories = languageId == null
         ? const []
-        : ref.watch(signCategoriesProvider(languageId)).value ?? const [];
+        : ref.watch(manageableCategoriesProvider(languageId)).value ?? const [];
 
     return AlertDialog(
       title: Text(widget.sign == null ? l10n.adminAddSign : l10n.adminEditSign),
       content: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 380, maxWidth: 520),
+        constraints: const BoxConstraints(minWidth: 380, maxWidth: 560),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -405,33 +642,27 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
                 TextFormField(
                   controller: _word,
                   autofocus: true,
+                  maxLength: 120,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(labelText: l10n.signWord),
                   validator: (v) =>
                       (v ?? '').trim().isEmpty ? l10n.admxWordRequired : null,
                 ),
-                const SizedBox(height: AppSpacing.m),
+                const SizedBox(height: AppSpacing.s),
                 TextFormField(
                   controller: _description,
                   maxLines: 3,
+                  maxLength: 2000,
                   decoration: InputDecoration(labelText: l10n.signDescription),
                 ),
-                const SizedBox(height: AppSpacing.m),
-                TextFormField(
-                  controller: _videoUrl,
-                  keyboardType: TextInputType.url,
-                  decoration: InputDecoration(
-                    labelText: l10n.signVideoUrl,
-                    prefixIcon: const Icon(AppIcons.video),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.m),
+                const SizedBox(height: AppSpacing.s),
                 DropdownButtonFormField<int>(
                   key: ValueKey('lang_$languageId'),
                   initialValue: languages.any((l) => l.id == languageId)
                       ? languageId
                       : null,
                   decoration: InputDecoration(labelText: l10n.adminLanguage),
+                  validator: (v) => v == null ? l10n.dmLanguageRequired : null,
                   items: [
                     for (final language in languages)
                       DropdownMenuItem(
@@ -464,13 +695,48 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
                   ],
                   onChanged: (v) => setState(() => _categoryId = v),
                 ),
+                const SizedBox(height: AppSpacing.m),
+                TextFormField(
+                  controller: _videoUrl,
+                  keyboardType: TextInputType.url,
+                  validator: _validateUrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.signVideoUrl,
+                    prefixIcon: const Icon(AppIcons.video),
+                    suffixIcon: _uploadButton(video: true),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextFormField(
+                  controller: _thumbnailUrl,
+                  keyboardType: TextInputType.url,
+                  validator: _validateUrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.dmThumbnailUrl,
+                    prefixIcon: const Icon(PhosphorIconsRegular.image),
+                    suffixIcon: _uploadButton(video: false),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextFormField(
+                  controller: _example,
+                  decoration: InputDecoration(labelText: l10n.dmExampleSentence),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                TextFormField(
+                  controller: _tags,
+                  decoration: InputDecoration(
+                    labelText: l10n.dmTags,
+                    helperText: l10n.dmTagsHelp,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.l),
                 Text(l10n.difficultyLevel, style: AppTextStyles.bodyMedium),
                 const SizedBox(height: AppSpacing.s),
                 SegmentedButton<int>(
                   showSelectedIcon: false,
                   segments: [
-                    for (var level = 1; level <= 5; level++)
+                    for (var level = 1; level <= kMaxDifficulty; level++)
                       ButtonSegment(
                         value: level,
                         label: Text('$level'),
@@ -484,7 +750,8 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
                 const SizedBox(height: AppSpacing.m),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.statusValidated),
+                  title: Text(l10n.dmPublished),
+                  subtitle: Text(l10n.dmPublishedHelp),
                   value: _validated,
                   onChanged: (v) => setState(() => _validated = v),
                 ),
@@ -499,14 +766,17 @@ class _SignEditorDialogState extends ConsumerState<_SignEditorDialog> {
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          onPressed: () {
-            _languageId ??= languageId;
-            _submit();
-          },
+          onPressed: _checking || _uploading != null ? null : () => _submit(languageId),
           style: FilledButton.styleFrom(
             minimumSize: const Size(0, kMinTouchTarget),
           ),
-          child: Text(l10n.save),
+          child: _checking
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.save),
         ),
       ],
     );
@@ -517,6 +787,7 @@ class _SignAdminTile extends StatelessWidget {
   const _SignAdminTile({
     required this.sign,
     required this.busy,
+    required this.canDelete,
     required this.onEdit,
     required this.onToggleValidated,
     required this.onDelete,
@@ -524,6 +795,7 @@ class _SignAdminTile extends StatelessWidget {
 
   final Sign sign;
   final bool busy;
+  final bool canDelete;
   final VoidCallback onEdit;
   final VoidCallback onToggleValidated;
   final VoidCallback onDelete;
@@ -574,13 +846,13 @@ class _SignAdminTile extends StatelessWidget {
                       ),
                     ),
                     AppBadge(
-                      label: sign.isValidated
-                          ? l10n.statusValidated
-                          : l10n.statusNotValidated,
+                      label: sign.isValidated ? l10n.dmPublished : l10n.dmDraft,
                       color: sign.isValidated
                           ? AppColors.success
                           : AppColors.warning,
                     ),
+                    if (sign.videoUrl == null)
+                      AppBadge(label: l10n.dmNoVideo, color: AppColors.error),
                   ],
                 ),
                 if (sign.description?.isNotEmpty ?? false) ...[
@@ -628,7 +900,7 @@ class _SignAdminTile extends StatelessWidget {
               icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
               onSelected: (value) {
                 switch (value) {
-                  case 'validate':
+                  case 'publish':
                     onToggleValidated();
                   case 'delete':
                     onDelete();
@@ -636,33 +908,34 @@ class _SignAdminTile extends StatelessWidget {
               },
               itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: 'validate',
+                  value: 'publish',
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(
                       sign.isValidated
-                          ? AppIcons.blocked
-                          : PhosphorIconsRegular.sealCheck,
+                          ? PhosphorIconsRegular.eyeSlash
+                          : PhosphorIconsRegular.globe,
                     ),
                     title: Text(
-                      sign.isValidated ? l10n.unvalidate : l10n.validate,
+                      sign.isValidated ? l10n.dmUnpublish : l10n.dmPublish,
                     ),
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
-                      AppIcons.delete,
-                      color: AppColors.error,
-                    ),
-                    title: Text(
-                      l10n.delete,
-                      style: const TextStyle(color: AppColors.error),
+                if (canDelete)
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        AppIcons.delete,
+                        color: AppColors.error,
+                      ),
+                      title: Text(
+                        l10n.delete,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ],

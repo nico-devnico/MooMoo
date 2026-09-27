@@ -80,18 +80,27 @@ final adminContributionsProvider =
 class AdminSignsFilter {
   final String? query;
   final bool? isValidated;
+  final int? languageId;
+  final int? categoryId;
 
-  const AdminSignsFilter({this.query, this.isValidated});
+  const AdminSignsFilter({
+    this.query,
+    this.isValidated,
+    this.languageId,
+    this.categoryId,
+  });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is AdminSignsFilter &&
           query == other.query &&
-          isValidated == other.isValidated;
+          isValidated == other.isValidated &&
+          languageId == other.languageId &&
+          categoryId == other.categoryId;
 
   @override
-  int get hashCode => Object.hash(query, isValidated);
+  int get hashCode => Object.hash(query, isValidated, languageId, categoryId);
 }
 
 final adminSignsProvider = FutureProvider.autoDispose
@@ -104,5 +113,7 @@ final adminSignsProvider = FutureProvider.autoDispose
   return repository.getSigns(
     query: filter.query,
     isValidated: filter.isValidated,
+    languageId: filter.languageId,
+    categoryId: filter.categoryId,
   );
 });

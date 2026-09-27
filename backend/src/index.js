@@ -7,7 +7,9 @@ import { adminRouter } from './routes/admin.js';
 import { modelsRouter } from './routes/models.js';
 import { inferRouter } from './routes/infer.js';
 import { healthRouter } from './routes/health.js';
+import { dictionaryRouter } from './routes/dictionary.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
+import { maintenanceGuard } from './lib/settings.js';
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -16,10 +18,14 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json({ limit: '15mb' }));
 
 app.use('/health', healthRouter);
+// Admin routes stay reachable during maintenance (they require the admin role).
+// Login stays open so administrators can sign in; sign-up is closed.
+app.use('/api/auth/signup', optionalAuth, maintenanceGuard);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', requireAuth, adminRouter);
-app.use('/api/models', optionalAuth, modelsRouter);
-app.use('/api/infer', optionalAuth, inferRouter);
+app.use('/api/dictionary', requireAuth, maintenanceGuard, dictionaryRouter);
+app.use('/api/models', optionalAuth, maintenanceGuard, modelsRouter);
+app.use('/api/infer', optionalAuth, maintenanceGuard, inferRouter);
 
 app.use((err, _req, res, _next) => {
   const status = err.status || 500;

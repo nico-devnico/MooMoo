@@ -3073,4 +3073,498 @@ class AppLocalizationsFr extends AppLocalizations {
   String mlStageChanged(String stage) {
     return 'Modèle passé au stade $stage';
   }
+
+  @override
+  String get close => 'Fermer';
+
+  @override
+  String get teacherSpace => 'Espace enseignant';
+
+  @override
+  String get expertSpace => 'Espace expert';
+
+  @override
+  String get teacherSpaceSubtitle =>
+      'Suivez vos leçons et la progression des apprenants.';
+
+  @override
+  String get expertSpaceSubtitle =>
+      'Qualité du dictionnaire et contributions à relire.';
+
+  @override
+  String get roleSpaceDeniedMessage =>
+      'Cet espace est réservé au rôle correspondant. Demandez à un administrateur de vous l\'attribuer.';
+
+  @override
+  String get wsMySpaces => 'Mes espaces';
+
+  @override
+  String get wsAdminSpaceHint =>
+      'Utilisateurs, dictionnaire, modèles et configuration';
+
+  @override
+  String get wsTeacherSpaceHint => 'Leçons, apprenants et statistiques';
+
+  @override
+  String get wsExpertSpaceHint => 'Dictionnaire, catégories et modération';
+
+  @override
+  String get wsUnitsPublished => 'Unités publiées';
+
+  @override
+  String get wsLessons => 'Leçons';
+
+  @override
+  String get wsLearners => 'Apprenants';
+
+  @override
+  String wsCompletions7d(int total) {
+    return 'Leçons terminées (7 j) · $total au total';
+  }
+
+  @override
+  String get wsAverageScore => 'Score moyen';
+
+  @override
+  String get wsLessonStats => 'Statistiques par leçon';
+
+  @override
+  String get wsNoLessons => 'Aucune leçon';
+
+  @override
+  String get wsNoLessonsMessage =>
+      'Créez des unités et des leçons depuis l\'onglet Apprentissage.';
+
+  @override
+  String wsLastCompletion(String date) {
+    return 'Dernière réussite : $date';
+  }
+
+  @override
+  String wsCompletionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réussites',
+      one: '1 réussite',
+      zero: 'Aucune réussite',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String wsLearnersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count apprenants',
+      one: '1 apprenant',
+      zero: 'aucun apprenant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wsReviewedByMe => 'Relues par moi';
+
+  @override
+  String get wsSignsWithoutVideo => 'Signes sans vidéo';
+
+  @override
+  String get wsSignsWithoutCategory => 'Signes sans catégorie';
+
+  @override
+  String get wsByLanguage => 'Par langue';
+
+  @override
+  String wsLanguageCounts(int signs, int published) {
+    return '$signs signes · $published publiés';
+  }
+
+  @override
+  String get dmPublished => 'Publié';
+
+  @override
+  String get dmDraft => 'Brouillon';
+
+  @override
+  String get dmCategories => 'Catégories';
+
+  @override
+  String get dmImport => 'Importer';
+
+  @override
+  String get dmUnpublish => 'Dépublier';
+
+  @override
+  String dmUnpublishConfirm(String word) {
+    return '« $word » ne sera plus visible dans le dictionnaire public. Continuer ?';
+  }
+
+  @override
+  String get dmUnpublished => 'Signe dépublié';
+
+  @override
+  String get dmPublishedDone => 'Signe publié';
+
+  @override
+  String get dmPublish => 'Publier';
+
+  @override
+  String get dmInvalidUrl => 'URL invalide (http ou https attendu)';
+
+  @override
+  String dmFileTooLarge(int mb) {
+    return 'Fichier trop volumineux (max $mb Mo)';
+  }
+
+  @override
+  String get dmDuplicateTitle => 'Signe déjà présent';
+
+  @override
+  String dmDuplicateMessage(String word) {
+    return 'Un signe « $word » existe déjà pour cette langue. L\'enregistrer quand même ?';
+  }
+
+  @override
+  String get dmUploadVideo => 'Téléverser une vidéo';
+
+  @override
+  String get dmUploadImage => 'Téléverser une image';
+
+  @override
+  String get dmLanguageRequired => 'Choisissez une langue';
+
+  @override
+  String get dmThumbnailUrl => 'URL de la miniature';
+
+  @override
+  String get dmExampleSentence => 'Phrase d\'exemple';
+
+  @override
+  String get dmTags => 'Mots-clés';
+
+  @override
+  String get dmTagsHelp => 'Séparés par des virgules';
+
+  @override
+  String get dmPublishedHelp => 'Visible dans le dictionnaire public';
+
+  @override
+  String get dmNoVideo => 'Sans vidéo';
+
+  @override
+  String get dmNewCategory => 'Nouvelle catégorie';
+
+  @override
+  String get dmRenameCategory => 'Renommer la catégorie';
+
+  @override
+  String get dmCategoryName => 'Nom de la catégorie';
+
+  @override
+  String get dmCategoryNameRequired => 'Le nom est obligatoire';
+
+  @override
+  String dmCategoryExists(String name) {
+    return 'La catégorie « $name » existe déjà';
+  }
+
+  @override
+  String get dmCategorySaved => 'Catégorie enregistrée';
+
+  @override
+  String get dmDeleteCategory => 'Supprimer la catégorie';
+
+  @override
+  String dmDeleteCategoryConfirm(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count signes perdront leur catégorie.',
+      one: '1 signe perdra sa catégorie.',
+      zero: 'Aucun signe n\'y est rattaché.',
+    );
+    return 'Supprimer « $name » ? $_temp0';
+  }
+
+  @override
+  String get dmCategoryDeleted => 'Catégorie supprimée';
+
+  @override
+  String get dmChooseLanguage => 'Langue des signes';
+
+  @override
+  String get dmNoCategories => 'Aucune catégorie pour cette langue';
+
+  @override
+  String get dmApiRequired =>
+      'L\'import passe par l\'API MooMoo, qui ne répond pas. Démarrez le serveur backend puis réessayez.';
+
+  @override
+  String get dmImportConfirmTitle => 'Lancer l\'import ?';
+
+  @override
+  String dmImportConfirmMessage(int count, int errors, String status) {
+    return '$count signe(s) seront enregistrés en « $status ». $errors ligne(s) en erreur seront ignorées.';
+  }
+
+  @override
+  String get dmImportTitle => 'Importer des signes';
+
+  @override
+  String get dmImportPreview => 'Aperçu';
+
+  @override
+  String get dmImportReport => 'Rapport';
+
+  @override
+  String get dmAnalyse => 'Analyser';
+
+  @override
+  String get dmReanalyse => 'Réanalyser';
+
+  @override
+  String get dmDefaultLanguage => 'Langue par défaut';
+
+  @override
+  String get dmDefaultLanguageHelp =>
+      'Utilisée quand une ligne n\'indique pas de langue';
+
+  @override
+  String get dmNoDefaultLanguage =>
+      'Aucune (la langue doit figurer dans le fichier)';
+
+  @override
+  String get dmCreateCategories => 'Créer les catégories manquantes';
+
+  @override
+  String get dmFetchMedia => 'Récupérer les médias';
+
+  @override
+  String get dmFetchMediaHelp =>
+      'Télécharge les vidéos et images depuis leurs URL publiques et les stocke dans MooMoo. En cas d\'échec, l\'URL d\'origine est conservée.';
+
+  @override
+  String get dmPublishImported => 'Publier directement';
+
+  @override
+  String get dmDuplicatesStrategy => 'Doublons existants';
+
+  @override
+  String get dmSkipDuplicates => 'Ignorer';
+
+  @override
+  String get dmUpdateDuplicates => 'Mettre à jour';
+
+  @override
+  String get dmImportHelp =>
+      'Formats acceptés : CSV, TSV, JSON, NDJSON, XML (10 Mo max). Les champs sont détectés automatiquement ; vous pourrez ajuster la correspondance avant l\'import. Aucune donnée manquante n\'est inventée.';
+
+  @override
+  String get dmChooseFile => 'Choisir un fichier';
+
+  @override
+  String get dmFormat => 'Format';
+
+  @override
+  String dmRecordsCount(int count) {
+    return '$count enregistrement(s)';
+  }
+
+  @override
+  String dmTruncated(int max) {
+    return 'Limité à $max lignes';
+  }
+
+  @override
+  String get dmMapping => 'Correspondance des champs';
+
+  @override
+  String get dmMappingHelp =>
+      'Associez chaque champ MooMoo à une colonne du fichier.';
+
+  @override
+  String get dmIgnoreField => '— Ignorer —';
+
+  @override
+  String get dmOptions => 'Options';
+
+  @override
+  String get dmReanalyseHint =>
+      'La correspondance ou les options ont changé : réanalysez avant d\'importer.';
+
+  @override
+  String dmValidCount(int count) {
+    return 'Valides ($count)';
+  }
+
+  @override
+  String dmDuplicateCount(int count) {
+    return 'Doublons ($count)';
+  }
+
+  @override
+  String dmErrorCount(int count) {
+    return 'Erreurs ($count)';
+  }
+
+  @override
+  String dmCategoriesToCreate(String names) {
+    return 'Catégories à créer : $names';
+  }
+
+  @override
+  String dmMoreRows(int count) {
+    return '… et $count autre(s) ligne(s)';
+  }
+
+  @override
+  String dmReportImported(int count) {
+    return '$count importé(s)';
+  }
+
+  @override
+  String dmReportUpdated(int count) {
+    return '$count mis à jour';
+  }
+
+  @override
+  String dmReportSkipped(int count) {
+    return '$count ignoré(s)';
+  }
+
+  @override
+  String dmReportRejected(int count) {
+    return '$count rejeté(s)';
+  }
+
+  @override
+  String dmReportMedia(int fetched, int failed) {
+    return 'Médias : $fetched récupéré(s), $failed échec(s)';
+  }
+
+  @override
+  String dmCategoriesCreated(String names) {
+    return 'Catégories créées : $names';
+  }
+
+  @override
+  String get dmReportAllGood =>
+      'Toutes les lignes ont été traitées sans avertissement.';
+
+  @override
+  String dmLine(int line) {
+    return 'Ligne $line';
+  }
+
+  @override
+  String get dmStatusValid => 'Valide';
+
+  @override
+  String get dmStatusDuplicate => 'Doublon';
+
+  @override
+  String get dmStatusError => 'Erreur';
+
+  @override
+  String get dmHasVideo => 'Vidéo';
+
+  @override
+  String get cfgIdentity => 'Identité de l\'application';
+
+  @override
+  String get cfgAppName => 'Nom de l\'application';
+
+  @override
+  String get cfgAppNameRequired => 'Le nom est obligatoire';
+
+  @override
+  String get cfgLogo => 'Logo';
+
+  @override
+  String get cfgChangeLogo => 'Changer le logo';
+
+  @override
+  String get cfgDefaultLogo => 'Logo par défaut';
+
+  @override
+  String get cfgLogoHelp =>
+      'PNG, JPG, WebP ou GIF, 2 Mo max. Idéalement carré.';
+
+  @override
+  String get cfgSupportEmail => 'E-mail de support';
+
+  @override
+  String get cfgSupportEmailHelp =>
+      'Adresse affichée aux utilisateurs pour nous contacter';
+
+  @override
+  String get cfgInvalidEmail => 'Adresse e-mail invalide';
+
+  @override
+  String get cfgMaintenance => 'Mode maintenance';
+
+  @override
+  String get cfgMaintenanceEnabled => 'Activer la maintenance';
+
+  @override
+  String get cfgMaintenanceHelp =>
+      'Seuls les administrateurs peuvent utiliser l\'application ; les écritures des autres comptes sont refusées par le serveur.';
+
+  @override
+  String get cfgMaintenanceMessage => 'Message affiché pendant la maintenance';
+
+  @override
+  String get cfgMaintenanceOnTitle => 'Activer la maintenance ?';
+
+  @override
+  String get cfgMaintenanceOnMessage =>
+      'Tous les utilisateurs non administrateurs perdront immédiatement l\'accès à l\'application.';
+
+  @override
+  String get cfgMaintenanceOffTitle => 'Désactiver la maintenance ?';
+
+  @override
+  String get cfgMaintenanceOffMessage =>
+      'L\'application redeviendra accessible à tous les utilisateurs.';
+
+  @override
+  String get cfgDefaults => 'Paramètres par défaut';
+
+  @override
+  String get cfgDefaultSignLanguage => 'Langue des signes par défaut';
+
+  @override
+  String get cfgNone => 'Aucune';
+
+  @override
+  String get cfgContributionsEnabled => 'Contributions ouvertes';
+
+  @override
+  String get cfgContributionsHelp =>
+      'Autorise les utilisateurs à proposer de nouveaux signes';
+
+  @override
+  String get cfgSaved => 'Configuration enregistrée';
+
+  @override
+  String get cfgSaveError => 'Enregistrement impossible';
+
+  @override
+  String get cfgLoadError => 'Impossible de charger la configuration';
+
+  @override
+  String get maintenanceTitle => 'Maintenance en cours';
+
+  @override
+  String get maintenanceDefaultMessage =>
+      'L\'application est momentanément indisponible. Merci de réessayer un peu plus tard.';
+
+  @override
+  String get maintenanceAdminLogin => 'Connexion administrateur';
+
+  @override
+  String get contributionsClosed =>
+      'Les contributions sont momentanément fermées. Vous pouvez toujours consulter vos propositions ci-dessous.';
 }

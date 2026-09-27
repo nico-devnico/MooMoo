@@ -6,7 +6,9 @@ import '../../../core/layout/responsive.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/services/onboarding_preferences.dart';
+import '../../../domain/providers/app_settings_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../widgets/app_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -52,15 +54,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: PageContainer.form(
         child: Semantics(
-          label: 'MooMoo',
+          label: ref.watch(appNameProvider),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                'assets/images/logo.png',
-                width: 120,
-                height: 120,
-              ),
+              const AppLogo(width: 120, height: 120),
               const SizedBox(height: 24),
               const SizedBox(
                 width: 28,

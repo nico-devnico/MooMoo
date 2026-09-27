@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../domain/providers/app_settings_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../widgets/app_logo.dart';
 import '../../widgets/app_panel.dart';
 import '../settings/settings_screen.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final appName = ref.watch(appNameProvider);
     final secondary = AppColors.textSecondary(context);
 
     return Scaffold(
@@ -32,8 +36,7 @@ class AboutScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Column(
                   children: [
-                    Image.asset(
-                      'assets/images/logo.png',
+                    const AppLogo(
                       width: 88,
                       height: 88,
                       excludeFromSemantics: true,
@@ -41,7 +44,7 @@ class AboutScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.m),
                     Semantics(
                       header: true,
-                      child: Text('MooMoo', style: AppTextStyles.h2),
+                      child: Text(appName, style: AppTextStyles.h2),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -76,7 +79,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     onTap: () => openSupportEmail(
                       context,
-                      subject: 'MooMoo · ${l10n.about}',
+                      subject: '$appName · ${l10n.about}',
                     ),
                   ),
                 ],

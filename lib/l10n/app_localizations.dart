@@ -5472,6 +5472,810 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Modèle passé au stade {stage}'**
   String mlStageChanged(String stage);
+
+  /// No description provided for @close.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get close;
+
+  /// No description provided for @teacherSpace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Espace enseignant'**
+  String get teacherSpace;
+
+  /// No description provided for @expertSpace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Espace expert'**
+  String get expertSpace;
+
+  /// No description provided for @teacherSpaceSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez vos leçons et la progression des apprenants.'**
+  String get teacherSpaceSubtitle;
+
+  /// No description provided for @expertSpaceSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Qualité du dictionnaire et contributions à relire.'**
+  String get expertSpaceSubtitle;
+
+  /// No description provided for @roleSpaceDeniedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet espace est réservé au rôle correspondant. Demandez à un administrateur de vous l\'attribuer.'**
+  String get roleSpaceDeniedMessage;
+
+  /// No description provided for @wsMySpaces.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes espaces'**
+  String get wsMySpaces;
+
+  /// No description provided for @wsAdminSpaceHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateurs, dictionnaire, modèles et configuration'**
+  String get wsAdminSpaceHint;
+
+  /// No description provided for @wsTeacherSpaceHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Leçons, apprenants et statistiques'**
+  String get wsTeacherSpaceHint;
+
+  /// No description provided for @wsExpertSpaceHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dictionnaire, catégories et modération'**
+  String get wsExpertSpaceHint;
+
+  /// No description provided for @wsUnitsPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unités publiées'**
+  String get wsUnitsPublished;
+
+  /// No description provided for @wsLessons.
+  ///
+  /// In fr, this message translates to:
+  /// **'Leçons'**
+  String get wsLessons;
+
+  /// No description provided for @wsLearners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apprenants'**
+  String get wsLearners;
+
+  /// No description provided for @wsCompletions7d.
+  ///
+  /// In fr, this message translates to:
+  /// **'Leçons terminées (7 j) · {total} au total'**
+  String wsCompletions7d(int total);
+
+  /// No description provided for @wsAverageScore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Score moyen'**
+  String get wsAverageScore;
+
+  /// No description provided for @wsLessonStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statistiques par leçon'**
+  String get wsLessonStats;
+
+  /// No description provided for @wsNoLessons.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune leçon'**
+  String get wsNoLessons;
+
+  /// No description provided for @wsNoLessonsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez des unités et des leçons depuis l\'onglet Apprentissage.'**
+  String get wsNoLessonsMessage;
+
+  /// No description provided for @wsLastCompletion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière réussite : {date}'**
+  String wsLastCompletion(String date);
+
+  /// No description provided for @wsCompletionsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune réussite} =1{1 réussite} other{{count} réussites}}'**
+  String wsCompletionsCount(int count);
+
+  /// No description provided for @wsLearnersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{aucun apprenant} =1{1 apprenant} other{{count} apprenants}}'**
+  String wsLearnersCount(int count);
+
+  /// No description provided for @wsReviewedByMe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relues par moi'**
+  String get wsReviewedByMe;
+
+  /// No description provided for @wsSignsWithoutVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signes sans vidéo'**
+  String get wsSignsWithoutVideo;
+
+  /// No description provided for @wsSignsWithoutCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signes sans catégorie'**
+  String get wsSignsWithoutCategory;
+
+  /// No description provided for @wsByLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par langue'**
+  String get wsByLanguage;
+
+  /// No description provided for @wsLanguageCounts.
+  ///
+  /// In fr, this message translates to:
+  /// **'{signs} signes · {published} publiés'**
+  String wsLanguageCounts(int signs, int published);
+
+  /// No description provided for @dmPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publié'**
+  String get dmPublished;
+
+  /// No description provided for @dmDraft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Brouillon'**
+  String get dmDraft;
+
+  /// No description provided for @dmCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories'**
+  String get dmCategories;
+
+  /// No description provided for @dmImport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer'**
+  String get dmImport;
+
+  /// No description provided for @dmUnpublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépublier'**
+  String get dmUnpublish;
+
+  /// No description provided for @dmUnpublishConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {word} » ne sera plus visible dans le dictionnaire public. Continuer ?'**
+  String dmUnpublishConfirm(String word);
+
+  /// No description provided for @dmUnpublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signe dépublié'**
+  String get dmUnpublished;
+
+  /// No description provided for @dmPublishedDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signe publié'**
+  String get dmPublishedDone;
+
+  /// No description provided for @dmPublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier'**
+  String get dmPublish;
+
+  /// No description provided for @dmInvalidUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL invalide (http ou https attendu)'**
+  String get dmInvalidUrl;
+
+  /// No description provided for @dmFileTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichier trop volumineux (max {mb} Mo)'**
+  String dmFileTooLarge(int mb);
+
+  /// No description provided for @dmDuplicateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signe déjà présent'**
+  String get dmDuplicateTitle;
+
+  /// No description provided for @dmDuplicateMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un signe « {word} » existe déjà pour cette langue. L\'enregistrer quand même ?'**
+  String dmDuplicateMessage(String word);
+
+  /// No description provided for @dmUploadVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléverser une vidéo'**
+  String get dmUploadVideo;
+
+  /// No description provided for @dmUploadImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléverser une image'**
+  String get dmUploadImage;
+
+  /// No description provided for @dmLanguageRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une langue'**
+  String get dmLanguageRequired;
+
+  /// No description provided for @dmThumbnailUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL de la miniature'**
+  String get dmThumbnailUrl;
+
+  /// No description provided for @dmExampleSentence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Phrase d\'exemple'**
+  String get dmExampleSentence;
+
+  /// No description provided for @dmTags.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mots-clés'**
+  String get dmTags;
+
+  /// No description provided for @dmTagsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séparés par des virgules'**
+  String get dmTagsHelp;
+
+  /// No description provided for @dmPublishedHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visible dans le dictionnaire public'**
+  String get dmPublishedHelp;
+
+  /// No description provided for @dmNoVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans vidéo'**
+  String get dmNoVideo;
+
+  /// No description provided for @dmNewCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle catégorie'**
+  String get dmNewCategory;
+
+  /// No description provided for @dmRenameCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renommer la catégorie'**
+  String get dmRenameCategory;
+
+  /// No description provided for @dmCategoryName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la catégorie'**
+  String get dmCategoryName;
+
+  /// No description provided for @dmCategoryNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom est obligatoire'**
+  String get dmCategoryNameRequired;
+
+  /// No description provided for @dmCategoryExists.
+  ///
+  /// In fr, this message translates to:
+  /// **'La catégorie « {name} » existe déjà'**
+  String dmCategoryExists(String name);
+
+  /// No description provided for @dmCategorySaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie enregistrée'**
+  String get dmCategorySaved;
+
+  /// No description provided for @dmDeleteCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la catégorie'**
+  String get dmDeleteCategory;
+
+  /// No description provided for @dmDeleteCategoryConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer « {name} » ? {count, plural, =0{Aucun signe n\'y est rattaché.} =1{1 signe perdra sa catégorie.} other{{count} signes perdront leur catégorie.}}'**
+  String dmDeleteCategoryConfirm(String name, int count);
+
+  /// No description provided for @dmCategoryDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie supprimée'**
+  String get dmCategoryDeleted;
+
+  /// No description provided for @dmChooseLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue des signes'**
+  String get dmChooseLanguage;
+
+  /// No description provided for @dmNoCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune catégorie pour cette langue'**
+  String get dmNoCategories;
+
+  /// No description provided for @dmApiRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'import passe par l\'API MooMoo, qui ne répond pas. Démarrez le serveur backend puis réessayez.'**
+  String get dmApiRequired;
+
+  /// No description provided for @dmImportConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer l\'import ?'**
+  String get dmImportConfirmTitle;
+
+  /// No description provided for @dmImportConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} signe(s) seront enregistrés en « {status} ». {errors} ligne(s) en erreur seront ignorées.'**
+  String dmImportConfirmMessage(int count, int errors, String status);
+
+  /// No description provided for @dmImportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer des signes'**
+  String get dmImportTitle;
+
+  /// No description provided for @dmImportPreview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aperçu'**
+  String get dmImportPreview;
+
+  /// No description provided for @dmImportReport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport'**
+  String get dmImportReport;
+
+  /// No description provided for @dmAnalyse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyser'**
+  String get dmAnalyse;
+
+  /// No description provided for @dmReanalyse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réanalyser'**
+  String get dmReanalyse;
+
+  /// No description provided for @dmDefaultLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue par défaut'**
+  String get dmDefaultLanguage;
+
+  /// No description provided for @dmDefaultLanguageHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisée quand une ligne n\'indique pas de langue'**
+  String get dmDefaultLanguageHelp;
+
+  /// No description provided for @dmNoDefaultLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune (la langue doit figurer dans le fichier)'**
+  String get dmNoDefaultLanguage;
+
+  /// No description provided for @dmCreateCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer les catégories manquantes'**
+  String get dmCreateCategories;
+
+  /// No description provided for @dmFetchMedia.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupérer les médias'**
+  String get dmFetchMedia;
+
+  /// No description provided for @dmFetchMediaHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharge les vidéos et images depuis leurs URL publiques et les stocke dans MooMoo. En cas d\'échec, l\'URL d\'origine est conservée.'**
+  String get dmFetchMediaHelp;
+
+  /// No description provided for @dmPublishImported.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier directement'**
+  String get dmPublishImported;
+
+  /// No description provided for @dmDuplicatesStrategy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Doublons existants'**
+  String get dmDuplicatesStrategy;
+
+  /// No description provided for @dmSkipDuplicates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignorer'**
+  String get dmSkipDuplicates;
+
+  /// No description provided for @dmUpdateDuplicates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get dmUpdateDuplicates;
+
+  /// No description provided for @dmImportHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Formats acceptés : CSV, TSV, JSON, NDJSON, XML (10 Mo max). Les champs sont détectés automatiquement ; vous pourrez ajuster la correspondance avant l\'import. Aucune donnée manquante n\'est inventée.'**
+  String get dmImportHelp;
+
+  /// No description provided for @dmChooseFile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un fichier'**
+  String get dmChooseFile;
+
+  /// No description provided for @dmFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get dmFormat;
+
+  /// No description provided for @dmRecordsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} enregistrement(s)'**
+  String dmRecordsCount(int count);
+
+  /// No description provided for @dmTruncated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Limité à {max} lignes'**
+  String dmTruncated(int max);
+
+  /// No description provided for @dmMapping.
+  ///
+  /// In fr, this message translates to:
+  /// **'Correspondance des champs'**
+  String get dmMapping;
+
+  /// No description provided for @dmMappingHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associez chaque champ MooMoo à une colonne du fichier.'**
+  String get dmMappingHelp;
+
+  /// No description provided for @dmIgnoreField.
+  ///
+  /// In fr, this message translates to:
+  /// **'— Ignorer —'**
+  String get dmIgnoreField;
+
+  /// No description provided for @dmOptions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Options'**
+  String get dmOptions;
+
+  /// No description provided for @dmReanalyseHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'La correspondance ou les options ont changé : réanalysez avant d\'importer.'**
+  String get dmReanalyseHint;
+
+  /// No description provided for @dmValidCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valides ({count})'**
+  String dmValidCount(int count);
+
+  /// No description provided for @dmDuplicateCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Doublons ({count})'**
+  String dmDuplicateCount(int count);
+
+  /// No description provided for @dmErrorCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreurs ({count})'**
+  String dmErrorCount(int count);
+
+  /// No description provided for @dmCategoriesToCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories à créer : {names}'**
+  String dmCategoriesToCreate(String names);
+
+  /// No description provided for @dmMoreRows.
+  ///
+  /// In fr, this message translates to:
+  /// **'… et {count} autre(s) ligne(s)'**
+  String dmMoreRows(int count);
+
+  /// No description provided for @dmReportImported.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} importé(s)'**
+  String dmReportImported(int count);
+
+  /// No description provided for @dmReportUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} mis à jour'**
+  String dmReportUpdated(int count);
+
+  /// No description provided for @dmReportSkipped.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} ignoré(s)'**
+  String dmReportSkipped(int count);
+
+  /// No description provided for @dmReportRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} rejeté(s)'**
+  String dmReportRejected(int count);
+
+  /// No description provided for @dmReportMedia.
+  ///
+  /// In fr, this message translates to:
+  /// **'Médias : {fetched} récupéré(s), {failed} échec(s)'**
+  String dmReportMedia(int fetched, int failed);
+
+  /// No description provided for @dmCategoriesCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories créées : {names}'**
+  String dmCategoriesCreated(String names);
+
+  /// No description provided for @dmReportAllGood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les lignes ont été traitées sans avertissement.'**
+  String get dmReportAllGood;
+
+  /// No description provided for @dmLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ligne {line}'**
+  String dmLine(int line);
+
+  /// No description provided for @dmStatusValid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valide'**
+  String get dmStatusValid;
+
+  /// No description provided for @dmStatusDuplicate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Doublon'**
+  String get dmStatusDuplicate;
+
+  /// No description provided for @dmStatusError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur'**
+  String get dmStatusError;
+
+  /// No description provided for @dmHasVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get dmHasVideo;
+
+  /// No description provided for @cfgIdentity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identité de l\'application'**
+  String get cfgIdentity;
+
+  /// No description provided for @cfgAppName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de l\'application'**
+  String get cfgAppName;
+
+  /// No description provided for @cfgAppNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom est obligatoire'**
+  String get cfgAppNameRequired;
+
+  /// No description provided for @cfgLogo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logo'**
+  String get cfgLogo;
+
+  /// No description provided for @cfgChangeLogo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer le logo'**
+  String get cfgChangeLogo;
+
+  /// No description provided for @cfgDefaultLogo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Logo par défaut'**
+  String get cfgDefaultLogo;
+
+  /// No description provided for @cfgLogoHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'PNG, JPG, WebP ou GIF, 2 Mo max. Idéalement carré.'**
+  String get cfgLogoHelp;
+
+  /// No description provided for @cfgSupportEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail de support'**
+  String get cfgSupportEmail;
+
+  /// No description provided for @cfgSupportEmailHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse affichée aux utilisateurs pour nous contacter'**
+  String get cfgSupportEmailHelp;
+
+  /// No description provided for @cfgInvalidEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse e-mail invalide'**
+  String get cfgInvalidEmail;
+
+  /// No description provided for @cfgMaintenance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode maintenance'**
+  String get cfgMaintenance;
+
+  /// No description provided for @cfgMaintenanceEnabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer la maintenance'**
+  String get cfgMaintenanceEnabled;
+
+  /// No description provided for @cfgMaintenanceHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les administrateurs peuvent utiliser l\'application ; les écritures des autres comptes sont refusées par le serveur.'**
+  String get cfgMaintenanceHelp;
+
+  /// No description provided for @cfgMaintenanceMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message affiché pendant la maintenance'**
+  String get cfgMaintenanceMessage;
+
+  /// No description provided for @cfgMaintenanceOnTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer la maintenance ?'**
+  String get cfgMaintenanceOnTitle;
+
+  /// No description provided for @cfgMaintenanceOnMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les utilisateurs non administrateurs perdront immédiatement l\'accès à l\'application.'**
+  String get cfgMaintenanceOnMessage;
+
+  /// No description provided for @cfgMaintenanceOffTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Désactiver la maintenance ?'**
+  String get cfgMaintenanceOffTitle;
+
+  /// No description provided for @cfgMaintenanceOffMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application redeviendra accessible à tous les utilisateurs.'**
+  String get cfgMaintenanceOffMessage;
+
+  /// No description provided for @cfgDefaults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres par défaut'**
+  String get cfgDefaults;
+
+  /// No description provided for @cfgDefaultSignLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue des signes par défaut'**
+  String get cfgDefaultSignLanguage;
+
+  /// No description provided for @cfgNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune'**
+  String get cfgNone;
+
+  /// No description provided for @cfgContributionsEnabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contributions ouvertes'**
+  String get cfgContributionsEnabled;
+
+  /// No description provided for @cfgContributionsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorise les utilisateurs à proposer de nouveaux signes'**
+  String get cfgContributionsHelp;
+
+  /// No description provided for @cfgSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration enregistrée'**
+  String get cfgSaved;
+
+  /// No description provided for @cfgSaveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement impossible'**
+  String get cfgSaveError;
+
+  /// No description provided for @cfgLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la configuration'**
+  String get cfgLoadError;
+
+  /// No description provided for @maintenanceTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maintenance en cours'**
+  String get maintenanceTitle;
+
+  /// No description provided for @maintenanceDefaultMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'application est momentanément indisponible. Merci de réessayer un peu plus tard.'**
+  String get maintenanceDefaultMessage;
+
+  /// No description provided for @maintenanceAdminLogin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion administrateur'**
+  String get maintenanceAdminLogin;
+
+  /// No description provided for @contributionsClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les contributions sont momentanément fermées. Vous pouvez toujours consulter vos propositions ci-dessous.'**
+  String get contributionsClosed;
 }
 
 class _AppLocalizationsDelegate
