@@ -7,8 +7,8 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../data/models/landmark_point.dart';
 import '../../data/models/sign.dart';
+import '../../data/models/sign_landmarks.dart';
 import '../../l10n/app_localizations.dart';
 import 'landmark_viewer/landmark_viewer.dart';
 
@@ -40,15 +40,13 @@ class SignMedia extends StatefulWidget {
   static bool hasVisual(Sign sign) =>
       sign.videoUrl != null ||
       sign.thumbnailUrl != null ||
-      parseLandmarks(sign.landmarkData).isNotEmpty;
+      !SignLandmarks.parse(sign.landmarkData).isEmpty;
 
-  static List<LandmarkPoint> parseLandmarks(Map<String, dynamic>? data) {
-    final points = data?['points'];
-    if (points is! List) return const [];
-    return points
-        .whereType<Map>()
-        .map((p) => LandmarkPoint.fromJson(p.cast<String, dynamic>()))
-        .toList(growable: false);
+  /// GIFs are animated images, not videos: the video player can't decode
+  /// them.
+  static bool isAnimatedImage(String url) {
+    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
+    return path.endsWith('.gif') || path.endsWith('.webp') || path.endsWith('.apng');
   }
 
   @override
@@ -59,10 +57,15 @@ class _SignMediaState extends State<SignMedia> {
   VideoPlayerController? _controller;
   bool _videoFailed = false;
   bool _visible = true;
-  List<LandmarkPoint>? _landmarks;
+  SignLandmarks? _landmarks;
 
-  List<LandmarkPoint> get _parsedLandmarks =>
-      _landmarks ??= SignMedia.parseLandmarks(widget.sign.landmarkData);
+  SignLandmarks get _parsedLandmarks =>
+      _landmarks ??= SignLandmarks.parse(widget.sign.landmarkData);
+
+  String? get _gifUrl {
+    final url = widget.sign.videoUrl;
+    return url != null && SignMedia.isAnimatedImage(url) ? url : null;
+  }
 
   @override
   void initState() {
@@ -101,7 +104,7 @@ class _SignMediaState extends State<SignMedia> {
 
   void _initVideo() {
     final url = widget.sign.videoUrl;
-    if (url == null) return;
+    if (url == null || _gifUrl != null) return;
     if (widget.preferStill && widget.sign.thumbnailUrl != null) return;
     final controller = VideoPlayerController.networkUrl(Uri.parse(url));
     _controller = controller;
@@ -185,18 +188,28 @@ class _SignMediaState extends State<SignMedia> {
     }
 
     final landmarks = _parsedLandmarks;
-    if (widget.sign.thumbnailUrl != null) {
-      return _thumbnailOr(_placeholder(l10n));
+    final landmarkView = landmarks.isEmpty
+        ? null
+        : LandmarkViewer(landmarks: landmarks, showControls: widget.showReplay);
+    final fallback = landmarkView ?? _placeholder(l10n);
+
+    final gif = _gifUrl;
+    if (gif != null && !(widget.preferStill && widget.sign.thumbnailUrl != null)) {
+      return _image(gif, _thumbnailOr(fallback));
     }
-    if (landmarks.isNotEmpty) {
-      return LandmarkViewer(points: landmarks);
-    }
-    return _placeholder(l10n);
+    // A moving figure teaches more than a still picture.
+    if (landmarks.isAnimated && !widget.preferStill) return landmarkView!;
+    if (widget.sign.thumbnailUrl != null) return _thumbnailOr(fallback);
+    return fallback;
   }
 
   Widget _thumbnailOr(Widget fallback) {
     final url = widget.sign.thumbnailUrl;
     if (url == null) return fallback;
+    return _image(url, fallback);
+  }
+
+  Widget _image(String url, Widget fallback) {
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.contain,

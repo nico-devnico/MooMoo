@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/user_profile.dart';
+import '../../../data/repositories/account_appeal_repository.dart';
 import '../../../data/repositories/admin_repository.dart';
+import '../../../domain/providers/account_appeal_provider.dart';
 import '../../../domain/providers/admin_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/workspace_provider.dart';
@@ -52,6 +55,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     final usersAsync = ref.watch(adminUsersProvider(_filter));
     final currentUser = ref.watch(currentUserProvider);
     final callerIsOwner = ref.watch(isSuperAdminProvider);
+    final appeals = ref.watch(openAppealsProvider).value ?? const {};
 
     return AdminShell(
       selectedIndex: 4,
@@ -168,6 +172,15 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                         child: _UserAdminTile(
                           profile: user,
                           isSelf: isSelf,
+                          hasAppeal: appeals.containsKey(user.id),
+                          onAppeal: appeals.containsKey(user.id)
+                              ? () => _showAppeal(
+                                    user,
+                                    appeals[user.id]!,
+                                    canReactivate: canManageAccount &&
+                                        user.status == 'suspended',
+                                  )
+                              : null,
                           onEdit: canTouch ? () => _editUser(user) : null,
                           onRoles: canTouch
                               ? () => _editRoles(user, canGrantAdmin: callerIsOwner)
@@ -204,7 +217,102 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   AdminRepository get _repo => ref.read(adminRepositoryProvider);
 
-  void _refresh() => ref.invalidate(adminUsersProvider(_filter));
+  void _refresh() {
+    ref.invalidate(adminUsersProvider(_filter));
+    ref.invalidate(openAppealsProvider);
+  }
+
+  Future<void> _showAppeal(
+    UserProfile user,
+    List<AccountAppeal> appeals, {
+    required bool canReactivate,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final name = user.displayName ?? user.email ?? user.id;
+    final locale = Localizations.localeOf(context).toString();
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(AppIcons.mail, color: AppColors.primary),
+        title: Text(l10n.appealDialogTitle(name)),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if ((user.suspendedReason ?? '').trim().isNotEmpty) ...[
+                  Text(
+                    l10n.accountSuspendedReason(user.suspendedReason!.trim()),
+                    style: AppTextStyles.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                ],
+                for (final appeal in appeals) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (appeal.createdAt != null)
+                          Text(
+                            DateFormat.yMMMd(locale)
+                                .add_Hm()
+                                .format(appeal.createdAt!.toLocal()),
+                            style: AppTextStyles.bodySmall,
+                          ),
+                        const SizedBox(height: AppSpacing.xs),
+                        SelectableText(appeal.message, style: AppTextStyles.bodyMedium),
+                        const SizedBox(height: AppSpacing.s),
+                        SelectableText(
+                          l10n.appealReplyTo(appeal.email),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.accountClose),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'resolve'),
+            child: Text(l10n.appealResolve),
+          ),
+          if (canReactivate)
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'reactivate'),
+              child: Text(l10n.unsuspendAccount),
+            ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    switch (action) {
+      case 'resolve':
+        await _run(
+          () => ref.read(accountAppealRepositoryProvider).resolveForUser(user.id),
+          l10n.appealResolved,
+        );
+      case 'reactivate':
+        await _unsuspend(user);
+    }
+  }
 
   Future<void> _run(Future<void> Function() action, String success) async {
     final l10n = AppLocalizations.of(context)!;
@@ -496,6 +604,8 @@ class _UserAdminTile extends StatelessWidget {
   const _UserAdminTile({
     required this.profile,
     required this.isSelf,
+    this.hasAppeal = false,
+    this.onAppeal,
     this.onEdit,
     this.onRoles,
     this.onSuspend,
@@ -504,6 +614,8 @@ class _UserAdminTile extends StatelessWidget {
 
   final UserProfile profile;
   final bool isSelf;
+  final bool hasAppeal;
+  final VoidCallback? onAppeal;
   final VoidCallback? onEdit;
   final VoidCallback? onRoles;
   final VoidCallback? onSuspend;
@@ -556,8 +668,21 @@ class _UserAdminTile extends StatelessWidget {
                             : AppColors.primary,
                       ),
                     if (isSelf) AppBadge(label: l10n.you, color: AppColors.info),
+                    if (hasAppeal)
+                      AppBadge(label: l10n.appealBadge, color: AppColors.warning),
                   ],
                 ),
+                if (hasAppeal && onAppeal != null) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ActionChip(
+                      avatar: const Icon(AppIcons.mail, size: 18, color: AppColors.warning),
+                      label: Text(l10n.appealView),
+                      onPressed: onAppeal,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

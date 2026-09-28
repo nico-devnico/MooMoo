@@ -141,6 +141,9 @@ class InferenceResult {
   final String? errorCode;
   final String? errorMessage;
 
+  /// Best candidates, most likely first (the label is the first one).
+  final List<String> topLabels;
+
   const InferenceResult({
     required this.ok,
     this.label,
@@ -149,6 +152,7 @@ class InferenceResult {
     this.model,
     this.errorCode,
     this.errorMessage,
+    this.topLabels = const [],
   });
 
   factory InferenceResult.fromJson(Map<String, dynamic> json) {
@@ -170,6 +174,10 @@ class InferenceResult {
           : null,
       errorCode: json['error'] as String?,
       errorMessage: json['message'] as String?,
+      topLabels: [
+        for (final item in (prediction?['top'] as List? ?? const []))
+          if (item is Map && item['label'] is String) item['label'] as String,
+      ],
     );
   }
 

@@ -7,8 +7,17 @@ import '../../../../l10n/app_localizations.dart';
 /// password that fails the server policy; the raw body is not presentable, so
 /// the known cases are matched here and everything else falls back to a
 /// generic message.
+bool isAccountSuspendedError(Object error) {
+  final raw = error.toString().toLowerCase();
+  return raw.contains('banned') || raw.contains('account_suspended');
+}
+
 String authErrorMessage(Object error, AppLocalizations l10n) {
   final raw = error.toString().toLowerCase();
+
+  if (isAccountSuspendedError(error)) {
+    return l10n.authAccountSuspended;
+  }
 
   if (raw.contains('user_already_exists') ||
       raw.contains('already registered') ||

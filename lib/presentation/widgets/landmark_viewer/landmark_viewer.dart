@@ -1,169 +1,209 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../data/models/landmark_point.dart';
+import '../../../data/models/sign_landmarks.dart';
 import '../../../l10n/app_localizations.dart';
 import 'skeleton_painter.dart';
 
+/// Plays the recorded landmarks of a sign: a looping stick figure for a
+/// sequence extracted from a video or a GIF, a still one for a single pose.
+///
+/// Hands use two colours that stay distinct for colour-blind people (blue and
+/// orange) on top of a high-contrast background.
 class LandmarkViewer extends StatefulWidget {
-  final List<LandmarkPoint> points;
+  const LandmarkViewer({super.key, required this.landmarks, this.showControls = true});
 
-  const LandmarkViewer({
-    super.key,
-    required this.points,
-  });
+  final SignLandmarks landmarks;
+  final bool showControls;
 
   @override
   State<LandmarkViewer> createState() => _LandmarkViewerState();
 }
 
-class _LandmarkViewerState extends State<LandmarkViewer> {
-  bool _showLabels = false;
-  bool _showNumbers = false;
+class _LandmarkViewerState extends State<LandmarkViewer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  Rect? _bounds;
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+    _configure();
+  }
+
+  @override
+  void didUpdateWidget(LandmarkViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.landmarks != widget.landmarks) {
+      _configure();
+      _sync();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  void _configure() {
+    final landmarks = widget.landmarks;
+    _bounds = landmarks.bounds;
+    if (landmarks.isAnimated) {
+      final duration = landmarks.duration;
+      _controller.duration =
+          duration < const Duration(milliseconds: 400) ? const Duration(milliseconds: 400) : duration;
+    }
+    _controller.value = 0;
+  }
+
+  bool get _reducedMotion => MediaQuery.disableAnimationsOf(context);
+
+  /// Loops on its own, except when the user paused it or asked for reduced
+  /// motion; then a still pose from the middle of the sign is shown and the
+  /// play button runs it once.
+  void _sync() {
+    final autoplay = widget.landmarks.isAnimated && !_paused && !_reducedMotion;
+    if (autoplay && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!autoplay && _controller.isAnimating && !_reducedMotion) {
+      _controller.stop();
+    } else if (_reducedMotion && !_controller.isAnimating && widget.landmarks.isAnimated) {
+      _controller.value = 0.5;
+    }
+  }
+
+  void _togglePlay() {
+    if (_controller.isAnimating) {
+      _controller.stop();
+      setState(() => _paused = true);
+    } else if (_reducedMotion) {
+      _controller.forward(from: 0).whenComplete(() {
+        if (mounted) setState(() => _controller.value = 0.5);
+      });
+      setState(() {});
+    } else {
+      setState(() => _paused = false);
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  LandmarkFrame _frameAt(double t) {
+    final frames = widget.landmarks.frames;
+    final i = (t * frames.length).floor().clamp(0, frames.length - 1);
+    return frames[i];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final landmarks = widget.landmarks;
 
-    return Stack(
-      children: [
-        // Background with subtle grid and gradient
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            borderRadius: AppRadius.radiusL,
-          ),
-          child: ClipRRect(
-            borderRadius: AppRadius.radiusL,
-            child: Stack(
-              children: [
-                const _GridViewerBackground(),
-                
-                // Skeleton Painter
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: SkeletonPainter(
-                      points: widget.points,
-                      showNumbers: _showNumbers,
-                      showLabels: _showLabels,
+    final background = ColoredBox(
+      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      child: CustomPaint(painter: _GridPainter(isDark: isDark), child: const SizedBox.expand()),
+    );
+
+    if (landmarks.isEmpty) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          background,
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.l),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(AppIcons.signLanguage, size: 44, color: AppColors.textSecondary(context)),
+                  const SizedBox(height: AppSpacing.m),
+                  Text(
+                    l10n.noLandmarkData,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
+      );
+    }
 
-        // Modern Overlay Controls
-        Positioned(
-          bottom: AppSpacing.m,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildControlChip(
-                label: l10n.numbers,
-                isSelected: _showNumbers,
-                onSelected: (val) => setState(() => _showNumbers = val),
-              ),
-              const SizedBox(width: AppSpacing.s),
-              _buildControlChip(
-                label: l10n.labels,
-                isSelected: _showLabels,
-                onSelected: (val) => setState(() => _showLabels = val),
-              ),
-            ],
-          ),
-        ),
+    final bodyColor = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : AppColors.primaryDeep.withValues(alpha: 0.45);
 
-        // Empty State Hint
-        if (widget.points.isEmpty)
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.gesture_outlined,
-                  size: 48,
-                  color: AppColors.primary.withValues(alpha: 0.3),
+    return Semantics(
+      image: true,
+      label: l10n.landmarksLabel,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          background,
+          RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => CustomPaint(
+                painter: SkeletonPainter(
+                  frame: _frameAt(_controller.value),
+                  bounds: _bounds,
+                  bodyColor: bodyColor,
+                  leftHandColor: AppColors.warning,
+                  rightHandColor: isDark ? AppColors.secondary : AppColors.primary,
                 ),
-                const SizedBox(height: AppSpacing.m),
-                Text(
-                  l10n.noLandmarkData,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark ? Colors.white38 : Colors.black38,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-      ],
-    );
-  }
-
-  Widget _buildControlChip({
-    required String label,
-    required bool isSelected,
-    required Function(bool) onSelected,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return FilterChip(
-      label: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-      selected: isSelected,
-      onSelected: onSelected,
-      selectedColor: AppColors.primary.withValues(alpha: 0.2),
-      checkmarkColor: AppColors.primary,
-      backgroundColor: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      side: BorderSide(
-        color: isSelected ? AppColors.primary : Colors.transparent,
-        width: 1,
+          if (widget.showControls && landmarks.isAnimated)
+            Positioned(
+              right: AppSpacing.s,
+              bottom: AppSpacing.s,
+              child: IconButton.filledTonal(
+                tooltip: _controller.isAnimating ? l10n.landmarksPause : l10n.landmarksPlay,
+                onPressed: _togglePlay,
+                icon: Icon(_controller.isAnimating ? AppIcons.pause : AppIcons.play),
+              ),
+            ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
-class _GridViewerBackground extends StatelessWidget {
-  const _GridViewerBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return CustomPaint(
-      painter: _GridPainter(isDark: isDark),
-      child: Container(),
     );
   }
 }
 
 class _GridPainter extends CustomPainter {
-  final bool isDark;
   _GridPainter({required this.isDark});
+
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03)
-      ..style = PaintingStyle.stroke
+      ..color = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04)
       ..strokeWidth = 1;
-
-    const int divisions = 12;
-    for (int i = 0; i <= divisions; i++) {
-      final x = size.width * (i / divisions);
+    const divisions = 12;
+    for (var i = 0; i <= divisions; i++) {
+      final x = size.width * i / divisions;
+      final y = size.height * i / divisions;
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-      
-      final y = size.height * (i / divisions);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GridPainter oldDelegate) => oldDelegate.isDark != isDark;
 }

@@ -2,8 +2,11 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moomoo/data/models/learning.dart';
+import 'package:moomoo/data/models/ml_model.dart';
 import 'package:moomoo/data/models/sign.dart';
 import 'package:moomoo/domain/learning/lesson_builder.dart';
+import 'package:moomoo/domain/learning/mastery.dart';
+import 'package:moomoo/domain/learning/practice.dart';
 import 'package:moomoo/domain/providers/learning_provider.dart';
 
 Sign _sign(String id, String word, {bool visual = true}) => Sign(
@@ -36,6 +39,20 @@ void main() {
       expect(steps[1].sign.id, steps.first.sign.id);
     });
 
+    test('ends with a practice session before the next lesson', () {
+      final signs = [
+        for (var i = 0; i < 5; i++) _sign('$i', 'mot$i'),
+      ];
+      final steps = buildLessonSteps(_content(signs), random: Random(5));
+      final practice = steps.whereType<PracticeStep>().toList();
+
+      expect(practice.length, maxPracticeSigns);
+      expect(steps.skip(steps.length - practice.length), everyElement(isA<PracticeStep>()));
+      expect(practice.map((p) => p.number), [1, 2, 3]);
+      expect(practice.every((p) => p.total == maxPracticeSigns), isTrue);
+      expect(practice.first.isQuestion, isTrue);
+    });
+
     test('options contain the answer once, distinct words, at most four', () {
       final signs = [_sign('a', 'bonjour'), _sign('b', 'merci')];
       final distractors = [
@@ -59,8 +76,10 @@ void main() {
 
     test('falls back to introductions when there is nothing to choose from', () {
       final steps = buildLessonSteps(_content([_sign('a', 'bonjour')]), random: Random(3));
-      expect(steps.length, 1);
-      expect(steps.single, isA<IntroStep>());
+      expect(steps.whereType<IntroStep>().length, 1);
+      expect(steps.whereType<RecognizeStep>(), isEmpty);
+      expect(steps.whereType<FindStep>(), isEmpty);
+      expect(steps.last, isA<PracticeStep>());
     });
 
     test('signs without any visual are introduced but never asked', () {
@@ -126,6 +145,51 @@ void main() {
       final states = resolveLessonStates(units, {'l1': done('l1')});
 
       expect(states['l2'], LessonState.current);
+    });
+  });
+
+  group('mastery', () {
+    LessonProgress p(int correct, int total) =>
+        LessonProgress(lessonId: 'l', bestCorrect: correct, questionCount: total, completions: 1);
+
+    test('levels follow the best score', () {
+      expect(masteryLevelOf(null), MasteryLevel.none);
+      expect(masteryLevelOf(p(1, 4)), MasteryLevel.fragile);
+      expect(masteryLevelOf(p(2, 4)), MasteryLevel.learning);
+      expect(masteryLevelOf(p(4, 5)), MasteryLevel.acquired);
+      expect(masteryLevelOf(p(5, 5)), MasteryLevel.mastered);
+      expect(masteryRatio(p(3, 4)), 0.75);
+    });
+
+    test('stars reward accuracy', () {
+      expect(starsFor(10, 10), 3);
+      expect(starsFor(9, 10), 3);
+      expect(starsFor(6, 10), 2);
+      expect(starsFor(2, 10), 1);
+    });
+  });
+
+  group('practice', () {
+    test('accepts the expected word among the best guesses', () {
+      const result = InferenceResult(
+        ok: true,
+        label: 'merci',
+        topLabels: ['merci', 'Ça va', 'bonjour'],
+      );
+      expect(practiceMatches('merci', result), isTrue);
+      expect(practiceMatches('ça va', result), isTrue);
+      expect(practiceMatches('Bonjour !', result), isTrue);
+      expect(practiceMatches('au revoir', result), isFalse);
+    });
+
+    test('never passes when recognition failed', () {
+      expect(practiceMatches('merci', InferenceResult.unavailable('down')), isFalse);
+    });
+
+    test('normalises accents, case and punctuation', () {
+      expect(normalizeSignWord('  Ça va ? '), 'cava');
+      expect(normalizeSignWord('Été'), 'ete');
+      expect(normalizeSignWord('cœur'), 'coeur');
     });
   });
 

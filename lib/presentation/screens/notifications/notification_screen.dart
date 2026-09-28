@@ -263,6 +263,7 @@ class _NotificationTile extends ConsumerWidget {
         'lesson' => (AppIcons.lesson, AppColors.success),
         'community' => (AppIcons.users, AppColors.warning),
         'contribution' => (AppIcons.upload, AppColors.primary),
+        'account_appeal' => (AppIcons.mail, AppColors.warning),
         _ => (AppIcons.notification, AppColors.primary),
       };
 

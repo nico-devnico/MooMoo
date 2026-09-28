@@ -3614,11 +3614,347 @@ abstract class AppLocalizations {
   /// **'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.'**
   String get translAvatarNote;
 
+  /// No description provided for @translCameraIdleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caméra en veille'**
+  String get translCameraIdleTitle;
+
+  /// No description provided for @translCameraIdleMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez sur « Traduire » pour activer la caméra, ou importez une vidéo.'**
+  String get translCameraIdleMessage;
+
+  /// No description provided for @translSwitchCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de caméra'**
+  String get translSwitchCamera;
+
+  /// No description provided for @translImportTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer une vidéo ou une image'**
+  String get translImportTooltip;
+
+  /// No description provided for @translBackToCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revenir à la caméra'**
+  String get translBackToCamera;
+
+  /// No description provided for @translCopy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier le texte'**
+  String get translCopy;
+
+  /// No description provided for @translCopied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Texte copié'**
+  String get translCopied;
+
+  /// No description provided for @translClear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer le texte'**
+  String get translClear;
+
+  /// No description provided for @translStatusReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prêt'**
+  String get translStatusReady;
+
+  /// No description provided for @translPickWord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un mot'**
+  String get translPickWord;
+
+  /// No description provided for @translViewModeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affichage du signe'**
+  String get translViewModeLabel;
+
   /// No description provided for @translModelAlt.
   ///
   /// In fr, this message translates to:
   /// **'Avatar 3D de traduction en langue des signes'**
   String get translModelAlt;
+
+  /// No description provided for @landmarksLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Repères animés du signe : main droite en bleu, main gauche en orange'**
+  String get landmarksLabel;
+
+  /// No description provided for @landmarksPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire l\'animation'**
+  String get landmarksPlay;
+
+  /// No description provided for @landmarksPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre l\'animation en pause'**
+  String get landmarksPause;
+
+  /// No description provided for @masteryNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas commencée'**
+  String get masteryNone;
+
+  /// No description provided for @masteryFragile.
+  ///
+  /// In fr, this message translates to:
+  /// **'À revoir'**
+  String get masteryFragile;
+
+  /// No description provided for @masteryLearning.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours d\'acquisition'**
+  String get masteryLearning;
+
+  /// No description provided for @masteryAcquired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Acquise'**
+  String get masteryAcquired;
+
+  /// No description provided for @masteryMastered.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maîtrisée'**
+  String get masteryMastered;
+
+  /// No description provided for @learnMasteryLegend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau d\'acquisition'**
+  String get learnMasteryLegend;
+
+  /// No description provided for @learnLessonMastery.
+  ///
+  /// In fr, this message translates to:
+  /// **'{level}, {percent} %'**
+  String learnLessonMastery(String level, int percent);
+
+  /// No description provided for @learnStartBubble.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est parti !'**
+  String get learnStartBubble;
+
+  /// No description provided for @learnUnitProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{done} / {total} leçons'**
+  String learnUnitProgress(int done, int total);
+
+  /// No description provided for @learnUnitTrophy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trophée de l\'unité'**
+  String get learnUnitTrophy;
+
+  /// No description provided for @learnUnitTrophyLocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminez toutes les leçons de l\'unité pour gagner ce trophée.'**
+  String get learnUnitTrophyLocked;
+
+  /// No description provided for @learnUnitTrophyEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trophée gagné : unité terminée !'**
+  String get learnUnitTrophyEarned;
+
+  /// No description provided for @learnPracticeIncluded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec exercice pratique'**
+  String get learnPracticeIncluded;
+
+  /// No description provided for @learnPracticeStop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exercice'**
+  String get learnPracticeStop;
+
+  /// No description provided for @learnPracticeStopLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exercice pratique de la leçon {title}'**
+  String learnPracticeStopLabel(String title);
+
+  /// No description provided for @learnPracticeAfterLesson.
+  ///
+  /// In fr, this message translates to:
+  /// **'À la fin de la leçon'**
+  String get learnPracticeAfterLesson;
+
+  /// No description provided for @lessonSpeakWord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter le mot'**
+  String get lessonSpeakWord;
+
+  /// No description provided for @lessonCombo.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} d\'affilée !'**
+  String lessonCombo(int count);
+
+  /// No description provided for @lessonStarsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 étoile sur 3} other{{count} étoiles sur 3}}'**
+  String lessonStarsLabel(int count);
+
+  /// No description provided for @lessonMasteryReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau atteint : {level}'**
+  String lessonMasteryReached(String level);
+
+  /// No description provided for @practiceSession.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exercice pratique · {number}/{total}'**
+  String practiceSession(int number, int total);
+
+  /// No description provided for @practiceTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reproduisez ce signe'**
+  String get practiceTitle;
+
+  /// No description provided for @practiceReference.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle à imiter'**
+  String get practiceReference;
+
+  /// No description provided for @practiceYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous'**
+  String get practiceYou;
+
+  /// No description provided for @practiceCameraHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Placez-vous face à la caméra, dans un endroit bien éclairé, les mains bien visibles.'**
+  String get practiceCameraHint;
+
+  /// No description provided for @practiceEnableCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer la caméra'**
+  String get practiceEnableCamera;
+
+  /// No description provided for @practiceNoCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je ne peux pas utiliser la caméra'**
+  String get practiceNoCamera;
+
+  /// No description provided for @practiceStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je signe !'**
+  String get practiceStart;
+
+  /// No description provided for @practiceCountdown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement dans {count}'**
+  String practiceCountdown(int count);
+
+  /// No description provided for @practiceRecording.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signez maintenant !'**
+  String get practiceRecording;
+
+  /// No description provided for @practiceAnalyzing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse de votre signe…'**
+  String get practiceAnalyzing;
+
+  /// No description provided for @practiceSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bravo, signe reconnu !'**
+  String get practiceSuccess;
+
+  /// No description provided for @practiceFailure.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas tout à fait…'**
+  String get practiceFailure;
+
+  /// No description provided for @practiceFailureHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revoyez le modèle puis réessayez, ou continuez.'**
+  String get practiceFailureHint;
+
+  /// No description provided for @practiceRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get practiceRetry;
+
+  /// No description provided for @practiceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La reconnaissance automatique est indisponible pour le moment.'**
+  String get practiceUnavailable;
+
+  /// No description provided for @practiceSelfCheckTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évaluez-vous'**
+  String get practiceSelfCheckTitle;
+
+  /// No description provided for @practiceSelfCheckMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reproduisez le signe comme sur le modèle, par exemple devant un miroir, puis indiquez si vous l\'avez réussi.'**
+  String get practiceSelfCheckMessage;
+
+  /// No description provided for @practiceSelfYes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je l\'ai réussi'**
+  String get practiceSelfYes;
+
+  /// No description provided for @practiceSelfNo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore'**
+  String get practiceSelfNo;
+
+  /// No description provided for @practiceSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get practiceSkip;
+
+  /// No description provided for @practiceSelfRated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Auto-évaluation enregistrée'**
+  String get practiceSelfRated;
 
   /// No description provided for @adminLearningForbidden.
   ///
@@ -6282,6 +6618,138 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger la configuration'**
   String get cfgLoadError;
+
+  /// No description provided for @accountSuspendedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre compte a été banni'**
+  String get accountSuspendedTitle;
+
+  /// No description provided for @accountSuspendedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un administrateur a banni votre compte : vous n\'avez plus accès à l\'application. Pour comprendre pourquoi, ou si vous pensez qu\'il s\'agit d\'une erreur, contactez l\'administrateur.'**
+  String get accountSuspendedMessage;
+
+  /// No description provided for @accountSuspendedReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif : {reason}'**
+  String accountSuspendedReason(String reason);
+
+  /// No description provided for @accountSuspendedAck.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get accountSuspendedAck;
+
+  /// No description provided for @appealContactAdmin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter l\'administrateur'**
+  String get appealContactAdmin;
+
+  /// No description provided for @appealFormIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expliquez votre situation. Un administrateur examinera votre demande et vous répondra par e-mail.'**
+  String get appealFormIntro;
+
+  /// No description provided for @appealEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre adresse e-mail'**
+  String get appealEmailLabel;
+
+  /// No description provided for @appealMessageLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre message'**
+  String get appealMessageLabel;
+
+  /// No description provided for @appealMessageHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour, je souhaite comprendre pourquoi mon compte a été banni…'**
+  String get appealMessageHint;
+
+  /// No description provided for @appealMessageTooShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez au moins 10 caractères.'**
+  String get appealMessageTooShort;
+
+  /// No description provided for @appealSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get appealSend;
+
+  /// No description provided for @appealBack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour'**
+  String get appealBack;
+
+  /// No description provided for @appealSentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message envoyé'**
+  String get appealSentTitle;
+
+  /// No description provided for @appealSentMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un administrateur va examiner votre demande et vous répondra à l\'adresse {email}.'**
+  String appealSentMessage(String email);
+
+  /// No description provided for @appealSendFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le message n\'a pas pu être envoyé. Vérifiez votre connexion puis réessayez.'**
+  String get appealSendFailed;
+
+  /// No description provided for @appealBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recours'**
+  String get appealBadge;
+
+  /// No description provided for @appealView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir le recours'**
+  String get appealView;
+
+  /// No description provided for @appealDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recours de {name}'**
+  String appealDialogTitle(String name);
+
+  /// No description provided for @appealReplyTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répondre à : {email}'**
+  String appealReplyTo(String email);
+
+  /// No description provided for @appealResolve.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme traité'**
+  String get appealResolve;
+
+  /// No description provided for @appealResolved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recours marqué comme traité'**
+  String get appealResolved;
+
+  /// No description provided for @authAccountSuspended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce compte est suspendu. Contactez le support si vous pensez que c\'est une erreur.'**
+  String get authAccountSuspended;
 
   /// No description provided for @maintenanceTitle.
   ///

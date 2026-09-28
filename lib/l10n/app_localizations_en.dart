@@ -1987,7 +1987,204 @@ class AppLocalizationsEn extends AppLocalizations {
       'The 3D avatar does not perform signs yet: choose Video or Landmarks to see the gesture.';
 
   @override
+  String get translCameraIdleTitle => 'Camera on standby';
+
+  @override
+  String get translCameraIdleMessage =>
+      'Tap “Translate” to turn the camera on, or import a video.';
+
+  @override
+  String get translSwitchCamera => 'Switch camera';
+
+  @override
+  String get translImportTooltip => 'Import a video or an image';
+
+  @override
+  String get translBackToCamera => 'Back to the camera';
+
+  @override
+  String get translCopy => 'Copy text';
+
+  @override
+  String get translCopied => 'Text copied';
+
+  @override
+  String get translClear => 'Clear text';
+
+  @override
+  String get translStatusReady => 'Ready';
+
+  @override
+  String get translPickWord => 'Pick a word';
+
+  @override
+  String get translViewModeLabel => 'Sign display';
+
+  @override
   String get translModelAlt => '3D sign language translation avatar';
+
+  @override
+  String get landmarksLabel =>
+      'Animated landmarks of the sign: right hand in blue, left hand in orange';
+
+  @override
+  String get landmarksPlay => 'Play the animation';
+
+  @override
+  String get landmarksPause => 'Pause the animation';
+
+  @override
+  String get masteryNone => 'Not started';
+
+  @override
+  String get masteryFragile => 'Needs review';
+
+  @override
+  String get masteryLearning => 'Learning';
+
+  @override
+  String get masteryAcquired => 'Acquired';
+
+  @override
+  String get masteryMastered => 'Mastered';
+
+  @override
+  String get learnMasteryLegend => 'Mastery level';
+
+  @override
+  String learnLessonMastery(String level, int percent) {
+    return '$level, $percent%';
+  }
+
+  @override
+  String get learnStartBubble => 'Let\'s go!';
+
+  @override
+  String learnUnitProgress(int done, int total) {
+    return '$done / $total lessons';
+  }
+
+  @override
+  String get learnUnitTrophy => 'Unit trophy';
+
+  @override
+  String get learnUnitTrophyLocked =>
+      'Finish every lesson of the unit to earn this trophy.';
+
+  @override
+  String get learnUnitTrophyEarned => 'Trophy earned: unit complete!';
+
+  @override
+  String get learnPracticeIncluded => 'Includes practice';
+
+  @override
+  String get learnPracticeStop => 'Practice';
+
+  @override
+  String learnPracticeStopLabel(String title) {
+    return 'Practice for the lesson $title';
+  }
+
+  @override
+  String get learnPracticeAfterLesson => 'At the end of the lesson';
+
+  @override
+  String get lessonSpeakWord => 'Hear the word';
+
+  @override
+  String lessonCombo(int count) {
+    return '$count in a row!';
+  }
+
+  @override
+  String lessonStarsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stars out of 3',
+      one: '1 star out of 3',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lessonMasteryReached(String level) {
+    return 'Level reached: $level';
+  }
+
+  @override
+  String practiceSession(int number, int total) {
+    return 'Practice · $number/$total';
+  }
+
+  @override
+  String get practiceTitle => 'Reproduce this sign';
+
+  @override
+  String get practiceReference => 'Model to imitate';
+
+  @override
+  String get practiceYou => 'You';
+
+  @override
+  String get practiceCameraHint =>
+      'Face the camera in a well-lit place, with your hands clearly visible.';
+
+  @override
+  String get practiceEnableCamera => 'Turn on the camera';
+
+  @override
+  String get practiceNoCamera => 'I can\'t use the camera';
+
+  @override
+  String get practiceStart => 'I\'m signing!';
+
+  @override
+  String practiceCountdown(int count) {
+    return 'Recording in $count';
+  }
+
+  @override
+  String get practiceRecording => 'Sign now!';
+
+  @override
+  String get practiceAnalyzing => 'Analysing your sign…';
+
+  @override
+  String get practiceSuccess => 'Well done, sign recognised!';
+
+  @override
+  String get practiceFailure => 'Not quite…';
+
+  @override
+  String get practiceFailureHint =>
+      'Watch the model again and retry, or continue.';
+
+  @override
+  String get practiceRetry => 'Try again';
+
+  @override
+  String get practiceUnavailable =>
+      'Automatic recognition is unavailable right now.';
+
+  @override
+  String get practiceSelfCheckTitle => 'Rate yourself';
+
+  @override
+  String get practiceSelfCheckMessage =>
+      'Reproduce the sign like the model, for example in front of a mirror, then tell us whether you got it.';
+
+  @override
+  String get practiceSelfYes => 'I got it';
+
+  @override
+  String get practiceSelfNo => 'Not yet';
+
+  @override
+  String get practiceSkip => 'Skip';
+
+  @override
+  String get practiceSelfRated => 'Self-assessment saved';
 
   @override
   String get adminLearningForbidden =>
@@ -3548,6 +3745,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cfgLoadError => 'Could not load the configuration';
+
+  @override
+  String get accountSuspendedTitle => 'Your account has been banned';
+
+  @override
+  String get accountSuspendedMessage =>
+      'An administrator banned your account: you no longer have access to the app. To find out why, or if you think this is a mistake, contact the administrator.';
+
+  @override
+  String accountSuspendedReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get accountSuspendedAck => 'Close';
+
+  @override
+  String get appealContactAdmin => 'Contact the administrator';
+
+  @override
+  String get appealFormIntro =>
+      'Explain your situation. An administrator will review your request and reply by email.';
+
+  @override
+  String get appealEmailLabel => 'Your email address';
+
+  @override
+  String get appealMessageLabel => 'Your message';
+
+  @override
+  String get appealMessageHint =>
+      'Hello, I would like to understand why my account was banned…';
+
+  @override
+  String get appealMessageTooShort => 'Write at least 10 characters.';
+
+  @override
+  String get appealSend => 'Send';
+
+  @override
+  String get appealBack => 'Back';
+
+  @override
+  String get appealSentTitle => 'Message sent';
+
+  @override
+  String appealSentMessage(String email) {
+    return 'An administrator will review your request and reply to $email.';
+  }
+
+  @override
+  String get appealSendFailed =>
+      'The message could not be sent. Check your connection and try again.';
+
+  @override
+  String get appealBadge => 'Appeal';
+
+  @override
+  String get appealView => 'View appeal';
+
+  @override
+  String appealDialogTitle(String name) {
+    return 'Appeal from $name';
+  }
+
+  @override
+  String appealReplyTo(String email) {
+    return 'Reply to: $email';
+  }
+
+  @override
+  String get appealResolve => 'Mark as handled';
+
+  @override
+  String get appealResolved => 'Appeal marked as handled';
+
+  @override
+  String get authAccountSuspended =>
+      'This account is suspended. Contact support if you think this is a mistake.';
 
   @override
   String get maintenanceTitle => 'Maintenance in progress';

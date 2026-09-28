@@ -1,19 +1,26 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../data/models/landmark_point.dart';
 
+import '../../../data/models/sign_landmarks.dart';
+
+/// Draws one frame of a sign: upper body, head and both hands, zoomed on
+/// [bounds] so the hands stay large whatever the framing of the source video.
 class SkeletonPainter extends CustomPainter {
-  final List<LandmarkPoint> points;
-  final bool showNumbers;
-  final bool showLabels;
-
   SkeletonPainter({
-    required this.points,
-    this.showNumbers = false,
-    this.showLabels = false,
+    required this.frame,
+    required this.bounds,
+    required this.bodyColor,
+    required this.leftHandColor,
+    required this.rightHandColor,
   });
 
-  // MediaPipe Hand Connections
+  final LandmarkFrame frame;
+  final Rect? bounds;
+  final Color bodyColor;
+  final Color leftHandColor;
+  final Color rightHandColor;
+
   static const List<List<int>> handConnections = [
     [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
     [0, 5], [5, 6], [6, 7], [7, 8], // Index
@@ -23,70 +30,142 @@ class SkeletonPainter extends CustomPainter {
     [0, 17], // Palm base
   ];
 
+  static const List<List<int>> bodyConnections = [
+    [11, 12], // Shoulders
+    [11, 13], [13, 15], // Left arm
+    [12, 14], [14, 16], // Right arm
+    [11, 23], [12, 24], [23, 24], // Torso
+  ];
+
+  static const int _nose = 0;
+  static const int _leftShoulder = 11;
+  static const int _rightShoulder = 12;
+  static const int _leftWrist = 15;
+  static const int _rightWrist = 16;
+
   @override
   void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
+    if (frame.isEmpty || size.isEmpty) return;
 
-    final paintJoint = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.fill;
+    final map = _mapper(size);
+    final stroke = (size.shortestSide / 60).clamp(2.5, 7.0);
 
-    final paintBone = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
+    final pose = frame.pose;
+    if (pose != null) _paintBody(canvas, pose, map, stroke);
 
-    final glowPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-
-    // Draw bones
-    for (final connection in handConnections) {
-      if (connection[0] < points.length && connection[1] < points.length) {
-        final p1 = points[connection[0]];
-        final p2 = points[connection[1]];
-        canvas.drawLine(
-          Offset(p1.x * size.width, p1.y * size.height),
-          Offset(p2.x * size.width, p2.y * size.height),
-          paintBone,
-        );
-      }
+    final left = frame.leftHand;
+    if (left != null) {
+      _paintHand(canvas, left, map, stroke, leftHandColor);
+      if (pose != null) _link(canvas, pose, _leftWrist, left.first, map, stroke);
     }
-
-    // Draw joints
-    for (int i = 0; i < points.length; i++) {
-      final p = points[i];
-      final offset = Offset(p.x * size.width, p.y * size.height);
-      
-      canvas.drawCircle(offset, 6, glowPaint);
-      canvas.drawCircle(offset, 4, paintJoint);
-
-      if (showNumbers) {
-        _drawText(canvas, i.toString(), offset + const Offset(8, -8), Colors.white70, 10);
-      }
-      if (showLabels && p.label != null) {
-        _drawText(canvas, p.label!, offset + const Offset(8, 8), Colors.white, 10);
-      }
+    final right = frame.rightHand;
+    if (right != null) {
+      _paintHand(canvas, right, map, stroke, rightHandColor);
+      if (pose != null) _link(canvas, pose, _rightWrist, right.first, map, stroke);
     }
   }
 
-  void _drawText(Canvas canvas, String text, Offset offset, Color color, double fontSize) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.bold),
-      ),
-      textDirection: TextDirection.ltr,
+  Offset Function(Offset) _mapper(Size size) {
+    var box = bounds ?? const Rect.fromLTWH(0, 0, 1, 1);
+    // A single still hand can be tiny: never zoom in more than 4x.
+    final minSide = math.max(box.longestSide, 0.25);
+    box = Rect.fromCenter(
+      center: box.center,
+      width: math.max(box.width, minSide * 0.6),
+      height: math.max(box.height, minSide * 0.6),
     );
-    textPainter.layout();
-    textPainter.paint(canvas, offset);
+    const fill = 0.84;
+    final scale = math.min(size.width * fill / box.width, size.height * fill / box.height);
+    final origin = Offset(
+      size.width / 2 - box.center.dx * scale,
+      size.height / 2 - box.center.dy * scale,
+    );
+    return (p) => origin + p * scale;
+  }
+
+  bool _has(List<Offset> points, int i) => i < points.length && points[i] != Offset.zero;
+
+  void _paintBody(Canvas canvas, List<Offset> pose, Offset Function(Offset) map, double stroke) {
+    final bone = Paint()
+      ..color = bodyColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke * 1.6
+      ..strokeCap = StrokeCap.round;
+
+    for (final c in bodyConnections) {
+      if (_has(pose, c[0]) && _has(pose, c[1])) {
+        canvas.drawLine(map(pose[c[0]]), map(pose[c[1]]), bone);
+      }
+    }
+
+    // The head gives the hands a reference point (near the face, the chest…).
+    if (_has(pose, _nose)) {
+      final shoulders = _has(pose, _leftShoulder) && _has(pose, _rightShoulder)
+          ? (map(pose[_leftShoulder]) - map(pose[_rightShoulder])).distance
+          : stroke * 20;
+      canvas.drawCircle(
+        map(pose[_nose]),
+        (shoulders * 0.32).clamp(stroke * 4, stroke * 30),
+        bone,
+      );
+    }
+  }
+
+  void _link(
+    Canvas canvas,
+    List<Offset> pose,
+    int wrist,
+    Offset handRoot,
+    Offset Function(Offset) map,
+    double stroke,
+  ) {
+    if (!_has(pose, wrist) || handRoot == Offset.zero) return;
+    canvas.drawLine(
+      map(pose[wrist]),
+      map(handRoot),
+      Paint()
+        ..color = bodyColor
+        ..strokeWidth = stroke * 1.6
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _paintHand(
+    Canvas canvas,
+    List<Offset> hand,
+    Offset Function(Offset) map,
+    double stroke,
+    Color color,
+  ) {
+    final bone = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final joint = Paint()..color = color;
+    final halo = Paint()..color = color.withValues(alpha: 0.22);
+
+    for (final c in handConnections) {
+      if (_has(hand, c[0]) && _has(hand, c[1])) {
+        canvas.drawLine(map(hand[c[0]]), map(hand[c[1]]), bone);
+      }
+    }
+    for (var i = 0; i < hand.length; i++) {
+      if (!_has(hand, i)) continue;
+      final o = map(hand[i]);
+      // Fingertips are what tells signs apart: make them stand out.
+      final tip = i == 4 || i == 8 || i == 12 || i == 16 || i == 20;
+      canvas.drawCircle(o, stroke * (tip ? 2.2 : 1.6), halo);
+      canvas.drawCircle(o, stroke * (tip ? 1.25 : 0.9), joint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant SkeletonPainter oldDelegate) {
-    return oldDelegate.points != points ||
-        oldDelegate.showNumbers != showNumbers ||
-        oldDelegate.showLabels != showLabels;
+    return oldDelegate.frame != frame ||
+        oldDelegate.bounds != bounds ||
+        oldDelegate.bodyColor != bodyColor ||
+        oldDelegate.leftHandColor != leftHandColor ||
+        oldDelegate.rightHandColor != rightHandColor;
   }
 }

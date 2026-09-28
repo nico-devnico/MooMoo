@@ -86,7 +86,17 @@ La propriété se transmet uniquement par `select transfer_ownership('<uuid du n
 
 Les permissions sont appliquées **côté base de données** (politiques RLS et fonctions SQL `current_user_has_role`, `is_current_user_admin`, `current_user_can_edit_dictionary`, `current_user_can_edit_learning`) et **côté API** (`backend/src/lib/roles.js`). L'interface masque les écrans non autorisés, mais ce masquage n'est pas une protection en soi.
 
-Un compte **suspendu** (`profiles.suspended_at`) ne peut plus écrire (fonction `current_user_is_active`).
+Un compte **suspendu** perd tout accès immédiatement :
+
+- Le trigger `apply_profile_suspension` bannit le compte dans Supabase Auth (`banned_until`) et supprime ses sessions : il ne peut plus se connecter ni rafraîchir son jeton.
+- L'API refuse tout jeton d'un compte banni (403 `account_suspended`), et la base refuse ses écritures (fonction `current_user_is_active`).
+- L'application, qui suit le profil en temps réel, déconnecte l'utilisateur sur-le-champ et lui affiche une fenêtre « Votre compte a été banni » avec le motif. La même fenêtre s'ouvre si un compte banni tente de se connecter, par e-mail ou avec Google.
+- Depuis cette fenêtre, l'utilisateur peut **contacter l'administrateur**. Il écrit un message avec son adresse e-mail, qui est enregistré dans `account_appeals` par la fonction `submit_account_appeal`.
+  - Cette fonction s'appelle sans session, puisque le compte banni n'en a plus.
+  - Elle n'accepte que l'adresse d'un compte suspendu, sans jamais révéler si une adresse existe ou est suspendue.
+  - Elle limite les envois à 3 par jour et par compte.
+- Chaque administrateur reçoit une notification. Dans *Administration > Utilisateurs*, le compte porte un badge « Recours ». Le bouton « Voir le recours » affiche les messages et l'adresse à laquelle répondre (par e-mail), et permet de marquer le recours comme traité ou de réactiver le compte. Une réactivation clôt automatiquement les recours en attente.
+- La synchronisation fonctionne dans les deux sens : bannir un utilisateur depuis le tableau de bord Supabase (Authentication) suspend son profil, et le débannir le réactive.
 
 ## Architecture
 
@@ -204,6 +214,10 @@ Les routes sont définies dans `lib/core/router/`.
 - **Signes → texte** : la caméra capture les images, les points clés sont envoyés à `POST /api/infer`, qui relaie vers l'API ML. Sans modèle en production pour la langue choisie, l'API répond 503 et l'interface affiche un message clair.
 - **Texte → signes** : le texte (saisi ou dicté) est associé aux signes du dictionnaire, affichés en vidéo ou via le personnage 3D.
 - Les traductions d'un utilisateur connecté sont enregistrées dans son historique.
+- Interface (`lib/presentation/screens/translator/translator_screen.dart`) : un sélecteur de sens en pilule, puis un seul bloc par sens.
+  - Signes vers texte : la caméra (ou le fichier importé) porte l'état de la reconnaissance et le bouton d'import. En dessous se trouvent un unique bouton « Traduire » / « Arrêter », puis le résultat avec la confiance, la lecture à voix haute et la copie.
+  - Texte vers signes : une barre de saisie réunit le texte, la dictée et l'envoi, suivie du signe affiché et du choix Vidéo, Landmarks ou 3D.
+  - Tous les contrôles font au moins 48 px. Les changements d'état sont annoncés aux lecteurs d'écran, et les animations sont coupées si l'utilisateur a demandé moins d'animations.
 
 ### Dictionnaire
 
@@ -237,7 +251,12 @@ Quand un administrateur active la maintenance, les écritures sont refusées par
 ## Authentification et autorisation
 
 - Authentification **Supabase Auth** par e-mail et mot de passe, avec réinitialisation par e-mail.
-- À la création d'un compte, un trigger (`handle_new_user`) crée le profil et une notification de bienvenue.
+- **Connexion Google intégrée** (`lib/data/services/google_auth.dart`), sans navigateur ni redirection : le paquet `google_sign_in` affiche le sélecteur de compte natif, et le jeton d'identité obtenu est échangé contre une session Supabase (`signInWithIdToken`, protégé par un nonce). Détail par plateforme :
+  - Android : sélecteur de compte du système.
+  - iOS : fenêtre du SDK Google.
+  - Web : bouton Google Identity Services, avec une fenêtre Google qui s'ouvre par-dessus la page.
+  - Windows, Linux et macOS : aucun SDK Google n'existe et Google interdit les vues web intégrées, donc la connexion reste obligatoirement dans le navigateur du système.
+- À la création d'un compte, un trigger (`handle_new_user`) crée le profil et une notification de bienvenue. Pour un compte Google, le profil reprend le nom complet et la photo du compte.
 - Le client envoie le JWT de la session à l'API Node (`Authorization: Bearer`) ; le middleware `backend/src/middleware/auth.js` le vérifie auprès de Supabase.
 - L'autorisation est vérifiée à trois niveaux : RLS en base, contrôle des rôles dans l'API, masquage des écrans dans l'interface.
 - Les champs sensibles du profil (rôle, statut administrateur, suspension) sont protégés par le trigger `protect_profile_privileges` : un utilisateur ne peut pas s'attribuer de droits.
@@ -267,7 +286,7 @@ Quand un administrateur active la maintenance, les écritures sont refusées par
 - **Journalisation** : les erreurs serveur sont écrites dans la console (pas d'outil centralisé ni d'alerte) ; côté client, certains échecs non bloquants sont tracés avec `debugPrint`.
 - **Pas d'antivirus** ni d'analyse de contenu sur les fichiers envoyés.
 - **Pas de pipeline CI/CD** : les tests se lancent manuellement.
-- Pas d'authentification à deux facteurs ni de connexion via des comptes tiers.
+- Pas d'authentification à deux facteurs. Google est le seul fournisseur de connexion tiers.
 
 ## Gestion des erreurs
 
@@ -301,7 +320,23 @@ Fichier `backend/.env` (modèle : `backend/.env.example`), lu aussi par le worke
 | `CORS_ORIGIN` | non (`*`) | Origines autorisées : **à restreindre en production** |
 | `ML_DATA_DIR`, `ML_CACHE_DIR`, `ML_ARTIFACTS_DIR`, `ML_ARTIFACT_BUCKET`, `ML_STALE_JOB_SECONDS`, `ML_MAX_JOB_ATTEMPTS` | non | Réglages du worker ML |
 
-Côté Flutter : `API_BASE_URL` via `--dart-define`.
+Côté Flutter, via `--dart-define` :
+
+- `API_BASE_URL` : adresse de l'API.
+- `GOOGLE_WEB_CLIENT_ID` : client OAuth « Application Web », celui configuré dans le fournisseur Google de Supabase. Il est renseigné par défaut.
+- `GOOGLE_IOS_CLIENT_ID` : client OAuth « iOS ». Il est obligatoire pour la connexion Google sur iOS.
+
+Ces identifiants sont publics : ce ne sont pas des secrets.
+
+### Configurer la connexion Google (Google Cloud Console, projet du client Web)
+
+1. **Android** : créer un client OAuth « Android » avec le nom de paquet `com.moomoo.moomoo` et l'empreinte SHA-1 de la clé de signature. Faire de même pour la clé de debug, dont l'empreinte s'obtient avec `cd android; ./gradlew signingReport`. Aucune modification du code n'est nécessaire.
+2. **Web** : dans le client « Application Web », ajouter chaque origine de l'application dans *Origines JavaScript autorisées* (par exemple `http://localhost:7357` et le domaine de production). En développement, lancer l'application sur un port fixe : `flutter run -d chrome --web-hostname localhost --web-port 7357`.
+3. **iOS** :
+   - créer un client OAuth « iOS » (bundle ID de l'application) ;
+   - le passer dans `GOOGLE_IOS_CLIENT_ID` ;
+   - ajouter son identifiant inversé (`com.googleusercontent.apps.…`) dans `CFBundleURLTypes` de `ios/Runner/Info.plist` ;
+   - dans Supabase (*Authentication > Providers > Google*), ajouter ce client iOS aux *Authorized Client IDs*.
 
 Ne jamais versionner de fichier `.env`.
 

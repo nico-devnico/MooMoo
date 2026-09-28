@@ -20,9 +20,12 @@ import '../../widgets/app_panel.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/sign_media.dart';
 import '../../widgets/skeletons.dart';
+import '../../../domain/learning/mastery.dart';
 import '../../../domain/providers/error_text.dart';
+import 'widgets/learning_widgets.dart';
+import 'widgets/practice_view.dart';
 
-/// Caps the media so the question and the answers stay on screen together.
+/// Limite la hauteur du média pour que la question et les réponses restent visibles ensemble.
 const double _mediaMaxHeight = 320;
 
 void _leaveLesson(BuildContext context) {
@@ -82,6 +85,9 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
   bool _lastCorrect = false;
   int _firstTryCorrect = 0;
 
+  /// Bonnes réponses d'affilée (affichées à partir de 2).
+  int _combo = 0;
+
   _Phase _phase = _Phase.playing;
   LessonResult? _result;
 
@@ -121,7 +127,7 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
     final options = switch (step) {
       RecognizeStep(:final options) => options,
       FindStep(:final options) => options,
-      IntroStep() => const <Sign>[],
+      IntroStep() || PracticeStep() => const <Sign>[],
     };
     if (index < options.length) _select(options[index].id);
   }
@@ -131,9 +137,27 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
     final step = _step;
     if (step is IntroStep || _checked) {
       _next();
+    } else if (step is PracticeStep) {
+      // Passer un exercice doit être un tap volontaire, pas une touche accidentelle.
+      return;
     } else if (_selectedId != null) {
       _check();
     }
+  }
+
+  /// Reçoit le verdict de [PracticeView] (réussi / raté).
+  void _practiceResult(bool ok) {
+    if (!mounted) return;
+    setState(() {
+      _checked = true;
+      _lastCorrect = ok;
+    });
+  }
+
+  /// Nouvelle tentative d'exercice : annule le verdict précédent.
+  void _practiceReset() {
+    if (!mounted || !_checked) return;
+    setState(() => _checked = false);
   }
 
   void _check() {
@@ -150,12 +174,22 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
       _checked = true;
       _lastCorrect = correct;
       if (!step.isRetry && correct) _firstTryCorrect++;
-      // Comme dans Duolingo, une question ratée revient en fin de leçon.
-      if (!correct && !step.isRetry) _steps.add(step.asRetry());
+      _combo = correct ? _combo + 1 : 0;
+      // Comme dans Duolingo, une question ratée revient avant la pratique.
+      if (!correct && !step.isRetry) {
+        final practiceAt = _steps.indexWhere((s) => s is PracticeStep, _index + 1);
+        _steps.insert(practiceAt < 0 ? _steps.length : practiceAt, step.asRetry());
+      }
     });
   }
 
   void _next() {
+    // A practice counts once the learner moves on: until then they may retry.
+    if (_step is PracticeStep) {
+      final ok = _checked && _lastCorrect;
+      if (ok) _firstTryCorrect++;
+      _combo = ok ? _combo + 1 : 0;
+    }
     if (_index + 1 >= _steps.length) {
       _finish();
       return;
@@ -263,6 +297,7 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
                   (_index + 1).clamp(1, _steps.length),
                   _steps.length,
                 ),
+                combo: _combo,
                 onClose: _confirmQuit,
               ),
               Expanded(
@@ -284,7 +319,7 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
                 checked: _checked,
                 correct: _lastCorrect,
                 canCheck: _selectedId != null,
-                onPressed: _primaryAction,
+                onPressed: _step is PracticeStep && !_checked ? _next : _primaryAction,
               ),
             ],
           ),
@@ -310,6 +345,11 @@ class _LessonPlayerState extends ConsumerState<_LessonPlayer> {
           checked: _checked,
           onSelect: _select,
         ),
+      PracticeStep() => PracticeView(
+          step: step,
+          onResult: _practiceResult,
+          onReset: _practiceReset,
+        ),
     };
   }
 }
@@ -318,11 +358,13 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.progress,
     required this.progressLabel,
+    required this.combo,
     required this.onClose,
   });
 
   final double progress;
   final String progressLabel;
+  final int combo;
   final VoidCallback onClose;
 
   @override
@@ -358,6 +400,46 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(width: AppSpacing.m),
+            AnimatedSwitcher(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
+              child: combo < 2
+                  ? const SizedBox.shrink()
+                  : Semantics(
+                      key: ValueKey(combo),
+                      liveRegion: true,
+                      label: l10n.lessonCombo(combo),
+                      excludeSemantics: true,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s + 2,
+                          vertical: AppSpacing.xs + 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.warningSoft,
+                          borderRadius: AppRadius.radiusCircular,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(AppIcons.combo, size: 18, color: AppColors.warning),
+                            const SizedBox(width: 4),
+                            Text(
+                              '×$combo',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.warningLedge,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(width: AppSpacing.m),
           ],
@@ -409,34 +491,26 @@ class _IntroView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs + 2),
-          decoration: BoxDecoration(
-            color: AppColors.primarySoft,
-            borderRadius: AppRadius.radiusCircular,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(AppIcons.achievement, size: 16, color: AppColors.primary),
-              const SizedBox(width: AppSpacing.xs + 2),
-              Text(
-                l10n.lessonNewSign,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+        LearningTag(
+          icon: AppIcons.achievement,
+          label: l10n.lessonNewSign,
+          color: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.l),
         Center(child: _MediaFrame(sign: sign)),
         const SizedBox(height: AppSpacing.l),
-        Semantics(
-          header: true,
-          liveRegion: true,
-          child: Text(sign.word, style: AppTextStyles.h1),
+        Row(
+          children: [
+            Flexible(
+              child: Semantics(
+                header: true,
+                liveRegion: true,
+                child: Text(sign.word, style: AppTextStyles.h1),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            SpeakWordButton(word: sign.word),
+          ],
         ),
         if (sign.description != null) ...[
           const SizedBox(height: AppSpacing.s),
@@ -567,7 +641,7 @@ class _OptionColors {
   }
 }
 
-/// The number shown next to an answer doubles as its keyboard shortcut.
+/// Le numéro à côté d'une réponse sert aussi de raccourci clavier.
 class _KeyBadge extends StatelessWidget {
   const _KeyBadge({required this.index, required this.state});
 
@@ -784,10 +858,14 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isIntro = step is IntroStep;
+    final isPractice = step is PracticeStep;
 
     final Color background;
     final Color accent;
-    if (!checked) {
+    if (isPractice && !checked) {
+      background = AppColors.surface(context);
+      accent = AppColors.textSecondary(context);
+    } else if (!checked) {
       background = AppColors.surface(context);
       accent = AppColors.primary;
     } else if (correct) {
@@ -798,21 +876,32 @@ class _BottomBar extends StatelessWidget {
       accent = AppColors.error;
     }
 
-    final label = isIntro || checked ? l10n.lessonContinue : l10n.lessonCheck;
-    final enabled = isIntro || checked || canCheck;
+    final label = isIntro || checked
+        ? l10n.lessonContinue
+        : isPractice
+            ? l10n.practiceSkip
+            : l10n.lessonCheck;
+    final enabled = isIntro || checked || canCheck || isPractice;
 
+    final shape = RoundedRectangleBorder(borderRadius: AppRadius.radiusL);
     final button = SizedBox(
       height: 56,
       width: context.isMobile ? double.infinity : 240,
-      child: FilledButton(
-        onPressed: enabled ? onPressed : null,
-        style: FilledButton.styleFrom(
-          backgroundColor: accent,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusL),
-          textStyle: AppTextStyles.button,
-        ),
-        child: Text(label),
-      ),
+      child: isPractice && !checked
+          ? OutlinedButton(
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(shape: shape, textStyle: AppTextStyles.button),
+              child: Text(label),
+            )
+          : FilledButton(
+              onPressed: enabled ? onPressed : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                shape: shape,
+                textStyle: AppTextStyles.button,
+              ),
+              child: Text(label),
+            ),
     );
 
     final feedback = !checked
@@ -838,13 +927,17 @@ class _BottomBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        correct ? l10n.lessonCorrect : l10n.lessonIncorrect,
+                        isPractice
+                            ? (correct ? l10n.practiceSuccess : l10n.practiceFailure)
+                            : (correct ? l10n.lessonCorrect : l10n.lessonIncorrect),
                         style: AppTextStyles.h3.copyWith(color: accent),
                       ),
                       if (!correct) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          l10n.lessonCorrectAnswer(step.sign.word),
+                          isPractice
+                              ? l10n.practiceFailureHint
+                              : l10n.lessonCorrectAnswer(step.sign.word),
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: accent,
                             fontWeight: FontWeight.w600,
@@ -909,6 +1002,9 @@ class _CompletionView extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final perfect = correct == total;
     final accuracy = total == 0 ? 100 : (correct * 100 / total).round();
+    final level = masteryLevelOf(
+      LessonProgress(lessonId: '', bestCorrect: correct, questionCount: total, completions: 1),
+    );
 
     final Widget details;
     switch (phase) {
@@ -977,8 +1073,10 @@ class _CompletionView extends StatelessWidget {
                   color: AppColors.warningSoft,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(AppIcons.trophy, size: 56, color: AppColors.warning),
+                child: const Icon(AppIcons.trophy, size: 56, color: AppColors.gold),
               ),
+              const SizedBox(height: AppSpacing.m),
+              _Stars(count: starsFor(correct, total)),
               const SizedBox(height: AppSpacing.l),
               Semantics(
                 header: true,
@@ -997,6 +1095,14 @@ class _CompletionView extends StatelessWidget {
                   style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary(context)),
                 ),
               ],
+              const SizedBox(height: AppSpacing.m),
+              Center(
+                child: LearningTag(
+                  icon: level.icon,
+                  label: l10n.lessonMasteryReached(level.label(l10n)),
+                  color: level.textColor(context),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xl),
               details,
               const SizedBox(height: AppSpacing.xl),
@@ -1016,6 +1122,49 @@ class _CompletionView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Jusqu'à trois étoiles qui apparaissent l'une après l'autre.
+class _Stars extends StatelessWidget {
+  const _Stars({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      label: AppLocalizations.of(context)!.lessonStarsLabel(count),
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 3; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.xs,
+                right: AppSpacing.xs,
+                // The middle star sits higher, like a podium.
+                bottom: i == 1 ? AppSpacing.m : 0,
+              ),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: reduced ? 1 : 0, end: 1),
+                duration: reduced
+                    ? Duration.zero
+                    : Duration(milliseconds: 450 + i * 250),
+                curve: Interval(i * 0.3, 1, curve: Curves.elasticOut),
+                builder: (context, t, child) => Transform.scale(scale: t, child: child),
+                child: Icon(
+                  i < count ? AppIcons.pointsActive : AppIcons.points,
+                  size: i == 1 ? 56 : 44,
+                  color: i < count ? AppColors.gold : AppColors.border(context),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

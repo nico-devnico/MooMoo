@@ -2002,7 +2002,204 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.';
 
   @override
+  String get translCameraIdleTitle => 'Caméra en veille';
+
+  @override
+  String get translCameraIdleMessage =>
+      'Appuyez sur « Traduire » pour activer la caméra, ou importez une vidéo.';
+
+  @override
+  String get translSwitchCamera => 'Changer de caméra';
+
+  @override
+  String get translImportTooltip => 'Importer une vidéo ou une image';
+
+  @override
+  String get translBackToCamera => 'Revenir à la caméra';
+
+  @override
+  String get translCopy => 'Copier le texte';
+
+  @override
+  String get translCopied => 'Texte copié';
+
+  @override
+  String get translClear => 'Effacer le texte';
+
+  @override
+  String get translStatusReady => 'Prêt';
+
+  @override
+  String get translPickWord => 'Choisissez un mot';
+
+  @override
+  String get translViewModeLabel => 'Affichage du signe';
+
+  @override
   String get translModelAlt => 'Avatar 3D de traduction en langue des signes';
+
+  @override
+  String get landmarksLabel =>
+      'Repères animés du signe : main droite en bleu, main gauche en orange';
+
+  @override
+  String get landmarksPlay => 'Lire l\'animation';
+
+  @override
+  String get landmarksPause => 'Mettre l\'animation en pause';
+
+  @override
+  String get masteryNone => 'Pas commencée';
+
+  @override
+  String get masteryFragile => 'À revoir';
+
+  @override
+  String get masteryLearning => 'En cours d\'acquisition';
+
+  @override
+  String get masteryAcquired => 'Acquise';
+
+  @override
+  String get masteryMastered => 'Maîtrisée';
+
+  @override
+  String get learnMasteryLegend => 'Niveau d\'acquisition';
+
+  @override
+  String learnLessonMastery(String level, int percent) {
+    return '$level, $percent %';
+  }
+
+  @override
+  String get learnStartBubble => 'C\'est parti !';
+
+  @override
+  String learnUnitProgress(int done, int total) {
+    return '$done / $total leçons';
+  }
+
+  @override
+  String get learnUnitTrophy => 'Trophée de l\'unité';
+
+  @override
+  String get learnUnitTrophyLocked =>
+      'Terminez toutes les leçons de l\'unité pour gagner ce trophée.';
+
+  @override
+  String get learnUnitTrophyEarned => 'Trophée gagné : unité terminée !';
+
+  @override
+  String get learnPracticeIncluded => 'Avec exercice pratique';
+
+  @override
+  String get learnPracticeStop => 'Exercice';
+
+  @override
+  String learnPracticeStopLabel(String title) {
+    return 'Exercice pratique de la leçon $title';
+  }
+
+  @override
+  String get learnPracticeAfterLesson => 'À la fin de la leçon';
+
+  @override
+  String get lessonSpeakWord => 'Écouter le mot';
+
+  @override
+  String lessonCombo(int count) {
+    return '$count d\'affilée !';
+  }
+
+  @override
+  String lessonStarsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count étoiles sur 3',
+      one: '1 étoile sur 3',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lessonMasteryReached(String level) {
+    return 'Niveau atteint : $level';
+  }
+
+  @override
+  String practiceSession(int number, int total) {
+    return 'Exercice pratique · $number/$total';
+  }
+
+  @override
+  String get practiceTitle => 'Reproduisez ce signe';
+
+  @override
+  String get practiceReference => 'Modèle à imiter';
+
+  @override
+  String get practiceYou => 'Vous';
+
+  @override
+  String get practiceCameraHint =>
+      'Placez-vous face à la caméra, dans un endroit bien éclairé, les mains bien visibles.';
+
+  @override
+  String get practiceEnableCamera => 'Activer la caméra';
+
+  @override
+  String get practiceNoCamera => 'Je ne peux pas utiliser la caméra';
+
+  @override
+  String get practiceStart => 'Je signe !';
+
+  @override
+  String practiceCountdown(int count) {
+    return 'Enregistrement dans $count';
+  }
+
+  @override
+  String get practiceRecording => 'Signez maintenant !';
+
+  @override
+  String get practiceAnalyzing => 'Analyse de votre signe…';
+
+  @override
+  String get practiceSuccess => 'Bravo, signe reconnu !';
+
+  @override
+  String get practiceFailure => 'Pas tout à fait…';
+
+  @override
+  String get practiceFailureHint =>
+      'Revoyez le modèle puis réessayez, ou continuez.';
+
+  @override
+  String get practiceRetry => 'Réessayer';
+
+  @override
+  String get practiceUnavailable =>
+      'La reconnaissance automatique est indisponible pour le moment.';
+
+  @override
+  String get practiceSelfCheckTitle => 'Évaluez-vous';
+
+  @override
+  String get practiceSelfCheckMessage =>
+      'Reproduisez le signe comme sur le modèle, par exemple devant un miroir, puis indiquez si vous l\'avez réussi.';
+
+  @override
+  String get practiceSelfYes => 'Je l\'ai réussi';
+
+  @override
+  String get practiceSelfNo => 'Pas encore';
+
+  @override
+  String get practiceSkip => 'Passer';
+
+  @override
+  String get practiceSelfRated => 'Auto-évaluation enregistrée';
 
   @override
   String get adminLearningForbidden =>
@@ -3571,6 +3768,85 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get cfgLoadError => 'Impossible de charger la configuration';
+
+  @override
+  String get accountSuspendedTitle => 'Votre compte a été banni';
+
+  @override
+  String get accountSuspendedMessage =>
+      'Un administrateur a banni votre compte : vous n\'avez plus accès à l\'application. Pour comprendre pourquoi, ou si vous pensez qu\'il s\'agit d\'une erreur, contactez l\'administrateur.';
+
+  @override
+  String accountSuspendedReason(String reason) {
+    return 'Motif : $reason';
+  }
+
+  @override
+  String get accountSuspendedAck => 'Fermer';
+
+  @override
+  String get appealContactAdmin => 'Contacter l\'administrateur';
+
+  @override
+  String get appealFormIntro =>
+      'Expliquez votre situation. Un administrateur examinera votre demande et vous répondra par e-mail.';
+
+  @override
+  String get appealEmailLabel => 'Votre adresse e-mail';
+
+  @override
+  String get appealMessageLabel => 'Votre message';
+
+  @override
+  String get appealMessageHint =>
+      'Bonjour, je souhaite comprendre pourquoi mon compte a été banni…';
+
+  @override
+  String get appealMessageTooShort => 'Écrivez au moins 10 caractères.';
+
+  @override
+  String get appealSend => 'Envoyer';
+
+  @override
+  String get appealBack => 'Retour';
+
+  @override
+  String get appealSentTitle => 'Message envoyé';
+
+  @override
+  String appealSentMessage(String email) {
+    return 'Un administrateur va examiner votre demande et vous répondra à l\'adresse $email.';
+  }
+
+  @override
+  String get appealSendFailed =>
+      'Le message n\'a pas pu être envoyé. Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get appealBadge => 'Recours';
+
+  @override
+  String get appealView => 'Voir le recours';
+
+  @override
+  String appealDialogTitle(String name) {
+    return 'Recours de $name';
+  }
+
+  @override
+  String appealReplyTo(String email) {
+    return 'Répondre à : $email';
+  }
+
+  @override
+  String get appealResolve => 'Marquer comme traité';
+
+  @override
+  String get appealResolved => 'Recours marqué comme traité';
+
+  @override
+  String get authAccountSuspended =>
+      'Ce compte est suspendu. Contactez le support si vous pensez que c\'est une erreur.';
 
   @override
   String get maintenanceTitle => 'Maintenance en cours';

@@ -38,9 +38,12 @@ class AppIcons {
   static const IconData upload = PhosphorIconsRegular.uploadSimple;
   static const IconData download = PhosphorIconsRegular.downloadSimple;
   static const IconData share = PhosphorIconsRegular.shareNetwork;
+  static const IconData mail = PhosphorIconsRegular.envelopeSimple;
+  static const IconData send = PhosphorIconsRegular.paperPlaneRight;
   static const IconData refresh = PhosphorIconsRegular.arrowsClockwise;
   static const IconData play = PhosphorIconsRegular.play;
   static const IconData stop = PhosphorIconsRegular.stop;
+  static const IconData pause = PhosphorIconsRegular.pause;
 
   // Status and feedback
   static const IconData success = PhosphorIconsRegular.checkCircle;
@@ -83,6 +86,10 @@ class AppIcons {
   static const IconData goal = PhosphorIconsRegular.target;
   static const IconData achievement = PhosphorIconsRegular.sparkle;
   static const IconData progress = PhosphorIconsRegular.chartLine;
+  static const IconData practice = PhosphorIconsRegular.handPalm;
+  static const IconData record = PhosphorIconsFill.record;
+  static const IconData crown = PhosphorIconsFill.crown;
+  static const IconData combo = PhosphorIconsFill.lightning;
 
   // Administration
   static const IconData admin = PhosphorIconsRegular.shieldCheck;

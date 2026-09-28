@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_client.dart';
+import '../services/google_auth.dart';
 
 abstract class AuthRepository {
   Stream<AuthState> watchAuthState();
@@ -16,6 +17,9 @@ abstract class AuthRepository {
     bool isDeaf = false,
   });
   Future<void> signInWithGoogle();
+
+  /// Exchanges an ID token from the in-app Google sign-in for a session.
+  Future<AuthResponse> signInWithGoogleIdToken(String idToken);
   Future<void> signOut();
   Future<void> resetPassword(String email);
   Future<void> updatePassword(String newPassword);
@@ -164,6 +168,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signInWithGoogle() async {
+    if (GoogleAuth.isSupported && !GoogleAuth.usesRenderedButton) {
+      final idToken = await GoogleAuth.instance.authenticate();
+      await signInWithGoogleIdToken(idToken);
+      return;
+    }
+    // Desktop (Windows, Linux, macOS): no Google SDK and Google refuses
+    // embedded web views, so the system browser is the only option left.
     await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: kIsWeb ? Uri.base.origin : 'moomoo://login-callback',
@@ -174,7 +185,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthResponse> signInWithGoogleIdToken(String idToken) {
+    return _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      nonce: GoogleAuth.instance.rawNonce,
+    );
+  }
+
+  @override
   Future<void> signOut() async {
+    await GoogleAuth.instance.signOut();
     await _supabase.auth.signOut();
   }
 

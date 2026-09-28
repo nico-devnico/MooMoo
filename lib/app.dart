@@ -6,6 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'domain/providers/app_settings_provider.dart';
 import 'domain/providers/profile_provider.dart';
+import 'presentation/screens/auth/account_status_gate.dart';
 import 'presentation/screens/maintenance/maintenance_gate.dart';
 
 class MooMooApp extends ConsumerWidget {
@@ -33,9 +34,11 @@ class MooMooApp extends ConsumerWidget {
       key: ValueKey('app_locale_$localeCode'),
       title: ref.watch(appNameProvider),
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => MaintenanceGate(
-        router: router,
-        child: child ?? const SizedBox.shrink(),
+      builder: (context, child) => AccountStatusGate(
+        child: MaintenanceGate(
+          router: router,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

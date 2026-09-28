@@ -10,6 +10,13 @@ export const authRouter = Router();
  * they are passed through. The raw error object is not.
  */
 function mapAuthError(error) {
+  if (error?.code === 'user_banned' || /banned/i.test(String(error?.message || ''))) {
+    return userError(
+      403,
+      'Votre compte a été suspendu. Contactez le support si vous pensez que c\'est une erreur.',
+      'account_suspended',
+    );
+  }
   const status = Number(error?.status);
   return userError(
     status >= 400 && status < 500 ? status : 400,

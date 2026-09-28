@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,13 +8,16 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/services/google_auth.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
+import 'account_status_gate.dart';
 import 'widgets/auth_error_message.dart';
 import 'widgets/auth_form_error.dart';
 import 'widgets/auth_layout.dart';
+import 'widgets/google_web_button.dart';
 import 'widgets/oauth_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -30,8 +35,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _formError;
 
+  /// Set on the web, where Google's own button replaces [OAuthButton].
+  Future<void>? _googleWebReady;
+  final List<StreamSubscription<Object>> _googleWebSubs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (GoogleAuth.isSupported && GoogleAuth.usesRenderedButton) {
+      final google = GoogleAuth.instance;
+      _googleWebReady = google.ensureInitialized();
+      _googleWebSubs
+        ..add(google.webIdTokens.listen((idToken) {
+          _handleOAuthSignIn(() async {
+            await ref.read(authRepositoryProvider).signInWithGoogleIdToken(idToken);
+          });
+        }))
+        ..add(google.webErrors.listen((error) {
+          if (!mounted) return;
+          setState(() {
+            _formError = authErrorMessage(error, AppLocalizations.of(context)!);
+          });
+        }));
+    }
+  }
+
   @override
   void dispose() {
+    for (final sub in _googleWebSubs) {
+      sub.cancel();
+    }
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -65,7 +98,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .signInWithEmailPassword(_emailController.text.trim(), _passwordController.text);
       if (mounted) context.go(AppRoutes.home);
     } catch (e) {
-      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
+      if (!mounted) return;
+      if (isAccountSuspendedError(e)) {
+        _showBanned(_emailController.text);
+      } else {
+        setState(() => _formError = authErrorMessage(e, l10n));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -81,11 +119,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await method();
       if (mounted) context.go(AppRoutes.home);
     } catch (e) {
-      if (mounted) setState(() => _formError = authErrorMessage(e, l10n));
+      if (!mounted || GoogleAuth.isCancellation(e)) return;
+      if (isAccountSuspendedError(e)) {
+        _showBanned(GoogleAuth.instance.lastEmail);
+      } else {
+        setState(() => _formError = authErrorMessage(e, l10n));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  void _showBanned(String? email) {
+    ref.read(suspensionNoticeProvider.notifier).show(email: email);
+  }
+
+  Widget _googleButton(AppLocalizations l10n) => OAuthButton(
+        label: l10n.continueWithGoogle,
+        assetName: 'assets/images/google_logo.png',
+        fallbackIcon: Icons.g_mobiledata,
+        onTap: _isLoading
+            ? null
+            : () => _handleOAuthSignIn(
+                  ref.read(authRepositoryProvider).signInWithGoogle,
+                ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -163,16 +221,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: AppSpacing.l),
             _OrDivider(label: l10n.orDivider),
             const SizedBox(height: AppSpacing.l),
-            OAuthButton(
-              label: l10n.continueWithGoogle,
-              assetName: 'assets/images/google_logo.png',
-              fallbackIcon: Icons.g_mobiledata,
-              onTap: _isLoading
-                  ? null
-                  : () => _handleOAuthSignIn(
-                      ref.read(authRepositoryProvider).signInWithGoogle,
+            if (_googleWebReady != null)
+              FutureBuilder<void>(
+                future: _googleWebReady,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) return _googleButton(l10n);
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const SizedBox(height: 44);
+                  }
+                  return Center(
+                    child: IgnorePointer(
+                      ignoring: _isLoading,
+                      child: googleWebButton(
+                        locale: Localizations.localeOf(context).languageCode,
+                        dark: Theme.of(context).brightness == Brightness.dark,
+                      ),
                     ),
-            ),
+                  );
+                },
+              )
+            else
+              _googleButton(l10n),
           ],
         ),
       ),

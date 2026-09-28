@@ -44,6 +44,11 @@ class AppColors {
   static const Color primaryLedge = Color(0xFF1240A8);
   static const Color successLedge = Color(0xFF0A7A55);
   static const Color warningLedge = Color(0xFFA86306);
+  static const Color errorLedge = Color(0xFFA3221A);
+
+  /// Reward colour of a mastered lesson, distinct from the warning orange.
+  static const Color gold = Color(0xFFE8A800);
+  static const Color goldLedge = Color(0xFFB07F00);
 
   static const Color successSoft = Color(0xFFE7F6F0);
   static const Color errorSoft = Color(0xFFFDECEA);

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -17,6 +18,8 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/sign.dart';
+import '../../../data/models/sign_landmarks.dart';
+import '../../../data/repositories/session_repository.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/character_provider.dart';
@@ -31,17 +34,22 @@ import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
+import '../../widgets/app_snackbar.dart';
 import '../../widgets/camera/camera_view.dart';
 import '../../widgets/landmark_viewer/landmark_viewer.dart';
 import '../../widgets/sign_media.dart';
 import '../../widgets/skeletons.dart';
 
-/// Au-delà de cette largeur, média et résultat s'affichent côte à côte.
+/// From this width the stage and the side column sit next to each other.
 const double _splitBreakpoint = 900;
-const double _sidePanelWidth = 400;
-const double _controlHeight = 56;
+const double _sideColumnWidth = 380;
+const double _actionHeight = 56;
 
 enum _SignStatus { idle, translating, done, unavailable }
+
+Duration _motion(BuildContext context) => MediaQuery.disableAnimationsOf(context)
+    ? Duration.zero
+    : const Duration(milliseconds: 220);
 
 class TranslatorScreen extends ConsumerStatefulWidget {
   const TranslatorScreen({super.key});
@@ -63,15 +71,25 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   _SignStatus _signStatus = _SignStatus.idle;
   String? _translationResult;
   double? _confidence;
-  String? _activeModelLabel;
   String? _errorMessage;
 
-  /// Incrémenté à chaque lancement ou arrêt : une réponse arrivée après coup
-  /// ne doit pas écraser l'état courant.
+  /// Bumped on every start or stop: a late answer must not overwrite the
+  /// current state.
   int _inferenceRun = 0;
 
   /// One history session per direction for the time the screen is open.
   final Map<String, String> _sessions = {};
+
+  // `ref` is unusable in dispose(): keep what it needs.
+  late final ProviderContainer _container;
+  late final SessionRepository _sessionRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _container = ProviderScope.containerOf(context, listen: false);
+    _sessionRepository = ref.read(sessionRepositoryProvider);
+  }
 
   @override
   void dispose() {
@@ -79,10 +97,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     _textFocus.dispose();
     _videoController?.dispose();
     _chewieController?.dispose();
-    ref.read(translatorStateProvider.notifier).stop();
-    final repo = ref.read(sessionRepositoryProvider);
+    final container = _container;
+    // Providers must not change while the tree is being torn down.
+    Future.microtask(() => container.read(translatorStateProvider.notifier).stop());
     for (final id in _sessions.values) {
-      repo.closeSession(id).catchError((_) {});
+      _sessionRepository.closeSession(id).catchError((_) {});
     }
     super.dispose();
   }
@@ -118,8 +137,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   }
 
   Future<XFile?> _captureFrame() async {
-    // Sur le web, la caméra ne s'initialise qu'une fois la traduction lancée :
-    // on laisse CameraView s'abonner au provider avant de le lire.
+    // On the web the camera only starts once translation is on: let
+    // CameraView subscribe to the provider before reading it.
     await WidgetsBinding.instance.endOfFrame;
     final controller = await ref.read(cameraStateProvider.future);
     if (controller == null || !controller.value.isInitialized) return null;
@@ -152,7 +171,6 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         _signStatus = _SignStatus.unavailable;
         _translationResult = null;
         _confidence = null;
-        _activeModelLabel = null;
         _errorMessage = l10n.translCameraUnavailable;
       });
       return;
@@ -164,21 +182,20 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     if (!mounted || run != _inferenceRun) return;
 
     final label = result.label?.trim();
+    final ok = result.ok && label != null && label.isNotEmpty;
     setState(() {
-      if (result.ok && label != null && label.isNotEmpty) {
+      if (ok) {
         _signStatus = _SignStatus.done;
         _translationResult = label;
         _confidence = result.confidence;
-        _activeModelLabel = result.model?.displayLabel;
       } else {
         _signStatus = _SignStatus.unavailable;
         _translationResult = null;
         _confidence = null;
-        _activeModelLabel = null;
         _errorMessage = l10n.inferenceUnavailableMessage;
       }
     });
-    if (result.ok && label != null && label.isNotEmpty) {
+    if (ok) {
       _record(
         direction: 'sign_to_text',
         translatedText: label,
@@ -198,15 +215,6 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     ref.read(translationModeStateProvider.notifier).setMode(mode);
     _stop();
     ref.read(speechControllerProvider.notifier).stopListening();
-  }
-
-  void _toggleDirection() {
-    final current = ref.read(translationModeStateProvider);
-    _setMode(
-      current == TranslationMode.signToText
-          ? TranslationMode.textToSign
-          : TranslationMode.signToText,
-    );
   }
 
   Future<void> _pickFile(bool isVideo) async {
@@ -262,12 +270,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final mode = ref.watch(translationModeStateProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    // Couvre aussi le bouton flottant du shell mobile, qui ne fait que
-    // basculer l'état : l'inférence part d'ici dans tous les cas.
+    // Also covers the mobile shell's central button, which only toggles the
+    // state: inference always starts from here.
     ref.listen<bool>(translatorStateProvider, (previous, next) {
       if (next && previous != true) {
-        if (ref.read(translationModeStateProvider) ==
-            TranslationMode.signToText) {
+        if (ref.read(translationModeStateProvider) == TranslationMode.signToText) {
           _runInference();
         }
       } else if (!next) {
@@ -288,49 +295,46 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.l,
                 AppSpacing.m,
-                AppSpacing.l,
+                AppSpacing.s,
+                AppSpacing.m,
                 AppSpacing.m,
               ),
-              child: _DirectionBar(
-                mode: mode,
-                onModeChanged: _setMode,
-                onSwap: _toggleDirection,
-              ),
+              child: _ModeSwitch(mode: mode, onChanged: _setMode),
             ),
             Expanded(
-              child: mode == TranslationMode.signToText
-                  ? _SignToTextView(
-                      key: const ValueKey('sign_to_text'),
-                      isTranslating: isTranslating,
-                      status: _signStatus,
-                      result: _translationResult,
-                      confidence: _confidence,
-                      modelLabel: _activeModelLabel,
-                      errorMessage: _errorMessage,
-                      selectedFile: _selectedFile,
-                      isImage: _isImage,
-                      chewieController: _chewieController,
-                      onPickFile: _pickFile,
-                      onClearFile: _clearFile,
-                      onStart: _start,
-                      onStop: _stop,
-                      onRestart: _runInference,
-                    )
-                  : _TextToSignView(
-                      key: const ValueKey('text_to_sign'),
-                      controller: _textController,
-                      focusNode: _textFocus,
-                      query: _searchQuery,
-                      onQueryChanged: (value) =>
-                          setState(() => _searchQuery = value),
-                      onTranslated: (text, signIds) => _record(
-                        direction: 'text_to_sign',
-                        sourceText: text,
-                        signIds: signIds,
+              child: AnimatedSwitcher(
+                duration: _motion(context),
+                child: mode == TranslationMode.signToText
+                    ? _SignToTextView(
+                        key: const ValueKey('sign_to_text'),
+                        isTranslating: isTranslating,
+                        status: _signStatus,
+                        result: _translationResult,
+                        confidence: _confidence,
+                        errorMessage: _errorMessage,
+                        selectedFile: _selectedFile,
+                        isImage: _isImage,
+                        chewieController: _chewieController,
+                        onPickFile: _pickFile,
+                        onClearFile: _clearFile,
+                        onStart: _start,
+                        onStop: _stop,
+                        onRestart: _runInference,
+                      )
+                    : _TextToSignView(
+                        key: const ValueKey('text_to_sign'),
+                        controller: _textController,
+                        focusNode: _textFocus,
+                        query: _searchQuery,
+                        onQueryChanged: (value) => setState(() => _searchQuery = value),
+                        onTranslated: (text, signIds) => _record(
+                          direction: 'text_to_sign',
+                          sourceText: text,
+                          signIds: signIds,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ],
         ),
@@ -339,129 +343,137 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   }
 }
 
-class _DirectionBar extends StatelessWidget {
-  const _DirectionBar({
-    required this.mode,
-    required this.onModeChanged,
-    required this.onSwap,
-  });
+// ---------------------------------------------------------------------------
+// Direction switch
+// ---------------------------------------------------------------------------
+
+class _ModeSwitch extends StatelessWidget {
+  const _ModeSwitch({required this.mode, required this.onChanged});
 
   final TranslationMode mode;
-  final ValueChanged<TranslationMode> onModeChanged;
-  final VoidCallback onSwap;
+  final ValueChanged<TranslationMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Row(
-          children: [
-            Expanded(
-              child: SegmentedButton<TranslationMode>(
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  minimumSize: const Size(0, kMinTouchTarget),
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadius.circular),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _ModeTab(
+                  icon: AppIcons.signLanguage,
+                  label: l10n.translDirectionSignToText,
+                  selected: mode == TranslationMode.signToText,
+                  onTap: () => onChanged(TranslationMode.signToText),
                 ),
-                segments: [
-                  ButtonSegment(
-                    value: TranslationMode.signToText,
-                    icon: const Icon(AppIcons.signLanguage),
-                    label: Text(l10n.translDirectionSignToText),
-                  ),
-                  ButtonSegment(
-                    value: TranslationMode.textToSign,
-                    icon: const Icon(AppIcons.keyboard),
-                    label: Text(l10n.translDirectionTextToSign),
-                  ),
-                ],
-                selected: {mode},
-                onSelectionChanged: (value) => onModeChanged(value.first),
               ),
-            ),
-            const SizedBox(width: AppSpacing.s),
-            IconButton.outlined(
-              tooltip: l10n.translSwapDirection,
-              constraints: const BoxConstraints(
-                minWidth: kMinTouchTarget,
-                minHeight: kMinTouchTarget,
+              Expanded(
+                child: _ModeTab(
+                  icon: AppIcons.keyboard,
+                  label: l10n.translDirectionTextToSign,
+                  selected: mode == TranslationMode.textToSign,
+                  onTap: () => onChanged(TranslationMode.textToSign),
+                ),
               ),
-              onPressed: onSwap,
-              icon: const Icon(PhosphorIconsRegular.arrowsLeftRight),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Ligne d'état annoncée aux lecteurs d'écran à chaque changement.
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({
-    required this.text,
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
     required this.icon,
-    required this.color,
-    this.busy = false,
+    required this.label,
+    required this.selected,
+    required this.onTap,
   });
 
-  final String text;
   final IconData icon;
-  final Color color;
-  final bool busy;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = selected ? scheme.onPrimary : scheme.onSurfaceVariant;
+
     return Semantics(
-      liveRegion: true,
-      container: true,
-      label: text,
+      button: true,
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
       excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.m,
-          vertical: AppSpacing.s + 4,
-        ),
+      label: label,
+      child: AnimatedContainer(
+        duration: _motion(context),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: AppRadius.radiusM,
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: selected ? scheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.circular),
         ),
-        child: Row(
-          children: [
-            SizedBox.square(
-              dimension: 20,
-              child: busy
-                  ? CircularProgressIndicator(strokeWidth: 2, color: color)
-                  : Icon(icon, size: 20, color: color),
-            ),
-            const SizedBox(width: AppSpacing.s + 4),
-            Expanded(
-              child: Text(
-                text,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: color,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: kMinTouchTarget),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s + 4,
+                  vertical: AppSpacing.s,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 20, color: foreground),
+                    const SizedBox(width: AppSpacing.s),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: foreground,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SignToTextView extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+// Sign -> text
+// ---------------------------------------------------------------------------
+
+class _SignToTextView extends StatelessWidget {
   const _SignToTextView({
     super.key,
     required this.isTranslating,
     required this.status,
     required this.result,
     required this.confidence,
-    required this.modelLabel,
     required this.errorMessage,
     required this.selectedFile,
     required this.isImage,
@@ -477,7 +489,6 @@ class _SignToTextView extends ConsumerWidget {
   final _SignStatus status;
   final String? result;
   final double? confidence;
-  final String? modelLabel;
   final String? errorMessage;
   final XFile? selectedFile;
   final bool isImage;
@@ -489,64 +500,32 @@ class _SignToTextView extends ConsumerWidget {
   final VoidCallback onRestart;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-
-    final statusLine = switch (status) {
-      _SignStatus.translating => _StatusLine(
-        text: l10n.translatingInProgress,
-        icon: AppIcons.info,
-        color: AppColors.primary,
-        busy: true,
-      ),
-      _SignStatus.done => _StatusLine(
-        text: l10n.translDone,
-        icon: AppIcons.success,
-        color: AppColors.success,
-      ),
-      _SignStatus.unavailable => _StatusLine(
-        text: l10n.inferenceUnavailable,
-        icon: AppIcons.warning,
-        color: AppColors.warning,
-      ),
-      _SignStatus.idle => _StatusLine(
-        text: l10n.readyToTranslate,
-        icon: AppIcons.info,
-        color: AppColors.textSecondary(context),
-      ),
-    };
-
-    final media = _MediaStage(
+  Widget build(BuildContext context) {
+    final stage = _CaptureStage(
+      status: status,
       selectedFile: selectedFile,
       isImage: isImage,
       chewieController: chewieController,
-    );
-    final sourceBar = _SourceBar(
-      selectedFile: selectedFile,
       onPickFile: onPickFile,
       onClearFile: onClearFile,
     );
-    final resultPanel = _ResultPanel(
+    final resultCard = _ResultCard(
       result: result,
       confidence: confidence,
-      modelLabel: modelLabel,
       unavailable: status == _SignStatus.unavailable,
       errorMessage: errorMessage,
+    );
+    final action = _TranslateAction(
+      isTranslating: isTranslating,
+      busy: status == _SignStatus.translating,
+      onStart: onStart,
+      onStop: onStop,
+      onRestart: onRestart,
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= _splitBreakpoint;
-        final controls = _TranslateControls(
-          isTranslating: isTranslating,
-          busy: status == _SignStatus.translating,
-          stretch: !wide,
-          onStart: onStart,
-          onStop: onStop,
-          onRestart: onRestart,
-        );
-
-        if (wide) {
+        if (constraints.maxWidth >= _splitBreakpoint) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.l,
@@ -555,32 +534,19 @@ class _SignToTextView extends ConsumerWidget {
               AppSpacing.l,
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
+                Expanded(child: stage),
+                const SizedBox(width: AppSpacing.l),
+                SizedBox(
+                  width: _sideColumnWidth,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(child: media),
+                      Expanded(child: SingleChildScrollView(child: resultCard)),
                       const SizedBox(height: AppSpacing.m),
-                      sourceBar,
+                      action,
                     ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.l),
-                SizedBox(
-                  width: _sidePanelWidth,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        statusLine,
-                        const SizedBox(height: AppSpacing.m),
-                        resultPanel,
-                        const SizedBox(height: AppSpacing.l),
-                        controls,
-                      ],
-                    ),
                   ),
                 ),
               ],
@@ -588,7 +554,12 @@ class _SignToTextView extends ConsumerWidget {
           );
         }
 
-        final mediaHeight = (constraints.maxWidth * 0.9).clamp(240.0, 420.0);
+        // On phones the bottom bar's central button starts and stops the
+        // translation: the camera takes the room of the in-page button.
+        final phone = !context.hasTopNavigation;
+        final stageHeight = phone
+            ? (constraints.maxHeight * 0.78).clamp(320.0, 720.0)
+            : (constraints.maxWidth * 0.95).clamp(260.0, 460.0);
         return ListView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.m,
@@ -597,15 +568,13 @@ class _SignToTextView extends ConsumerWidget {
             AppSpacing.xxl,
           ),
           children: [
-            statusLine,
-            const SizedBox(height: AppSpacing.m),
-            SizedBox(height: mediaHeight, child: media),
-            const SizedBox(height: AppSpacing.m),
-            sourceBar,
-            const SizedBox(height: AppSpacing.l),
-            controls,
-            const SizedBox(height: AppSpacing.l),
-            resultPanel,
+            SizedBox(height: stageHeight, child: stage),
+            if (!phone) ...[
+              const SizedBox(height: AppSpacing.m),
+              action,
+            ],
+            SizedBox(height: phone ? AppSpacing.l : AppSpacing.m),
+            resultCard,
           ],
         );
       },
@@ -613,21 +582,31 @@ class _SignToTextView extends ConsumerWidget {
   }
 }
 
-class _MediaStage extends StatelessWidget {
-  const _MediaStage({
+/// Camera (or imported file) with the state and the source control laid over
+/// it, so the whole capture reads as one block.
+class _CaptureStage extends StatelessWidget {
+  const _CaptureStage({
+    required this.status,
     required this.selectedFile,
     required this.isImage,
     required this.chewieController,
+    required this.onPickFile,
+    required this.onClearFile,
   });
 
+  final _SignStatus status;
   final XFile? selectedFile;
   final bool isImage;
   final ChewieController? chewieController;
+  final ValueChanged<bool> onPickFile;
+  final VoidCallback onClearFile;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final file = selectedFile;
-    Widget content;
+
+    final Widget content;
     if (file == null) {
       content = const CameraView();
     } else if (isImage) {
@@ -637,87 +616,192 @@ class _MediaStage extends StatelessWidget {
     } else if (chewieController != null) {
       content = Chewie(controller: chewieController!);
     } else {
-      content = const Skeleton(child: SkeletonBlock(height: double.infinity));
+      content = const Center(child: CircularProgressIndicator(color: Colors.white));
     }
+
+    final (statusText, statusColor) = switch (status) {
+      _SignStatus.idle => (l10n.translStatusReady, Colors.white70),
+      _SignStatus.translating => (l10n.translatingInProgress, AppColors.primary),
+      _SignStatus.done => (l10n.translDone, AppColors.success),
+      _SignStatus.unavailable => (l10n.inferenceUnavailable, AppColors.warning),
+    };
 
     return ClipRRect(
       borderRadius: AppRadius.radiusL,
-      child: ColoredBox(color: Colors.black, child: content),
+      child: ColoredBox(
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            content,
+            Positioned(
+              top: AppSpacing.m,
+              left: AppSpacing.m,
+              right: AppSpacing.m,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: _StatusPill(
+                      text: statusText,
+                      color: statusColor,
+                      busy: status == _SignStatus.translating,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (file == null)
+                    _ImportButton(onPickFile: onPickFile)
+                  else
+                    _OverlayChip(
+                      icon: AppIcons.camera,
+                      label: l10n.translBackToCamera,
+                      tooltip: l10n.translFileSelected(file.name),
+                      onPressed: onClearFile,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _SourceBar extends StatelessWidget {
-  const _SourceBar({
-    required this.selectedFile,
-    required this.onPickFile,
-    required this.onClearFile,
-  });
+/// State of the recognition, announced to screen readers when it changes.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.text, required this.color, this.busy = false});
 
-  final XFile? selectedFile;
+  final String text;
+  final Color color;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      label: text,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s + 4,
+          vertical: AppSpacing.s,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(AppRadius.circular),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: 12,
+              child: busy
+                  ? CircularProgressIndicator(strokeWidth: 2, color: color)
+                  : DecoratedBox(
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImportButton extends StatelessWidget {
+  const _ImportButton({required this.onPickFile});
+
   final ValueChanged<bool> onPickFile;
-  final VoidCallback onClearFile;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final buttonStyle = OutlinedButton.styleFrom(
-      minimumSize: const Size(0, kMinTouchTarget),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: AppSpacing.s,
-          runSpacing: AppSpacing.s,
-          children: [
-            OutlinedButton.icon(
-              style: buttonStyle,
-              onPressed: () => onPickFile(true),
-              icon: const Icon(AppIcons.video, size: 20),
-              label: Text(l10n.translImportVideo),
-            ),
-            OutlinedButton.icon(
-              style: buttonStyle,
-              onPressed: () => onPickFile(false),
-              icon: const Icon(AppIcons.image, size: 20),
-              label: Text(l10n.translImportImage),
-            ),
-            if (selectedFile != null)
-              OutlinedButton.icon(
-                style: buttonStyle.copyWith(
-                  foregroundColor: const WidgetStatePropertyAll(
-                    AppColors.error,
-                  ),
-                ),
-                onPressed: onClearFile,
-                icon: const Icon(AppIcons.camera, size: 20),
-                label: Text(l10n.translRemoveFile),
-              ),
-          ],
+    return MenuAnchor(
+      alignmentOffset: const Offset(0, AppSpacing.xs),
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(AppIcons.video),
+          onPressed: () => onPickFile(true),
+          child: Text(l10n.translImportVideo),
         ),
-        if (selectedFile != null) ...[
-          const SizedBox(height: AppSpacing.s),
-          Text(
-            l10n.translFileSelected(selectedFile!.name),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary(context),
-            ),
-          ),
-        ],
+        MenuItemButton(
+          leadingIcon: const Icon(AppIcons.image),
+          onPressed: () => onPickFile(false),
+          child: Text(l10n.translImportImage),
+        ),
       ],
+      builder: (context, menu, _) => _OverlayChip(
+        icon: AppIcons.upload,
+        label: l10n.translImportTooltip,
+        compact: true,
+        onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+      ),
     );
   }
 }
 
-class _TranslateControls extends StatelessWidget {
-  const _TranslateControls({
+/// Translucent control laid over the camera image.
+class _OverlayChip extends StatelessWidget {
+  const _OverlayChip({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.tooltip,
+    this.compact = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? tooltip;
+  final VoidCallback onPressed;
+
+  /// Icon only; [label] is then the tooltip and the accessible name.
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextButton.styleFrom(
+      backgroundColor: Colors.black.withValues(alpha: 0.6),
+      foregroundColor: Colors.white,
+      minimumSize: const Size(kMinTouchTarget, kMinTouchTarget),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 0 : AppSpacing.m),
+      shape: const StadiumBorder(),
+    );
+    final button = compact
+        ? IconButton(
+            tooltip: label,
+            style: style,
+            onPressed: onPressed,
+            icon: Icon(icon, size: 22),
+          )
+        : TextButton.icon(
+            style: style,
+            onPressed: onPressed,
+            icon: Icon(icon, size: 20),
+            label: Text(label),
+          );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
+  }
+}
+
+class _TranslateAction extends StatelessWidget {
+  const _TranslateAction({
     required this.isTranslating,
     required this.busy,
-    required this.stretch,
     required this.onStart,
     required this.onStop,
     required this.onRestart,
@@ -725,7 +809,6 @@ class _TranslateControls extends StatelessWidget {
 
   final bool isTranslating;
   final bool busy;
-  final bool stretch;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final VoidCallback onRestart;
@@ -733,66 +816,63 @@ class _TranslateControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    const size = Size(0, _controlHeight);
+    const shape = StadiumBorder();
 
     if (!isTranslating) {
-      final start = FilledButton.icon(
-        autofocus: context.isDesktop,
-        style: FilledButton.styleFrom(minimumSize: size),
-        onPressed: onStart,
-        icon: const Icon(AppIcons.play),
-        label: Text(l10n.translStart),
+      return SizedBox(
+        height: _actionHeight,
+        child: FilledButton.icon(
+          autofocus: context.isDesktop,
+          style: FilledButton.styleFrom(shape: shape),
+          onPressed: onStart,
+          icon: const Icon(AppIcons.play),
+          label: Text(l10n.translate, style: AppTextStyles.button),
+        ),
       );
-      return stretch
-          ? SizedBox(width: double.infinity, child: start)
-          : Align(alignment: Alignment.centerLeft, child: start);
     }
 
-    final stop = FilledButton.icon(
-      style: FilledButton.styleFrom(
-        minimumSize: size,
-        backgroundColor: AppColors.error,
-      ),
-      onPressed: onStop,
-      icon: const Icon(AppIcons.stop),
-      label: Text(l10n.stopTranslation),
-    );
-    final restart = OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(minimumSize: size),
-      onPressed: busy ? null : onRestart,
-      icon: const Icon(AppIcons.refresh),
-      label: Text(l10n.translRestart),
-    );
-
-    if (stretch) {
-      return Row(
+    return SizedBox(
+      height: _actionHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: stop),
+          Expanded(
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                shape: shape,
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: onStop,
+              icon: const Icon(AppIcons.stop),
+              label: Text(l10n.stopTranslation, style: AppTextStyles.button),
+            ),
+          ),
           const SizedBox(width: AppSpacing.s),
-          Expanded(child: restart),
+          IconButton.outlined(
+            tooltip: l10n.translRestart,
+            style: IconButton.styleFrom(
+              minimumSize: const Size.square(_actionHeight),
+            ),
+            onPressed: busy ? null : onRestart,
+            icon: const Icon(AppIcons.refresh),
+          ),
         ],
-      );
-    }
-    return Wrap(
-      spacing: AppSpacing.s,
-      runSpacing: AppSpacing.s,
-      children: [stop, restart],
+      ),
     );
   }
 }
 
-class _ResultPanel extends ConsumerWidget {
-  const _ResultPanel({
+class _ResultCard extends ConsumerWidget {
+  const _ResultCard({
     required this.result,
     required this.confidence,
-    required this.modelLabel,
     required this.unavailable,
     required this.errorMessage,
   });
 
   final String? result;
   final double? confidence;
-  final String? modelLabel;
   final bool unavailable;
   final String? errorMessage;
 
@@ -806,97 +886,162 @@ class _ResultPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            header: true,
-            child: Text(
-              l10n.translResultLabel,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: secondary,
-                fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.translResultLabel,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              // Sound only complements the text, which stays the reference.
+              IconButton(
+                tooltip: l10n.translSpeak,
+                onPressed: text == null
+                    ? null
+                    : () => ref.read(ttsControllerProvider.notifier).speak(text),
+                icon: const Icon(AppIcons.speaker),
+              ),
+              IconButton(
+                tooltip: l10n.translCopy,
+                onPressed: text == null
+                    ? null
+                    : () {
+                        Clipboard.setData(ClipboardData(text: text));
+                        AppSnackbar.show(
+                          context,
+                          message: l10n.translCopied,
+                          type: AppSnackbarType.success,
+                        );
+                      },
+                icon: const Icon(PhosphorIconsRegular.copy),
+              ),
+            ],
+          ),
+          AnimatedSwitcher(
+            duration: _motion(context),
+            child: Semantics(
+              key: ValueKey(text),
+              liveRegion: true,
+              child: SizedBox(
+                width: double.infinity,
+                child: text == null
+                    ? Text(
+                        l10n.translResultPlaceholder,
+                        style: AppTextStyles.bodyLarge.copyWith(color: secondary),
+                      )
+                    : SelectableText(text, style: AppTextStyles.h1),
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.s),
-          Semantics(
-            liveRegion: true,
-            child: SelectableText(
-              text ?? l10n.translResultPlaceholder,
-              style: text == null
-                  ? AppTextStyles.bodyLarge.copyWith(color: secondary)
-                  : AppTextStyles.h1,
-            ),
-          ),
-          if (text != null && (confidence != null || modelLabel != null)) ...[
-            const SizedBox(height: AppSpacing.s),
-            Wrap(
-              spacing: AppSpacing.m,
-              runSpacing: AppSpacing.xs,
-              children: [
-                if (confidence != null)
-                  Text(
-                    l10n.translConfidence((confidence! * 100).round()),
-                    style: AppTextStyles.bodySmall.copyWith(color: secondary),
-                  ),
-                if (modelLabel != null)
-                  Text(
-                    l10n.translModelUsed(modelLabel!),
-                    style: AppTextStyles.bodySmall.copyWith(color: secondary),
-                  ),
-              ],
-            ),
+          if (text != null && confidence != null) ...[
+            const SizedBox(height: AppSpacing.m),
+            _ConfidenceBar(value: confidence!),
           ],
           if (unavailable) ...[
             const SizedBox(height: AppSpacing.m),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: AppRadius.radiusM,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(AppIcons.warning, color: AppColors.warning),
-                  const SizedBox(width: AppSpacing.s + 4),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.inferenceUnavailable,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          errorMessage ?? l10n.inferenceUnavailableMessage,
-                          style: AppTextStyles.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _Notice(
+              title: l10n.inferenceUnavailable,
+              message: errorMessage ?? l10n.inferenceUnavailableMessage,
             ),
           ],
-          const SizedBox(height: AppSpacing.m),
-          // Le son n'est qu'un complément : le texte ci-dessus reste la source.
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, kMinTouchTarget),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfidenceBar extends StatelessWidget {
+  const _ConfidenceBar({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final percent = (value * 100).round().clamp(0, 100);
+    final color = value >= 0.7
+        ? AppColors.success
+        : value >= 0.4
+            ? AppColors.warning
+            : AppColors.error;
+
+    return Semantics(
+      label: l10n.translConfidence(percent),
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.circular),
+              child: LinearProgressIndicator(
+                value: value.clamp(0.0, 1.0),
+                minHeight: 6,
+                color: color,
+                backgroundColor: color.withValues(alpha: 0.15),
+              ),
             ),
-            onPressed: text == null
-                ? null
-                : () => ref.read(ttsControllerProvider.notifier).speak(text),
-            icon: const Icon(AppIcons.speaker, size: 20),
-            label: Text(l10n.translSpeak),
+          ),
+          const SizedBox(width: AppSpacing.s + 4),
+          Text(
+            l10n.translConfidence(percent),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+class _Notice extends StatelessWidget {
+  const _Notice({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: AppRadius.radiusM,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(AppIcons.warning, color: AppColors.warning),
+          const SizedBox(width: AppSpacing.s + 4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(message, style: AppTextStyles.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Text -> sign
+// ---------------------------------------------------------------------------
 
 class _TextToSignView extends ConsumerStatefulWidget {
   const _TextToSignView({
@@ -940,6 +1085,12 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     widget.focusNode.requestFocus();
   }
 
+  void _clear() {
+    widget.controller.clear();
+    _setQuery('');
+    widget.focusNode.requestFocus();
+  }
+
   Future<void> _toggleSpeech() async {
     final isListening = ref.read(speechControllerProvider);
     final notifier = ref.read(speechControllerProvider.notifier);
@@ -961,7 +1112,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    // Résultats de la dictée lancée depuis le bouton flottant du shell.
+    // Dictation started from the mobile shell's central button.
     ref.listen<String>(sttResultProvider, (previous, next) {
       if (next.isNotEmpty && mounted) {
         widget.controller.text = next;
@@ -971,113 +1122,105 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     });
 
     final isListening = ref.watch(speechControllerProvider);
-    final viewMode =
-        ref.watch(signViewModeProvider).value ?? SignViewModeEnum.video;
+    final viewMode = ref.watch(signViewModeProvider).value ?? SignViewModeEnum.video;
 
     final trimmed = widget.query.trim();
     final words = trimmed.isEmpty
         ? const <String>[]
-        : trimmed.split(RegExp(r'\s+')).toList(growable: false);
-    // Une phrase se traduit mot à mot : on cherche un mot à la fois.
+        : trimmed.split(RegExp(r'\s+')).toSet().toList(growable: false);
+    // A phrase is translated word by word: one word is looked up at a time.
     final lookup = words.length > 1
         ? (words.contains(_activeWord) ? _activeWord! : words.first)
         : trimmed;
 
-    final resultsAsync = lookup.isEmpty
-        ? null
-        : ref.watch(signSearchProvider(query: lookup));
+    final resultsAsync =
+        lookup.isEmpty ? null : ref.watch(signSearchProvider(query: lookup));
     final signs = resultsAsync?.value ?? const <Sign>[];
     final selected = _pickSign(signs, lookup);
-    final detailAsync = selected == null
-        ? null
-        : ref.watch(signDetailProvider(selected.id));
+    final detailAsync =
+        selected == null ? null : ref.watch(signDetailProvider(selected.id));
     final displaySign = detailAsync?.value ?? selected;
-    final searching =
-        resultsAsync != null && resultsAsync.isLoading && signs.isEmpty;
+    final searching = resultsAsync != null && resultsAsync.isLoading && signs.isEmpty;
+    final failed = resultsAsync != null && resultsAsync.hasError && signs.isEmpty;
 
-    if (_recordPending && trimmed.isNotEmpty && resultsAsync != null && !resultsAsync.isLoading) {
+    if (_recordPending &&
+        trimmed.isNotEmpty &&
+        resultsAsync != null &&
+        !resultsAsync.isLoading) {
       _recordPending = false;
       final ids = selected == null ? const <String>[] : [selected.id];
       WidgetsBinding.instance.addPostFrameCallback((_) => widget.onTranslated(trimmed, ids));
     }
 
-    final statusLine = isListening
-        ? _StatusLine(
-            text: l10n.translListening,
-            icon: AppIcons.microphone,
-            color: AppColors.primary,
-          )
-        : lookup.isEmpty
-        ? _StatusLine(
-            text: l10n.translEmptyPrompt,
-            icon: AppIcons.info,
-            color: AppColors.textSecondary(context),
-          )
-        : searching
-        ? _StatusLine(
-            text: l10n.translSearching,
-            icon: AppIcons.search,
-            color: AppColors.primary,
-            busy: true,
-          )
-        : resultsAsync!.hasError && signs.isEmpty
-        ? _StatusLine(
-            text: l10n.errorGeneric,
-            icon: AppIcons.error,
-            color: AppColors.error,
-          )
-        : displaySign == null
-        ? _StatusLine(
-            text: l10n.translNoMatch(lookup),
-            icon: AppIcons.warning,
-            color: AppColors.warning,
-          )
-        : _StatusLine(
-            text: l10n.translShownSign(displaySign.word),
-            icon: AppIcons.success,
-            color: AppColors.success,
-          );
-
-    final input = _InputPanel(
+    final composer = _Composer(
       controller: widget.controller,
       focusNode: widget.focusNode,
       isListening: isListening,
-      words: words,
-      activeWord: lookup,
-      signs: signs,
-      selectedSignId: selected?.id,
       onChanged: _setQuery,
       onSubmit: _submit,
+      onClear: _clear,
       onToggleSpeech: _toggleSpeech,
-      onWordSelected: (word) => setState(() {
-        _activeWord = word;
-        _selectedSignId = null;
-      }),
-      onSignSelected: (id) => setState(() => _selectedSignId = id),
+    );
+
+    final wordPicker = words.length > 1
+        ? _ChipGroup(
+            label: l10n.translPickWord,
+            options: [for (final w in words) (w, w)],
+            selected: lookup,
+            onSelected: (word) => setState(() {
+              _activeWord = word;
+              _selectedSignId = null;
+            }),
+          )
+        : null;
+
+    final alternatives = signs.length > 1
+        ? _ChipGroup(
+            label: l10n.translMatches,
+            options: [for (final s in signs.take(12)) (s.id, s.word)],
+            selected: selected?.id,
+            onSelected: (id) => setState(() => _selectedSignId = id),
+          )
+        : null;
+
+    final header = Row(
+      children: [
+        Expanded(
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              displaySign?.word ?? l10n.translViewModeLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: displaySign == null
+                  ? AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary(context),
+                      fontWeight: FontWeight.w600,
+                    )
+                  : AppTextStyles.h3,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.s),
+        _ViewToggle(mode: viewMode),
+      ],
     );
 
     final stage = _SignStage(
       viewMode: viewMode,
       lookup: lookup,
       searching: searching,
+      failed: failed,
       sign: displaySign,
       detailLoading: detailAsync?.isLoading ?? false,
     );
 
-    final caption = displaySign == null
-        ? const SizedBox.shrink()
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(displaySign.word, style: AppTextStyles.h1),
-              if (displaySign.description?.isNotEmpty ?? false) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(displaySign.description!, style: AppTextStyles.bodyLarge),
-              ],
-            ],
-          );
-
-    final viewSelector = _ViewModeSelector(mode: viewMode);
+    final description = displaySign?.description?.trim() ?? '';
+    final details = [
+      if (description.isNotEmpty)
+        Text(description, style: AppTextStyles.bodyLarge),
+      ?alternatives,
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1090,17 +1233,23 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
               AppSpacing.l,
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: _sidePanelWidth,
+                  width: _sideColumnWidth,
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        statusLine,
-                        const SizedBox(height: AppSpacing.m),
-                        input,
+                        composer,
+                        if (wordPicker != null) ...[
+                          const SizedBox(height: AppSpacing.l),
+                          wordPicker,
+                        ],
+                        for (final detail in details) ...[
+                          const SizedBox(height: AppSpacing.l),
+                          detail,
+                        ],
                       ],
                     ),
                   ),
@@ -1110,11 +1259,9 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      viewSelector,
-                      const SizedBox(height: AppSpacing.m),
+                      header,
+                      const SizedBox(height: AppSpacing.s),
                       Expanded(child: stage),
-                      const SizedBox(height: AppSpacing.m),
-                      caption,
                     ],
                   ),
                 ),
@@ -1123,7 +1270,11 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
           );
         }
 
-        final stageHeight = (constraints.maxWidth * 0.9).clamp(240.0, 400.0);
+        // On phones the signs fill what the composer and title leave of the
+        // screen.
+        final stageHeight = !context.hasTopNavigation
+            ? (constraints.maxHeight - 136).clamp(380.0, 900.0)
+            : (constraints.maxWidth * 0.9).clamp(240.0, 420.0);
         return ListView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.m,
@@ -1132,15 +1283,19 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
             AppSpacing.xxl,
           ),
           children: [
-            statusLine,
-            const SizedBox(height: AppSpacing.m),
-            input,
+            composer,
+            if (wordPicker != null) ...[
+              const SizedBox(height: AppSpacing.m),
+              wordPicker,
+            ],
             const SizedBox(height: AppSpacing.l),
-            viewSelector,
-            const SizedBox(height: AppSpacing.m),
+            header,
+            const SizedBox(height: AppSpacing.s),
             SizedBox(height: stageHeight, child: stage),
-            const SizedBox(height: AppSpacing.m),
-            caption,
+            for (final detail in details) ...[
+              const SizedBox(height: AppSpacing.m),
+              detail,
+            ],
           ],
         );
       },
@@ -1160,166 +1315,229 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   }
 }
 
-class _InputPanel extends StatelessWidget {
-  const _InputPanel({
+/// Single-line composer: text, clear, dictation and translate in one bar.
+class _Composer extends StatelessWidget {
+  const _Composer({
     required this.controller,
     required this.focusNode,
     required this.isListening,
-    required this.words,
-    required this.activeWord,
-    required this.signs,
-    required this.selectedSignId,
     required this.onChanged,
     required this.onSubmit,
+    required this.onClear,
     required this.onToggleSpeech,
-    required this.onWordSelected,
-    required this.onSignSelected,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isListening;
-  final List<String> words;
-  final String activeWord;
-  final List<Sign> signs;
-  final String? selectedSignId;
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmit;
+  final VoidCallback onClear;
   final VoidCallback onToggleSpeech;
-  final ValueChanged<String> onWordSelected;
-  final ValueChanged<String> onSignSelected;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    const noBorder = InputBorder.none;
 
-    return AppPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: controller,
-            focusNode: focusNode,
-            textInputAction: TextInputAction.search,
-            style: AppTextStyles.bodyLarge,
-            onChanged: onChanged,
-            onSubmitted: (_) => onSubmit(),
-            decoration: InputDecoration(
-              labelText: l10n.translInputLabel,
-              hintText: l10n.typeWordPhrase,
-              helperText: context.isAtLeastTablet ? l10n.translInputHint : null,
-              prefixIcon: const Icon(AppIcons.keyboard),
-              suffixIcon: IconButton(
-                tooltip: isListening
-                    ? l10n.translStopDictation
-                    : l10n.translStartDictation,
-                constraints: const BoxConstraints(
-                  minWidth: kMinTouchTarget,
-                  minHeight: kMinTouchTarget,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListenableBuilder(
+          listenable: Listenable.merge([focusNode, controller]),
+          builder: (context, _) {
+            final focused = focusNode.hasFocus;
+            return AnimatedContainer(
+              duration: _motion(context),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.m, 4, 6, 4),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: focused ? scheme.primary : scheme.outlineVariant,
+                  width: focused ? 2 : 1,
                 ),
-                onPressed: onToggleSpeech,
-                icon: Icon(
-                  isListening ? AppIcons.stop : AppIcons.microphone,
-                  color: isListening ? AppColors.error : AppColors.primary,
-                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      label: l10n.translInputLabel,
+                      child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      minLines: 1,
+                      maxLines: 4,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.search,
+                      style: AppTextStyles.bodyLarge,
+                      onChanged: onChanged,
+                      onSubmitted: (_) => onSubmit(),
+                      decoration: InputDecoration(
+                        hintText: l10n.typeWordPhrase,
+                        filled: false,
+                        isDense: true,
+                        border: noBorder,
+                        enabledBorder: noBorder,
+                        focusedBorder: noBorder,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                    ),
+                  ),
+                  if (controller.text.isNotEmpty)
+                    IconButton(
+                      tooltip: l10n.translClear,
+                      onPressed: onClear,
+                      icon: const Icon(AppIcons.close, size: 20),
+                    ),
+                  IconButton(
+                    tooltip: isListening
+                        ? l10n.translStopDictation
+                        : l10n.translStartDictation,
+                    isSelected: isListening,
+                    style: isListening
+                        ? IconButton.styleFrom(
+                            backgroundColor: AppColors.error.withValues(alpha: 0.12),
+                          )
+                        : null,
+                    onPressed: onToggleSpeech,
+                    icon: Icon(
+                      isListening ? AppIcons.stop : AppIcons.microphone,
+                      color: isListening ? AppColors.error : scheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  IconButton.filled(
+                    tooltip: l10n.translate,
+                    onPressed: onSubmit,
+                    icon: const Icon(PhosphorIconsRegular.arrowRight),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (isListening)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.s, left: AppSpacing.m),
+            child: Semantics(
+              liveRegion: true,
+              child: Row(
+                children: [
+                  const Icon(AppIcons.microphone, size: 16, color: AppColors.error),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    l10n.translListening,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.m),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, _controlHeight),
-              ),
-              onPressed: onSubmit,
-              icon: const Icon(AppIcons.translate),
-              label: Text(l10n.translate),
-            ),
-          ),
-          if (words.length > 1) ...[
-            const SizedBox(height: AppSpacing.l),
-            Wrap(
-              spacing: AppSpacing.s,
-              runSpacing: AppSpacing.s,
-              children: [
-                for (final word in words.toSet())
-                  ChoiceChip(
-                    label: Text(word),
-                    selected: word == activeWord,
-                    onSelected: (_) => onWordSelected(word),
-                  ),
-              ],
-            ),
-          ],
-          if (signs.length > 1) ...[
-            const SizedBox(height: AppSpacing.l),
-            Semantics(
-              header: true,
-              child: Text(
-                l10n.translMatches,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Wrap(
-              spacing: AppSpacing.s,
-              runSpacing: AppSpacing.s,
-              children: [
-                for (final sign in signs.take(12))
-                  ChoiceChip(
-                    label: Text(sign.word),
-                    selected: sign.id == selectedSignId,
-                    onSelected: (_) => onSignSelected(sign.id),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _ViewModeSelector extends ConsumerWidget {
-  const _ViewModeSelector({required this.mode});
+/// Labelled row of choice chips (words of a phrase, alternative signs).
+class _ChipGroup extends StatelessWidget {
+  const _ChipGroup({
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+
+  /// `(value, text)` pairs.
+  final List<(String, String)> options;
+  final String? selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        Wrap(
+          spacing: AppSpacing.s,
+          runSpacing: AppSpacing.s,
+          children: [
+            for (final (value, text) in options)
+              ChoiceChip(
+                label: Text(text),
+                selected: value == selected,
+                showCheckmark: false,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+                onSelected: (_) => onSelected(value),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ViewToggle extends ConsumerWidget {
+  const _ViewToggle({required this.mode});
 
   final SignViewModeEnum mode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final options = [
+      (SignViewModeEnum.video, AppIcons.video, l10n.videoMode),
+      (SignViewModeEnum.landmarks, AppIcons.signLanguage, l10n.landmarks),
+      (SignViewModeEnum.model3d, PhosphorIconsRegular.cube, l10n.threeDModel),
+    ];
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SegmentedButton<SignViewModeEnum>(
-        showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(
-          minimumSize: const Size(0, kMinTouchTarget),
+    return Semantics(
+      container: true,
+      label: l10n.translViewModeLabel,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.circular),
         ),
-        segments: [
-          ButtonSegment(
-            value: SignViewModeEnum.video,
-            icon: const Icon(AppIcons.video),
-            label: Text(l10n.videoMode),
-          ),
-          ButtonSegment(
-            value: SignViewModeEnum.landmarks,
-            icon: const Icon(AppIcons.signLanguage),
-            label: Text(l10n.landmarks),
-          ),
-          ButtonSegment(
-            value: SignViewModeEnum.model3d,
-            icon: const Icon(PhosphorIconsRegular.cube),
-            label: Text(l10n.threeDModel),
-          ),
-        ],
-        selected: {mode},
-        onSelectionChanged: (value) =>
-            ref.read(signViewModeProvider.notifier).setMode(value.first),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (value, icon, label) in options)
+              Semantics(
+                selected: value == mode,
+                inMutuallyExclusiveGroup: true,
+                child: IconButton(
+                  tooltip: label,
+                  isSelected: value == mode,
+                  style: IconButton.styleFrom(
+                    backgroundColor: value == mode ? scheme.primary : null,
+                    foregroundColor:
+                        value == mode ? scheme.onPrimary : scheme.onSurfaceVariant,
+                  ),
+                  onPressed: () =>
+                      ref.read(signViewModeProvider.notifier).setMode(value),
+                  icon: Icon(icon, size: 20),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1330,6 +1548,7 @@ class _SignStage extends StatelessWidget {
     required this.viewMode,
     required this.lookup,
     required this.searching,
+    required this.failed,
     required this.sign,
     required this.detailLoading,
   });
@@ -1337,6 +1556,7 @@ class _SignStage extends StatelessWidget {
   final SignViewModeEnum viewMode;
   final String lookup;
   final bool searching;
+  final bool failed;
   final Sign? sign;
   final bool detailLoading;
 
@@ -1344,8 +1564,11 @@ class _SignStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final current = sign;
+    const loading = Skeleton(
+      child: SkeletonBlock(height: double.infinity, radius: AppRadius.l),
+    );
 
-    Widget content;
+    final Widget content;
     if (viewMode == SignViewModeEnum.model3d) {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1365,30 +1588,20 @@ class _SignStage extends StatelessWidget {
     } else if (searching) {
       content = Skeleton(
         label: l10n.translSearching,
-        child: const SkeletonBlock(
-          height: double.infinity,
-          radius: AppRadius.l,
-        ),
+        child: const SkeletonBlock(height: double.infinity, radius: AppRadius.l),
       );
+    } else if (failed) {
+      content = _StagePlaceholder(icon: AppIcons.error, title: l10n.errorGeneric);
     } else if (current == null) {
       content = _StagePlaceholder(
         icon: lookup.isEmpty ? AppIcons.signLanguage : AppIcons.search,
-        title: lookup.isEmpty
-            ? l10n.translEmptyPrompt
-            : l10n.translNoMatch(lookup),
+        title: lookup.isEmpty ? l10n.translEmptyPrompt : l10n.translNoMatch(lookup),
         message: lookup.isEmpty ? null : l10n.translNoMatchHint,
       );
     } else if (viewMode == SignViewModeEnum.landmarks) {
       content = detailLoading && current.landmarkData == null
-          ? const Skeleton(
-              child: SkeletonBlock(
-                height: double.infinity,
-                radius: AppRadius.l,
-              ),
-            )
-          : LandmarkViewer(
-              points: SignMedia.parseLandmarks(current.landmarkData),
-            );
+          ? loading
+          : LandmarkViewer(landmarks: SignLandmarks.parse(current.landmarkData));
     } else {
       content = Padding(
         padding: const EdgeInsets.all(AppSpacing.s),
@@ -1399,17 +1612,27 @@ class _SignStage extends StatelessWidget {
     return Semantics(
       container: true,
       label: current == null ? null : l10n.translShownSign(current.word),
-      child: AppPanel(padding: EdgeInsets.zero, child: content),
+      child: AppPanel(
+        padding: EdgeInsets.zero,
+        child: AnimatedSwitcher(
+          duration: _motion(context),
+          // The 3D avatar ignores the text: keep it mounted while typing.
+          child: KeyedSubtree(
+            key: ValueKey(
+              viewMode == SignViewModeEnum.model3d
+                  ? viewMode
+                  : '$viewMode-${current?.id ?? lookup}-$searching-$failed',
+            ),
+            child: content,
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _StagePlaceholder extends StatelessWidget {
-  const _StagePlaceholder({
-    required this.icon,
-    required this.title,
-    this.message,
-  });
+  const _StagePlaceholder({required this.icon, required this.title, this.message});
 
   final IconData icon;
   final String title;
@@ -1417,31 +1640,40 @@ class _StagePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondary = AppColors.textSecondary(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.l),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: AppColors.primary),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
+    return Semantics(
+      liveRegion: true,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: Icon(icon, size: 30, color: AppColors.primary),
               ),
-            ),
-            if (message != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                message!,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(color: secondary),
+              const SizedBox(height: AppSpacing.m),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
+              if (message != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary(context),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1458,23 +1690,18 @@ class _AvatarView extends ConsumerWidget {
       child: SkeletonBlock(height: double.infinity, radius: AppRadius.l),
     );
     Widget failure(Object e) => _StagePlaceholder(
-      icon: AppIcons.error,
-      title: l10n.translLoadError,
-      message: ref.userErrorText(e, l10n),
-    );
+          icon: AppIcons.error,
+          title: l10n.translLoadError,
+          message: ref.userErrorText(e, l10n),
+        );
 
-    return ref
-        .watch(threeDSettingsProvider)
-        .when(
+    return ref.watch(threeDSettingsProvider).when(
           loading: () => loading,
           error: (e, _) => failure(e),
           data: (settings) {
-            final characterId =
-                settings['selectedCharacterId'] as String? ??
+            final characterId = settings['selectedCharacterId'] as String? ??
                 CharacterConstants.defaultCharacterId;
-            return ref
-                .watch(characterByIdProvider(characterId))
-                .when(
+            return ref.watch(characterByIdProvider(characterId)).when(
                   loading: () => loading,
                   error: (e, _) => failure(e),
                   data: (character) {
@@ -1499,7 +1726,7 @@ class _AvatarView extends ConsumerWidget {
                       cameraOrbit: '0deg 75deg 2.5m',
                       cameraTarget: '0m 1.2m 0m',
                       fieldOfView: '30deg',
-                      // Axe vertical verrouillé à 75° : l'avatar reste de face.
+                      // Vertical axis locked at 75°: the avatar stays facing.
                       minCameraOrbit: 'auto 75deg auto',
                       maxCameraOrbit: 'auto 75deg auto',
                     );
