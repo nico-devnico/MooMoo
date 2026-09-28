@@ -606,6 +606,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleExpert => 'Sign language expert';
 
   @override
+  String get roleOwner => 'Owner';
+
+  @override
+  String get ownerProtectedHint =>
+      'System owner account: it cannot be edited, suspended or deleted.';
+
+  @override
+  String get ownerOnlyAdminHint =>
+      'Only the system owner can grant or remove the admin role and manage administrator accounts.';
+
+  @override
+  String get ownerOnlySettings =>
+      'Only the system owner can change these settings.';
+
+  @override
   String get statusActive => 'Active';
 
   @override

@@ -824,6 +824,7 @@ class _SignAdminTile extends StatelessWidget {
                     : CachedNetworkImage(
                         imageUrl: sign.thumbnailUrl!,
                         fit: BoxFit.cover,
+                        memCacheWidth: 256,
                         placeholder: (_, _) => const SizedBox.shrink(),
                         errorWidget: (_, _, _) => placeholder,
                       ),

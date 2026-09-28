@@ -59,6 +59,46 @@ async function rolesOf(client, userId) {
   return (data || []).map((r) => r.role).sort();
 }
 
+const OWNER_ROLE = 'super_admin';
+
+/**
+ * Règles du propriétaire, vérifiées ici parce que les écritures faites avec la
+ * clé service arrivent en base sans auth.uid() : les triggers protègent le
+ * propriétaire mais ne savent pas quel admin agit.
+ */
+async function assertOwnerRules(req, client, targetId, { adminOnly = false } = {}) {
+  const [callerRoles, targetRoles] = await Promise.all([
+    rolesOf(client, req.user.id),
+    rolesOf(client, targetId),
+  ]);
+  req.isOwner = callerRoles.includes(OWNER_ROLE);
+  if (targetRoles.includes(OWNER_ROLE) && targetId !== req.user.id) {
+    throw userError(
+      403,
+      'Le propriétaire du système ne peut être ni modifié, ni suspendu, ni supprimé.',
+      'protected_owner',
+    );
+  }
+  if (adminOnly && targetRoles.includes('admin') && !req.isOwner) {
+    throw userError(
+      403,
+      'Seul le propriétaire du système peut gérer les comptes administrateurs.',
+      'owner_only',
+    );
+  }
+  return { callerRoles, targetRoles };
+}
+
+function assertOwnerForAdminRole(req) {
+  if (!req.isOwner) {
+    throw userError(
+      403,
+      'Seul le propriétaire du système peut accorder ou retirer le rôle admin.',
+      'owner_only',
+    );
+  }
+}
+
 /**
  * Nombre d'admins effectifs hors [excludeId].
  *
@@ -209,6 +249,8 @@ adminRouter.patch('/users/:id/admin', async (req, res, next) => {
     const client = dbPreferService(req.accessToken);
     const makeAdmin = Boolean(req.body?.isAdmin);
     const targetId = req.params.id;
+    await assertOwnerRules(req, client, targetId);
+    assertOwnerForAdminRole(req);
 
     if (!makeAdmin && targetId === req.user.id) {
       throw Object.assign(
@@ -254,6 +296,10 @@ adminRouter.post('/users', async (req, res, next) => {
     const password = String(req.body?.password || '');
     const displayName = String(req.body?.displayName || '').trim();
     const roles = normalizeRoles(req.body?.roles);
+    if (roles.includes('admin')) {
+      await assertOwnerRules(req, dbForUser(req.accessToken), req.user.id);
+      assertOwnerForAdminRole(req);
+    }
 
     if (!email || !password) throw badRequest('email et password requis');
     if (password.length < 8) {
@@ -334,6 +380,7 @@ adminRouter.patch('/users/:id', async (req, res, next) => {
   try {
     await assertAdmin(req);
     const client = dbPreferService(req.accessToken);
+    await assertOwnerRules(req, client, req.params.id);
 
     const patch = { updated_at: new Date().toISOString() };
     if (req.body?.displayName !== undefined) {
@@ -389,6 +436,7 @@ adminRouter.delete('/users/:id', async (req, res, next) => {
     }
 
     const reader = dbForUser(req.accessToken);
+    await assertOwnerRules(req, reader, req.params.id, { adminOnly: true });
     const { data: target } = await reader
       .from('profiles')
       .select('is_admin')
@@ -431,6 +479,7 @@ adminRouter.post('/users/:id/suspend', async (req, res, next) => {
     if (!reason) throw badRequest('reason requis pour suspendre un compte');
 
     const client = dbPreferService(req.accessToken);
+    await assertOwnerRules(req, client, req.params.id, { adminOnly: true });
     const { data, error } = await client
       .from('profiles')
       .update({
@@ -460,6 +509,7 @@ adminRouter.post('/users/:id/unsuspend', async (req, res, next) => {
   try {
     await assertAdmin(req);
     const client = dbPreferService(req.accessToken);
+    await assertOwnerRules(req, client, req.params.id, { adminOnly: true });
     const { data, error } = await client
       .from('profiles')
       .update({
@@ -501,7 +551,11 @@ adminRouter.put('/users/:id/roles', async (req, res, next) => {
       );
     }
 
-    const current = await rolesOf(client, targetId);
+    const { targetRoles } = await assertOwnerRules(req, client, targetId);
+    const current = targetRoles.filter((r) => r !== OWNER_ROLE);
+    if (current.includes('admin') !== roles.includes('admin')) {
+      assertOwnerForAdminRole(req);
+    }
     const losesAdmin = current.includes('admin') && !roles.includes('admin');
     if (losesAdmin && (await otherAdminCount(client, targetId)) === 0) {
       throw Object.assign(

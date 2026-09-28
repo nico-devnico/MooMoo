@@ -1256,6 +1256,30 @@ abstract class AppLocalizations {
   /// **'Expert en langue des signes'**
   String get roleExpert;
 
+  /// No description provided for @roleOwner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire'**
+  String get roleOwner;
+
+  /// No description provided for @ownerProtectedHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte du propriétaire du système : il ne peut être ni modifié, ni suspendu, ni supprimé.'**
+  String get ownerProtectedHint;
+
+  /// No description provided for @ownerOnlyAdminHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul le propriétaire du système peut accorder ou retirer le rôle admin, et gérer les comptes administrateurs.'**
+  String get ownerOnlyAdminHint;
+
+  /// No description provided for @ownerOnlySettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul le propriétaire du système peut modifier ces réglages.'**
+  String get ownerOnlySettings;
+
   /// No description provided for @statusActive.
   ///
   /// In fr, this message translates to:

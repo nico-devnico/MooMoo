@@ -154,6 +154,9 @@ class SignCard extends StatelessWidget {
               imageUrl: sign.thumbnailUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
+              // Grid tiles never show more than this; decoding the full frame
+              // for every card wastes memory while scrolling.
+              memCacheWidth: 480,
               placeholder: (context, url) =>
                   Container(color: AppColors.neutral(context)),
               errorWidget: (context, url, error) => _buildPlaceholder(context),

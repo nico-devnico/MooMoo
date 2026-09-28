@@ -73,7 +73,16 @@ Les rôles sont stockés dans la table `user_roles` (`admin`, `teacher`, `sign_e
 | Utilisateur | Traduire, consulter le dictionnaire, apprendre, gérer son profil, ses favoris et son historique, proposer des contributions (si elles sont ouvertes) |
 | Enseignant (`teacher`) | Tout ce qui précède + gérer les contenus d'apprentissage, consulter le tableau de bord enseignant |
 | Expert (`sign_expert`) | Tout ce qui précède pour l'utilisateur + créer et modifier des signes (sans les supprimer), relire les contributions, tableau de bord expert |
-| Administrateur (`admin`) | Tout : utilisateurs (création, rôles, suspension, suppression), dictionnaire (y compris import et suppression), apprentissage, modèles ML, réglages de l'application (nom, logo, maintenance, ouverture des contributions) |
+| Administrateur (`admin`) | Utilisateurs non-admins (création, rôles enseignant/expert, suspension, suppression), dictionnaire (y compris import et suppression), apprentissage, modèles ML. Les réglages sont visibles en lecture seule |
+| Propriétaire (`super_admin`) | Tout ce que fait un admin + accorder ou retirer le rôle admin, suspendre, réactiver ou supprimer un autre admin, modifier les réglages de l'application (nom, logo, maintenance, ouverture des contributions) |
+
+### Propriétaire du système (super admin)
+
+Un seul compte porte le rôle `super_admin` (index unique), en plus du rôle `admin`. À la migration `20260928000014_super_admin.sql`, le plus ancien admin l'a reçu.
+
+Il est protégé par des triggers Postgres, qui s'appliquent aussi à la clé service et à l'éditeur SQL du tableau de bord Supabase. Son compte ne peut être ni supprimé (`auth.users`, `profiles`), ni désactivé (suppression douce, bannissement), ni suspendu. Il ne peut pas perdre les rôles `admin` et `super_admin`, et personne d'autre que lui ne peut modifier son profil ou ses rôles. Il ne peut pas non plus se supprimer lui-même.
+
+La propriété se transmet uniquement par `select transfer_ownership('<uuid du nouvel owner>')`, appelée par le propriétaire en place, et le destinataire doit déjà être admin. Limite : un superutilisateur Postgres peut toujours désactiver un trigger. Ce qui est bloqué, ce sont les suppressions et modifications ordinaires, pas une modification délibérée du schéma.
 
 Les permissions sont appliquées **côté base de données** (politiques RLS et fonctions SQL `current_user_has_role`, `is_current_user_admin`, `current_user_can_edit_dictionary`, `current_user_can_edit_learning`) et **côté API** (`backend/src/lib/roles.js`). L'interface masque les écrans non autorisés, mais ce masquage n'est pas une protection en soi.
 

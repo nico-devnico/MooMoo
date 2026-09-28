@@ -8,7 +8,6 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
-import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/app_settings_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_nav_bar.dart';
@@ -79,9 +78,6 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-
-    // Watch profile to force rebuild on locale/theme change
-    ref.watch(userProfileProvider);
 
     if (context.hasTopNavigation) {
       return Scaffold(

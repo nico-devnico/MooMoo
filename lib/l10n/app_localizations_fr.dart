@@ -610,6 +610,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get roleExpert => 'Expert en langue des signes';
 
   @override
+  String get roleOwner => 'Propriétaire';
+
+  @override
+  String get ownerProtectedHint =>
+      'Compte du propriétaire du système : il ne peut être ni modifié, ni suspendu, ni supprimé.';
+
+  @override
+  String get ownerOnlyAdminHint =>
+      'Seul le propriétaire du système peut accorder ou retirer le rôle admin, et gérer les comptes administrateurs.';
+
+  @override
+  String get ownerOnlySettings =>
+      'Seul le propriétaire du système peut modifier ces réglages.';
+
+  @override
   String get statusActive => 'Actif';
 
   @override

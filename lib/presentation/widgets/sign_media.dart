@@ -58,11 +58,33 @@ class SignMedia extends StatefulWidget {
 class _SignMediaState extends State<SignMedia> {
   VideoPlayerController? _controller;
   bool _videoFailed = false;
+  bool _visible = true;
+  List<LandmarkPoint>? _landmarks;
+
+  List<LandmarkPoint> get _parsedLandmarks =>
+      _landmarks ??= SignMedia.parseLandmarks(widget.sign.landmarkData);
 
   @override
   void initState() {
     super.initState();
     _initVideo();
+  }
+
+  /// The navigation shell keeps hidden tabs mounted: a looping video there
+  /// would keep decoding frames for nobody.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible == _visible) return;
+    _visible = visible;
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (!visible) {
+      controller.pause();
+    } else if (widget.autoplay) {
+      controller.play();
+    }
   }
 
   @override
@@ -72,6 +94,7 @@ class _SignMediaState extends State<SignMedia> {
       _controller?.dispose();
       _controller = null;
       _videoFailed = false;
+      _landmarks = null;
       _initVideo();
     }
   }
@@ -86,7 +109,7 @@ class _SignMediaState extends State<SignMedia> {
       if (!mounted || _controller != controller) return;
       await controller.setVolume(0);
       await controller.setLooping(true);
-      if (widget.autoplay) await controller.play();
+      if (widget.autoplay && _visible) await controller.play();
       if (mounted) setState(() {});
     }).catchError((Object _) {
       if (mounted && _controller == controller) {
@@ -161,7 +184,7 @@ class _SignMediaState extends State<SignMedia> {
       );
     }
 
-    final landmarks = SignMedia.parseLandmarks(widget.sign.landmarkData);
+    final landmarks = _parsedLandmarks;
     if (widget.sign.thumbnailUrl != null) {
       return _thumbnailOr(_placeholder(l10n));
     }
@@ -177,6 +200,7 @@ class _SignMediaState extends State<SignMedia> {
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.contain,
+      memCacheWidth: 720,
       placeholder: (_, _) => const SizedBox.shrink(),
       errorWidget: (_, _, _) => fallback,
     );

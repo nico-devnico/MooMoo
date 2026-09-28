@@ -14,15 +14,16 @@ class MooMooApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final profileAsync = ref.watch(userProfileProvider);
-    final profile = profileAsync.value;
-    
-    final localeCode = profile?.locale ?? 'fr';
-    
+    // Only these two fields matter here: watching the whole profile rebuilt
+    // the entire app on every avatar, bio or progress update.
+    final localeCode =
+        ref.watch(userProfileProvider.select((p) => p.value?.locale)) ?? 'fr';
+    final theme = ref.watch(userProfileProvider.select((p) => p.value?.theme));
+
     // The white and blue identity is the default; following the OS is opt-in
     // through the settings screen, otherwise the light theme never shows on a
     // machine that prefers dark.
-    final themeMode = switch (profile?.theme) {
+    final themeMode = switch (theme) {
       'dark' => ThemeMode.dark,
       'system' => ThemeMode.system,
       _ => ThemeMode.light,

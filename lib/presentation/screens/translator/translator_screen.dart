@@ -632,8 +632,8 @@ class _MediaStage extends StatelessWidget {
       content = const CameraView();
     } else if (isImage) {
       content = kIsWeb
-          ? Image.network(file.path, fit: BoxFit.contain)
-          : Image.file(File(file.path), fit: BoxFit.contain);
+          ? Image.network(file.path, fit: BoxFit.contain, cacheWidth: 1280)
+          : Image.file(File(file.path), fit: BoxFit.contain, cacheWidth: 1280);
     } else if (chewieController != null) {
       content = Chewie(controller: chewieController!);
     } else {

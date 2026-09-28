@@ -11,6 +11,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/app_settings.dart';
 import '../../../domain/providers/app_settings_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
+import '../../../domain/providers/workspace_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_panel.dart';
@@ -60,10 +61,44 @@ class GeneralSettingsPanel extends ConsumerWidget {
       ),
       // Keyed on the saved version so a save (or a change made elsewhere)
       // resets the form to what is actually stored.
-      data: (settings) => _GeneralSettingsForm(
-        key: ValueKey(settings.updatedAt),
-        initial: settings,
+      data: (settings) => _OwnerOnly(
+        canEdit: ref.watch(isSuperAdminProvider),
+        child: _GeneralSettingsForm(
+          key: ValueKey(settings.updatedAt),
+          initial: settings,
+        ),
       ),
+    );
+  }
+}
+
+/// Other admins see the configuration read-only; the database refuses their
+/// updates anyway.
+class _OwnerOnly extends StatelessWidget {
+  const _OwnerOnly({required this.canEdit, required this.child});
+
+  final bool canEdit;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (canEdit) return child;
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppPanel(
+          child: Row(
+            children: [
+              const Icon(AppIcons.locked, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(child: Text(l10n.ownerOnlySettings)),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.l),
+        AbsorbPointer(child: Opacity(opacity: 0.6, child: child)),
+      ],
     );
   }
 }

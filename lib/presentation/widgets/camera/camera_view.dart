@@ -20,6 +20,8 @@ class CameraView extends ConsumerStatefulWidget {
 
 class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  late final AppLifecycleListener _lifecycle;
+  bool _appVisible = true;
   double _baseScale = 1.0;
   double _currentScale = 1.0;
 
@@ -29,11 +31,26 @@ class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProvid
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    );
+    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+  }
+
+  void _onLifecycle(AppLifecycleState state) {
+    final visible = state == AppLifecycleState.resumed || state == AppLifecycleState.inactive;
+    if (visible != _appVisible && mounted) setState(() => _appVisible = visible);
+  }
+
+  void _syncScanAnimation(bool active) {
+    if (active && !_animationController.isAnimating) {
+      _animationController.repeat(reverse: true);
+    } else if (!active && _animationController.isAnimating) {
+      _animationController.stop();
+    }
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -65,6 +82,14 @@ class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProvid
     final isTranslating = ref.watch(translatorStateProvider);
     final settings = ref.watch(cameraSettingsProvider);
     final isRecording = settings['isRecording'] ?? false;
+    _syncScanAnimation(isTranslating);
+
+    // Not watching the auto-dispose provider releases the camera: nothing to
+    // film while the tab is hidden (the shell keeps it mounted) or the app is
+    // in the background.
+    if (!_appVisible || !TickerMode.valuesOf(context).enabled) {
+      return const ColoredBox(color: Colors.black);
+    }
 
     // On Web, only initialize camera if translating is active
     if (kIsWeb && !isTranslating) {
@@ -132,11 +157,16 @@ class _CameraViewState extends ConsumerState<CameraView> with SingleTickerProvid
                 ),
               ),
               
-              // Overlay
-              CustomPaint(
-                painter: CameraOverlayPainter(
-                  isRecording: isRecording,
-                  animation: _animationController,
+              // Overlay, repainted every frame while scanning: isolated so the
+              // preview and controls are not repainted with it.
+              IgnorePointer(
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: CameraOverlayPainter(
+                      isRecording: isRecording,
+                      animation: _animationController,
+                    ),
+                  ),
                 ),
               ),
 

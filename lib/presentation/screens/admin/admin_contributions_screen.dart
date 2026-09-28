@@ -562,6 +562,7 @@ class _Thumbnail extends StatelessWidget {
                   : CachedNetworkImage(
                       imageUrl: url!,
                       fit: BoxFit.cover,
+                      memCacheWidth: 320,
                       placeholder: (_, _) => const SizedBox.shrink(),
                       errorWidget: (_, _, _) => placeholder,
                     ),

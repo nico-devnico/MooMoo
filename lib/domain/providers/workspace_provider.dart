@@ -18,6 +18,12 @@ final currentUserRolesProvider = FutureProvider<List<String>>((ref) async {
   return ref.watch(workspaceRepositoryProvider).currentRoles();
 });
 
+/// The system owner: only one account, protected by the database.
+final isSuperAdminProvider = Provider<bool>((ref) {
+  final roles = ref.watch(currentUserRolesProvider).value ?? const [];
+  return roles.contains(AppRole.superAdmin);
+});
+
 /// Admins can open every space; the database applies the same rule.
 final isTeacherProvider = Provider<bool>((ref) {
   final roles = ref.watch(currentUserRolesProvider).value ?? const [];

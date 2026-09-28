@@ -4,10 +4,21 @@ import 'dart:async';
 
 part 'camera_provider.g.dart';
 
+/// Inference only needs single stills of the signer's hands: medium keeps them
+/// sharp enough while costing far less sensor, ISP and battery than 720p.
+const _capturePreset = ResolutionPreset.medium;
+
 @riverpod
 class CameraState extends _$CameraState {
+  CameraController? _active;
+
   @override
   FutureOr<CameraController?> build() async {
+    ref.onDispose(() {
+      _active?.dispose();
+      _active = null;
+    });
+
     final cameras = await availableCameras();
     if (cameras.isEmpty) return null;
 
@@ -16,15 +27,13 @@ class CameraState extends _$CameraState {
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       ),
-      ResolutionPreset.high,
-      enableAudio: true,
+      _capturePreset,
+      enableAudio: false,
     );
 
     try {
       await controller.initialize();
-      ref.onDispose(() {
-        controller.dispose();
-      });
+      _active = controller;
       return controller;
     } catch (e) {
       controller.dispose();
@@ -45,15 +54,17 @@ class CameraState extends _$CameraState {
 
     if (newCamera == currentCamera) return;
 
+    _active = null;
     await controller.dispose();
-    
+
     final newController = CameraController(
       newCamera,
-      ResolutionPreset.high,
-      enableAudio: true,
+      _capturePreset,
+      enableAudio: false,
     );
 
     await newController.initialize();
+    _active = newController;
     state = AsyncData(newController);
   }
 
@@ -95,7 +106,7 @@ class CameraSettings extends _$CameraSettings {
   Map<String, dynamic> build() {
     return {
       'showGrid': false,
-      'resolution': ResolutionPreset.high,
+      'resolution': _capturePreset,
       'flashMode': FlashMode.off,
       'isRecording': false,
       'recordingDuration': 0,

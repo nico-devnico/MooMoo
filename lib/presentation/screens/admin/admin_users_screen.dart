@@ -9,6 +9,7 @@ import '../../../data/models/user_profile.dart';
 import '../../../data/repositories/admin_repository.dart';
 import '../../../domain/providers/admin_provider.dart';
 import '../../../domain/providers/auth_provider.dart';
+import '../../../domain/providers/workspace_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_badge.dart';
@@ -50,6 +51,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     final l10n = AppLocalizations.of(context)!;
     final usersAsync = ref.watch(adminUsersProvider(_filter));
     final currentUser = ref.watch(currentUserProvider);
+    final callerIsOwner = ref.watch(isSuperAdminProvider);
 
     return AdminShell(
       selectedIndex: 4,
@@ -149,21 +151,33 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                   separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s),
                   itemBuilder: (context, index) {
                     final user = users[index];
+                    final isSelf = currentUser?.id == user.id;
+                    final targetIsOwner = user.roles.contains(AppRole.superAdmin);
+                    final targetIsAdmin =
+                        user.isAdmin || user.roles.contains(AppRole.admin);
+                    // Mirrors the database triggers so the menu never offers
+                    // an action the server would refuse.
+                    final canTouch = !targetIsOwner || isSelf;
+                    final canManageAccount = !targetIsOwner &&
+                        !isSelf &&
+                        (callerIsOwner || !targetIsAdmin);
                     return Align(
                       alignment: Alignment.centerLeft,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: _UserAdminTile(
                           profile: user,
-                          isSelf: currentUser?.id == user.id,
-                          onEdit: () => _editUser(user),
-                          onRoles: () => _editRoles(user),
-                          onSuspend: user.status == 'suspended'
-                              ? () => _unsuspend(user)
-                              : () => _suspend(user),
-                          onDelete: currentUser?.id == user.id
+                          isSelf: isSelf,
+                          onEdit: canTouch ? () => _editUser(user) : null,
+                          onRoles: canTouch
+                              ? () => _editRoles(user, canGrantAdmin: callerIsOwner)
+                              : null,
+                          onSuspend: !canManageAccount
                               ? null
-                              : () => _delete(user),
+                              : user.status == 'suspended'
+                                  ? () => _unsuspend(user)
+                                  : () => _suspend(user),
+                          onDelete: canManageAccount ? () => _delete(user) : null,
                         ),
                       ),
                     );
@@ -254,12 +268,17 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     );
   }
 
-  Future<void> _editRoles(UserProfile user) async {
+  Future<void> _editRoles(UserProfile user, {required bool canGrantAdmin}) async {
     final l10n = AppLocalizations.of(context)!;
+    final isOwnerAccount = user.roles.contains(AppRole.superAdmin);
     final result = await _showForm(
       title: l10n.manageRoles,
       fields: const [],
-      roles: user.roles,
+      roles: user.roles.where(AppRole.all.contains).toList(),
+      lockedRoles: {
+        if (!canGrantAdmin || isOwnerAccount) AppRole.admin,
+      },
+      hint: canGrantAdmin ? null : l10n.ownerOnlyAdminHint,
     );
     if (result == null) return;
     await _run(() => _repo.setUserRoles(user.id, result.roles), l10n.userUpdated);
@@ -316,6 +335,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     required String title,
     required List<_Field> fields,
     List<String>? roles,
+    Set<String> lockedRoles = const {},
+    String? hint,
   }) {
     return showDialog<_FormResult>(
       context: context,
@@ -323,6 +344,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         title: title,
         fields: fields,
         initialRoles: roles,
+        lockedRoles: lockedRoles,
+        hint: hint,
       ),
     );
   }
@@ -355,11 +378,15 @@ class _UserFormDialog extends StatefulWidget {
     required this.title,
     required this.fields,
     this.initialRoles,
+    this.lockedRoles = const {},
+    this.hint,
   });
 
   final String title;
   final List<_Field> fields;
   final List<String>? initialRoles;
+  final Set<String> lockedRoles;
+  final String? hint;
 
   @override
   State<_UserFormDialog> createState() => _UserFormDialogState();
@@ -426,14 +453,20 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                     contentPadding: EdgeInsets.zero,
                     value: _roles.contains(role),
                     title: Text(roleLabels[role]!),
-                    onChanged: (checked) => setState(() {
-                      if (checked ?? false) {
-                        _roles.add(role);
-                      } else {
-                        _roles.remove(role);
-                      }
-                    }),
+                    onChanged: widget.lockedRoles.contains(role)
+                        ? null
+                        : (checked) => setState(() {
+                              if (checked ?? false) {
+                                _roles.add(role);
+                              } else {
+                                _roles.remove(role);
+                              }
+                            }),
                   ),
+              if (widget.hint != null) ...[
+                const SizedBox(height: AppSpacing.s),
+                Text(widget.hint!, style: AppTextStyles.bodySmall),
+              ],
             ],
           ),
         ),
@@ -463,17 +496,17 @@ class _UserAdminTile extends StatelessWidget {
   const _UserAdminTile({
     required this.profile,
     required this.isSelf,
-    required this.onEdit,
-    required this.onRoles,
-    required this.onSuspend,
+    this.onEdit,
+    this.onRoles,
+    this.onSuspend,
     this.onDelete,
   });
 
   final UserProfile profile;
   final bool isSelf;
-  final VoidCallback onEdit;
-  final VoidCallback onRoles;
-  final VoidCallback onSuspend;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRoles;
+  final VoidCallback? onSuspend;
   final VoidCallback? onDelete;
 
   @override
@@ -482,10 +515,13 @@ class _UserAdminTile extends StatelessWidget {
     final name = profile.displayName ?? profile.email ?? l10n.guest;
     final suspended = profile.status == 'suspended';
     final roleLabels = {
+      AppRole.superAdmin: l10n.roleOwner,
       AppRole.admin: l10n.adminRole,
       AppRole.teacher: l10n.roleTeacher,
       AppRole.signExpert: l10n.roleExpert,
     };
+    final hasActions =
+        onEdit != null || onRoles != null || onSuspend != null || onDelete != null;
 
     return AppCard(
       child: Row(
@@ -515,7 +551,9 @@ class _UserAdminTile extends StatelessWidget {
                     for (final role in profile.roles)
                       AppBadge(
                         label: roleLabels[role] ?? role,
-                        color: AppColors.primary,
+                        color: role == AppRole.superAdmin
+                            ? AppColors.warning
+                            : AppColors.primary,
                       ),
                     if (isSelf) AppBadge(label: l10n.you, color: AppColors.info),
                   ],
@@ -523,32 +561,44 @@ class _UserAdminTile extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuButton<String>(
-            tooltip: l10n.manageRoles,
-            icon: const Icon(AppIcons.settings),
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  onEdit();
-                case 'roles':
-                  onRoles();
-                case 'suspend':
-                  onSuspend();
-                case 'delete':
-                  onDelete?.call();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'edit', child: Text(l10n.editUser)),
-              PopupMenuItem(value: 'roles', child: Text(l10n.manageRoles)),
-              PopupMenuItem(
-                value: 'suspend',
-                child: Text(suspended ? l10n.unsuspendAccount : l10n.suspendAccount),
+          if (!hasActions)
+            Tooltip(
+              message: l10n.ownerProtectedHint,
+              child: const Padding(
+                padding: EdgeInsets.all(AppSpacing.s),
+                child: Icon(AppIcons.locked, color: AppColors.warning),
               ),
-              if (onDelete != null)
-                PopupMenuItem(value: 'delete', child: Text(l10n.deleteAccount)),
-            ],
-          ),
+            )
+          else
+            PopupMenuButton<String>(
+              tooltip: l10n.manageRoles,
+              icon: const Icon(AppIcons.settings),
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    onEdit?.call();
+                  case 'roles':
+                    onRoles?.call();
+                  case 'suspend':
+                    onSuspend?.call();
+                  case 'delete':
+                    onDelete?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  PopupMenuItem(value: 'edit', child: Text(l10n.editUser)),
+                if (onRoles != null)
+                  PopupMenuItem(value: 'roles', child: Text(l10n.manageRoles)),
+                if (onSuspend != null)
+                  PopupMenuItem(
+                    value: 'suspend',
+                    child: Text(suspended ? l10n.unsuspendAccount : l10n.suspendAccount),
+                  ),
+                if (onDelete != null)
+                  PopupMenuItem(value: 'delete', child: Text(l10n.deleteAccount)),
+              ],
+            ),
         ],
       ),
     );

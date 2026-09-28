@@ -16,6 +16,10 @@ class AppRole {
   static const teacher = 'teacher';
   static const signExpert = 'sign_expert';
 
+  /// Propriétaire du système : jamais attribuable depuis l'app, il se transmet
+  /// par `transfer_ownership()` et la base le protège.
+  static const superAdmin = 'super_admin';
+
   static const all = <String>[admin, teacher, signExpert];
 }
 
@@ -258,7 +262,9 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<List<String>> setUserRoles(String userId, List<String> roles) async {
     final requested = {...roles}.where(AppRole.all.contains).toList()..sort();
-    final current = (await _rolesFor([userId]))[userId] ?? const <String>[];
+    final current = ((await _rolesFor([userId]))[userId] ?? const <String>[])
+        .where(AppRole.all.contains)
+        .toList();
 
     final losesAdmin =
         current.contains(AppRole.admin) && !requested.contains(AppRole.admin);
