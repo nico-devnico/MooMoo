@@ -23,8 +23,11 @@ class SpellingBuffer {
   String? _lastCommitted;
   DateTime? _lastAt;
 
-  String get text => _chars.join().trimRight();
-
+  String get text {
+    final s = _chars.join();
+    if (s.endsWith(' ')) return '${s.trimRight()} ';
+    return s;
+  }
   /// Met à jour le tampon avec une prédiction frame.
   /// Retourne la lettre réellement commitée, ou null.
   String? update(String? label, double confidence) {

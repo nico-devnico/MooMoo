@@ -10,6 +10,8 @@ void main() {
     expect(buf.update('A', 0.9), 'A');
     expect(buf.text, 'HI A');
     expect(buf.update('del', 0.9), 'del');
+    expect(buf.text, 'HI ');
+    expect(buf.update('del', 0.9), 'del');
     expect(buf.text, 'HI');
     expect(buf.update('nothing', 0.9), isNull);
     expect(buf.text, 'HI');

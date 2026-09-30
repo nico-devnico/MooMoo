@@ -24,6 +24,8 @@ abstract class MlModelRepository {
     bool reset = false,
     double threshold = 0.55,
     bool singleShot = false,
+    bool? handDetected,
+    bool live = false,
   });
 }
 
@@ -203,6 +205,8 @@ class MlModelRepositoryImpl implements MlModelRepository {
     bool reset = false,
     double threshold = 0.55,
     bool singleShot = false,
+    bool? handDetected,
+    bool live = false,
   }) async {
     try {
       ApiClient.resetAvailability();
@@ -215,6 +219,8 @@ class MlModelRepositoryImpl implements MlModelRepository {
           'threshold': threshold.toString(),
           if (reset) 'reset': 'true',
           if (singleShot) 'single_shot': 'true',
+          if (handDetected != null) 'hand_detected': handDetected ? 'true' : 'false',
+          if (live) 'live': 'true',
         },
         accessToken: _token,
         timeout: const Duration(seconds: 90),

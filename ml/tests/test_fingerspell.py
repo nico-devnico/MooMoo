@@ -12,16 +12,16 @@ from moomoo_ml.fingerspell.predictor import FingerspellUnavailable, default_mode
 
 def test_spelling_buffer_builds_phrase():
     buf = SpellingBuffer()
-    # Bypass gate for unit checks.
     buf.apply_raw("H")
     buf.apply_raw("I")
     buf.apply_raw("space")
     buf.apply_raw("A")
     assert buf.text == "HI A"
-    buf.apply_raw("del")
+    buf.apply_raw("del")  # retire A → "HI "
+    assert buf.text == "HI "
+    buf.apply_raw("del")  # retire l'espace → "HI"
     assert buf.text == "HI"
-    buf.apply_raw("del")
-    buf.apply_raw("del")
+    buf.apply_raw("del")  # retire I → "H"
     assert buf.text == "H"
     buf.apply_raw("nothing")
     assert buf.text == "H"
@@ -112,6 +112,81 @@ def test_unavailable_without_model(tmp_path):
 
     with pytest.raises(FingerspellUnavailable):
         FingerspellPredictor(tmp_path)
+
+
+def test_no_hand_emits_space_once():
+    """Sans main → un seul espace, puis skip jusqu'au retour de la main."""
+    model_dir = default_model_dir()
+    if not (model_dir / "model.tflite").exists() and not (
+        model_dir / "asl_lstm_mobile.tflite"
+    ).exists():
+        pytest.skip("modèle fingerspell absent")
+
+    pytest.importorskip("tensorflow", reason="TensorFlow requis pour l'interpréteur TFLite")
+
+    from moomoo_ml.fingerspell.service import classify_frame
+
+    blank = b"\xff\xd8\xff\xd9"  # JPEG minimal (jamais décodé si hand_detected=False)
+    r1 = classify_frame(
+        blank,
+        session_id="no-hand-session",
+        reset=True,
+        hand_detected=False,
+        live=True,
+    )
+    assert r1["ok"]
+    assert r1["label"] == "space"
+    # Buffer vide → pas d'espace leading, mais l'événement est consommé.
+    assert r1["committed"] is None
+    assert r1["text"] == ""
+
+    r2 = classify_frame(
+        blank,
+        session_id=r1["session_id"],
+        hand_detected=False,
+        live=True,
+    )
+    assert r2["committed"] is None
+    assert r2["runtime"] == "skip"
+    assert r2["text"] == r1["text"]
+
+    # Main de nouveau → autorise un futur espace.
+    holdout = (
+        Path(__file__).resolve().parents[1]
+        / "dataset"
+        / "asl_alphabet_test"
+        / "asl_alphabet_test"
+        / "A_test.jpg"
+    )
+    if not holdout.exists():
+        return
+    r3 = classify_frame(
+        holdout.read_bytes(),
+        session_id=r1["session_id"],
+        hand_detected=True,
+        live=True,
+        threshold=0.35,
+        single_shot=True,
+    )
+    assert r3["ok"]
+    # Force une lettre dans le buffer si le modèle n'a pas commit.
+    if not (r3.get("text") or "").strip():
+        from moomoo_ml.fingerspell.service import _store
+
+        _, sess = _store.get(r1["session_id"])
+        sess.buffer.apply_raw("A")
+    r4 = classify_frame(
+        blank,
+        session_id=r1["session_id"],
+        hand_detected=False,
+        live=True,
+    )
+    assert r4["committed"] == "space"
+    assert r4["text"].endswith(" ")
+    from moomoo_ml.fingerspell.service import _store
+
+    _, sess = _store.get(r1["session_id"])
+    assert sess.buffer.chars and sess.buffer.chars[-1] == " "
 
 
 def test_candidate_crops_closeup_returns_variants():

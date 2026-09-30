@@ -193,17 +193,16 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final isImage = _isImage ||
         (filename != null &&
             RegExp(r'\.(jpe?g|png|webp|bmp)$', caseSensitive: false).hasMatch(filename));
-    // Crop main uniquement (preview UI reste l'image originale).
-    final spellBytes = isImage
-        ? prepareHandSpellFrame(bytes).jpeg
-        : bytes;
+    // Même pipeline que le live : crop main + handDetected (pas de main → space).
+    final hand = isImage ? prepareHandSpellFrame(bytes) : null;
     final result = isImage
         ? await ref.read(mlModelRepositoryProvider).inferSpell(
-              fileBytes: spellBytes,
+              fileBytes: hand!.jpeg,
               filename: 'hand.jpg',
               reset: true,
               threshold: 0.35,
               singleShot: true,
+              handDetected: hand.detected,
             )
         : await ref.read(mlModelRepositoryProvider).infer(
               fileBytes: bytes,
@@ -285,12 +284,15 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       if (!ref.read(translatorStateProvider)) return;
       inferBusy = true;
       try {
+        // Même seuil / pipeline que l'import image ; live=true pour hold=1.
         final result = await ref.read(mlModelRepositoryProvider).inferSpell(
               fileBytes: jpeg,
               filename: 'hand.jpg',
               sessionId: _spellSessionId,
               reset: resetSession,
-              threshold: 0.42,
+              threshold: 0.35,
+              handDetected: handDetected,
+              live: true,
             );
         resetSession = false;
         if (!mounted || run != _inferenceRun) return;
@@ -315,7 +317,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         if (phrase.isEmpty &&
             result.label != null &&
             result.confidence != null &&
-            result.label!.toLowerCase() != 'nothing') {
+            result.label!.toLowerCase() != 'nothing' &&
+            result.label!.toLowerCase() != 'space') {
           _spellBuffer.update(result.label, result.confidence!);
           phrase = _spellBuffer.text;
         }
@@ -331,13 +334,19 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       }
     }
 
+    // Stream d'abord (même preprocess 256 + miroir que l'import) ; stills en secours.
     final streamed = await cam.startHandFrameStream(
       (jpeg, {required handDetected}) {
         unawaited(handleHandJpeg(jpeg, handDetected: handDetected));
       },
     );
 
-    if (!streamed) {
+    if (streamed) {
+      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      await cam.stopHandFrameStream();
+    } else {
       while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
         final still = await cam.captureHandStill();
         if (!mounted || run != _inferenceRun) break;
@@ -353,14 +362,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
           await Future<void>.delayed(const Duration(milliseconds: 220));
           continue;
         }
+        consecutiveFailures = 0;
         await handleHandJpeg(still.jpeg, handDetected: still.handDetected);
         await Future<void>.delayed(CameraState.frameInterval);
       }
-    } else {
-      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-      }
-      await cam.stopHandFrameStream();
     }
 
     if (!mounted || run != _inferenceRun) return;

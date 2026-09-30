@@ -15,6 +15,8 @@ from .predictor import FingerspellUnavailable, get_predictor
 class _Session:
     buffer: SpellingBuffer = field(default_factory=SpellingBuffer)
     touched: float = field(default_factory=time.monotonic)
+    # Espace déjà ajouté suite à « pas de main » — jusqu'à ce qu'une main revienne.
+    no_hand_space_done: bool = False
 
 
 class SpellSessionStore:
@@ -25,16 +27,16 @@ class SpellSessionStore:
         self._lock = threading.Lock()
         self._sessions: dict[str, _Session] = {}
 
-    def get(self, session_id: str | None) -> tuple[str, SpellingBuffer]:
+    def get(self, session_id: str | None) -> tuple[str, _Session]:
         self._purge()
         with self._lock:
             if session_id and session_id in self._sessions:
                 s = self._sessions[session_id]
                 s.touched = time.monotonic()
-                return session_id, s.buffer
+                return session_id, s
             new_id = session_id or uuid.uuid4().hex
             self._sessions[new_id] = _Session()
-            return new_id, self._sessions[new_id].buffer
+            return new_id, self._sessions[new_id]
 
     def reset(self, session_id: str) -> None:
         with self._lock:
@@ -58,23 +60,102 @@ def classify_frame(
     threshold: float = 0.55,
     reset: bool = False,
     single_shot: bool = False,
+    hand_detected: bool | None = None,
+    live: bool = False,
 ) -> dict:
-    """Classifie une image et met à jour le tampon d'épellation de la session."""
+    """Classifie une image et met à jour le tampon d'épellation de la session.
+
+    [hand_detected]=False → traite comme « space », une seule fois jusqu'à
+    ce qu'une main soit à nouveau détectée.
+    [live]=True → hold allégé pour coller à l'import image (réponse rapide).
+    """
     try:
-        predictor = get_predictor()
-    except FingerspellUnavailable as exc:
+        get_predictor()
+    except FingerspellUnavailable:
         raise
 
     if reset and session_id:
         _store.reset(session_id)
 
-    sid, buf = _store.get(session_id)
-    # Import d'une seule image : commit immédiat (pas de hold multi-frames).
+    sid, session = _store.get(session_id)
+    buf = session.buffer
+
     if single_shot:
         buf.gate.min_hold = 1
         buf.gate.cooldown_s = 0.0
+    elif live:
+        # Même sensibilité que l'import, avec un léger cooldown anti-doublon.
+        buf.gate.min_hold = 1
+        buf.gate.cooldown_s = 0.35
 
-    pred = predictor.predict_bytes(image_bytes)
+    # Pas de main → un seul espace (jamais deux, jamais une fausse lettre).
+    if hand_detected is False:
+        model_meta = {
+            "id": "fingerspell-asl",
+            "name": "ASL Fingerspell CNN-BiLSTM",
+            "version": "1.0.0",
+            "dataset": "asl_alphabet",
+        }
+        if session.no_hand_space_done:
+            return {
+                "ok": True,
+                "mode": "fingerspell",
+                "session_id": sid,
+                "label": "space",
+                "confidence": 1.0,
+                "top": [{"label": "space", "confidence": 1.0}],
+                "latency_ms": 0.0,
+                "runtime": "skip",
+                "hand_detected": False,
+                "text": buf.text,
+                "committed": None,
+                "accepted": False,
+                "model": model_meta,
+            }
+        # Applique immédiatement (hors gate) — une seule fois jusqu'au retour de main.
+        # Sur buffer vide, pas d'espace leading (no-op) mais on marque quand même
+        # pour ne pas spammer tant que la main n'est pas revenue.
+        session.no_hand_space_done = True
+        committed = None
+        if buf.chars and buf.chars[-1] != " ":
+            buf.apply_raw("space")
+            committed = "space"
+        buf.gate.reset()
+        return {
+            "ok": True,
+            "mode": "fingerspell",
+            "session_id": sid,
+            "label": "space",
+            "confidence": 1.0,
+            "top": [{"label": "space", "confidence": 1.0}],
+            "latency_ms": 0.0,
+            "runtime": "space",
+            "hand_detected": False,
+            "text": buf.text,
+            "committed": committed,
+            "accepted": committed is not None,
+            "model": model_meta,
+        }
+
+    # Une main est visible → on peut à nouveau émettre un espace plus tard.
+    if hand_detected is True:
+        session.no_hand_space_done = False
+
+    from .predictor import get_predictor as _gp
+
+    pred = _gp().predict_bytes(image_bytes)
+    # Si le modèle lui-même signale pas de main claire.
+    if pred.get("hand_detected") is False and hand_detected is None:
+        return classify_frame(
+            image_bytes,
+            session_id=sid,
+            threshold=threshold,
+            reset=False,
+            single_shot=single_shot,
+            hand_detected=False,
+            live=live,
+        )
+
     update = buf.update(pred["label"], confidence=pred["confidence"], threshold=threshold)
 
     display_text = update["text"]
@@ -117,12 +198,10 @@ def classify_media(
     threshold: float = 0.55,
     reset: bool = False,
     single_shot: bool = False,
+    hand_detected: bool | None = None,
+    live: bool = False,
 ) -> dict:
-    """Classifie une image OU un clip vidéo (flux caméra temps réel).
-
-    Pour une vidéo : échantillonne plusieurs frames et les enchaîne dans la
-    même session d'épellation — c'est le chemin live appareil.
-    """
+    """Classifie une image OU un clip vidéo."""
     from .video_frames import is_video_filename, sample_jpeg_frames
 
     if not is_video_filename(filename):
@@ -132,20 +211,22 @@ def classify_media(
             threshold=threshold,
             reset=reset,
             single_shot=single_shot,
+            hand_detected=hand_detected,
+            live=live,
         )
 
     frames = sample_jpeg_frames(data, filename=filename, max_frames=5)
     if not frames:
-        # Fallback : tenter comme image (certains webm courts).
         return classify_frame(
             data,
             session_id=session_id,
             threshold=threshold,
             reset=reset,
             single_shot=single_shot,
+            hand_detected=hand_detected,
+            live=live,
         )
 
-    # Clip live : hold allégé (plusieurs frames du même signe dans le clip).
     result: dict | None = None
     sid = session_id
     do_reset = reset
@@ -156,14 +237,11 @@ def classify_media(
             threshold=threshold,
             reset=do_reset and i == 0,
             single_shot=False,
+            hand_detected=hand_detected if i == 0 else True,
+            live=True,
         )
         sid = result.get("session_id") or sid
         do_reset = False
-        # Accélère le gate pour les frames suivantes du même clip.
-        if i == 0 and sid:
-            _, buf = _store.get(sid)
-            buf.gate.min_hold = max(1, min(buf.gate.min_hold, 2))
-            buf.gate.cooldown_s = min(buf.gate.cooldown_s, 0.25)
 
     assert result is not None
     result["frames_scored"] = len(frames)

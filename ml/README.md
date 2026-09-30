@@ -31,13 +31,16 @@ Storage).
 # Inference API (libère le port 8000 s'il est déjà pris — évite WinError 10048)
 start_api.bat
 # ou : powershell -File start_api.ps1
+# ou : .venv\Scripts\python run_server.py
 ```
 
-Si vous lancez uvicorn à la main et que le port est occupé :
+Ne lancez **pas** `uvicorn` seul si le port 8000 est déjà occupé (`WinError 10048`).
+Utilisez `start_api.bat` / `run_server.py` qui libèrent le port avant le bind.
+
+Si vous devez vraiment lancer uvicorn à la main :
 
 ```powershell
-Get-NetTCPConnection -LocalPort 8000 | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }
-.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8000
+.venv\Scripts\python run_server.py --port 8000
 ```
 
 Several workers can run at once (jobs are claimed with `FOR UPDATE SKIP LOCKED`).

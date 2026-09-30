@@ -189,21 +189,35 @@ class CameraState extends _$CameraState {
     _frameBusy = true;
     _lastFrameAt = now;
     try {
-      final jpeg = await cameraImageToJpeg(image, quality: 78);
+      final jpeg = await cameraImageToJpeg(image, quality: 90);
       if (jpeg == null || _onHandFrame == null) return;
-      final hand = prepareHandSpellFrame(jpeg, outSize: 160, jpegQuality: 80);
+      final mirror = state.value?.description.lensDirection == CameraLensDirection.front;
+      final hand = prepareHandSpellFrame(
+        jpeg,
+        outSize: 256,
+        jpegQuality: 90,
+        mirrorHorizontal: mirror,
+      );
       _onHandFrame!(hand.jpeg, handDetected: hand.detected);
     } finally {
       _frameBusy = false;
     }
   }
 
-  /// Capture one-shot : photo → crop main (repli si pas de stream).
+  /// Capture one-shot JPEG (même qualité qu'un import) → crop main.
   Future<({Uint8List jpeg, bool handDetected})?> captureHandStill() async {
+    final controller = state.value;
     final file = await takePicture();
     if (file == null) return null;
     final bytes = await file.readAsBytes();
-    final hand = prepareHandSpellFrame(bytes, outSize: 160, jpegQuality: 80);
+    final mirror =
+        controller?.description.lensDirection == CameraLensDirection.front;
+    final hand = prepareHandSpellFrame(
+      bytes,
+      outSize: 256,
+      jpegQuality: 90,
+      mirrorHorizontal: mirror,
+    );
     return (jpeg: hand.jpeg, handDetected: hand.detected);
   }
 }

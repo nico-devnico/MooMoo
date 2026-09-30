@@ -70,6 +70,10 @@ inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
     if (req.body?.threshold) form.append('threshold', String(req.body.threshold));
     if (req.body?.reset) form.append('reset', String(req.body.reset));
     if (req.body?.single_shot) form.append('single_shot', String(req.body.single_shot));
+    if (req.body?.hand_detected != null && req.body?.hand_detected !== '') {
+      form.append('hand_detected', String(req.body.hand_detected));
+    }
+    if (req.body?.live) form.append('live', String(req.body.live));
 
     const result = await forwardToMl('/infer/spell', form);
     if (result.errorStatus) {

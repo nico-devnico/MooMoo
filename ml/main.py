@@ -107,13 +107,13 @@ async def infer_spell(
     threshold: Optional[float] = Form(0.55),
     reset: Optional[str] = Form(None),
     single_shot: Optional[str] = Form(None),
+    hand_detected: Optional[str] = Form(None),
+    live: Optional[str] = Form(None),
 ):
-    """Épellation temps réel : image OU clip vidéo → lettre + phrase.
+    """Épellation : image/clip → lettre + phrase.
 
-    Labels spéciaux : `space` (espace), `del` (effacer), `nothing` (ignorer).
-    Passez le même `session_id` entre les clips pour garder le tampon.
-    `single_shot=true` : commit immédiat (import d'une seule image).
-    Un fichier vidéo/GIF est échantillonné en frames (flux caméra live).
+    `hand_detected=false` → un seul « space » jusqu'au retour de la main.
+    `live=true` → même sensibilité que l'import (hold=1).
     """
     from moomoo_ml.fingerspell.predictor import FingerspellUnavailable
     from moomoo_ml.fingerspell.service import classify_media
@@ -121,6 +121,16 @@ async def infer_spell(
     data = await file.read()
     if not data:
         return _unavailable("no_input", "Média vide.", 422)
+
+    hd_raw = (hand_detected or "").strip().lower()
+    hd: bool | None
+    if hd_raw in ("0", "false", "no", "off"):
+        hd = False
+    elif hd_raw in ("1", "true", "yes", "on"):
+        hd = True
+    else:
+        hd = None
+
     try:
         result = classify_media(
             data,
@@ -129,6 +139,8 @@ async def infer_spell(
             threshold=float(threshold or 0.55),
             reset=str(reset or "").lower() in ("1", "true", "yes"),
             single_shot=str(single_shot or "").lower() in ("1", "true", "yes"),
+            hand_detected=hd,
+            live=str(live or "").lower() in ("1", "true", "yes"),
         )
     except FingerspellUnavailable as exc:
         return _unavailable("fingerspell_unavailable", str(exc))

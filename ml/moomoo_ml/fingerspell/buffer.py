@@ -113,7 +113,11 @@ class SpellingBuffer:
 
     @property
     def text(self) -> str:
-        return "".join(self.chars).rstrip()
+        # Garde un espace final unique (séparateur visible), sans espaces multiples.
+        s = "".join(self.chars)
+        if s.endswith(" "):
+            return s.rstrip() + " "
+        return s
 
     def reset(self) -> None:
         self.chars.clear()

@@ -13,8 +13,9 @@ import numpy as np
 
 TARGET_MEAN = 130.0
 BRIGHTNESS_TOLERANCE = 35.0
-# Vrais crops dataset (~200px) ; au-delà on traite comme frame caméra.
-CLOSEUP_MAX_SIDE = 220
+# Crops client/dataset (souvent 200–256px). Au-delà = frame caméra pleine.
+# Doit être ≥ outSize Flutter (256) pour éviter un 2e crop destructeur.
+CLOSEUP_MAX_SIDE = 280
 
 
 @dataclass(frozen=True)

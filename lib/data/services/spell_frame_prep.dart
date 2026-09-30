@@ -3,9 +3,7 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-/// Détection peau + recadrage main pour l'épellation live.
-///
-/// Le preview caméra reste plein cadre ; seul ce JPEG compact part au ML.
+/// Détection peau + recadrage main — même pipeline import et live.
 class HandCropResult {
   const HandCropResult({
     required this.jpeg,
@@ -18,61 +16,90 @@ class HandCropResult {
   final ({int x, int y, int w, int h})? bbox;
 }
 
-/// Prépare une frame pour le modèle : détecte la main, croppe uniquement
-/// cette zone (sinon centre), redimensionne à [outSize] pour la vitesse.
+/// Prépare une frame pour le modèle (import image OU caméra live).
+///
+/// - [mirrorHorizontal] : caméra frontale (selfie) pour coller au jeu d'entraînement
+/// - [outSize] ≥ 256 : le serveur peut encore affiner le crop (CLOSEUP_MAX=220)
+/// Si aucune main n'est détectée, [detected] vaut false (le client enverra « space »).
 HandCropResult prepareHandSpellFrame(
   List<int> raw, {
-  int outSize = 160,
-  int jpegQuality = 82,
+  int outSize = 256,
+  int jpegQuality = 90,
+  bool mirrorHorizontal = false,
 }) {
-  final decoded = img.decodeImage(Uint8List.fromList(raw));
+  var decoded = img.decodeImage(Uint8List.fromList(raw));
   if (decoded == null) {
     return HandCropResult(jpeg: Uint8List.fromList(raw), detected: false);
   }
 
-  // Downscale rapide avant détection (latence).
+  if (mirrorHorizontal) {
+    decoded = img.flipHorizontal(decoded);
+  }
+
   final maxSide = math.max(decoded.width, decoded.height);
-  final work = maxSide > 480
+  // Déjà un crop type dataset : ne pas re-cadrer agressivement.
+  if (maxSide <= 220) {
+    final square = decoded.width == decoded.height
+        ? decoded
+        : _centerSquare(decoded, 1.0);
+    final sized = outSize > 0 && math.max(square.width, square.height) != outSize
+        ? img.copyResize(square, width: outSize, height: outSize)
+        : square;
+    return HandCropResult(
+      jpeg: Uint8List.fromList(img.encodeJpg(sized, quality: jpegQuality)),
+      detected: true,
+    );
+  }
+
+  final work = maxSide > 640
       ? img.copyResize(
           decoded,
-          width: decoded.width > decoded.height
-              ? 480
-              : (decoded.width * 480 / decoded.height).round(),
-          height: decoded.height >= decoded.width
-              ? 480
-              : (decoded.height * 480 / decoded.width).round(),
+          width: decoded.width >= decoded.height
+              ? 640
+              : (decoded.width * 640 / decoded.height).round(),
+          height: decoded.height > decoded.width
+              ? 640
+              : (decoded.height * 640 / decoded.width).round(),
         )
       : decoded;
 
   final bbox = _detectHandBBox(work);
-  img.Image crop;
-  var detected = false;
-  if (bbox != null) {
-    final side = math.max(bbox.w, bbox.h);
-    final pad = (side * 0.22).round();
-    final cx = bbox.x + bbox.w ~/ 2;
-    final cy = bbox.y + bbox.h ~/ 2;
-    final s = math.min(work.width, math.min(work.height, side + 2 * pad));
-    final x0 = (cx - s ~/ 2).clamp(0, work.width - s);
-    final y0 = (cy - s ~/ 2).clamp(0, work.height - s);
-    crop = img.copyCrop(work, x: x0, y: y0, width: s, height: s);
-    detected = s >= 40;
-  } else {
-    // Repli : centre (main face à la caméra).
-    final s = (math.min(work.width, work.height) * 0.72).round();
-    final x0 = (work.width - s) ~/ 2;
-    final y0 = (work.height - s) ~/ 2;
-    crop = img.copyCrop(work, x: x0, y: y0, width: s, height: s);
+  if (bbox == null) {
+    // Pas de main : JPEG centre uniquement pour debug ; detected=false.
+    final center = _centerSquare(work, 0.72);
+    final sized = img.copyResize(center, width: outSize, height: outSize);
+    return HandCropResult(
+      jpeg: Uint8List.fromList(img.encodeJpg(sized, quality: jpegQuality)),
+      detected: false,
+    );
   }
 
+  final side = math.max(bbox.w, bbox.h);
+  final pad = (side * 0.28).round();
+  final cx = bbox.x + bbox.w ~/ 2;
+  final cy = bbox.y + bbox.h ~/ 2;
+  final s = math.min(work.width, math.min(work.height, side + 2 * pad));
+  final x0 = (cx - s ~/ 2).clamp(0, work.width - s).toInt();
+  final y0 = (cy - s ~/ 2).clamp(0, work.height - s).toInt();
+  final crop = img.copyCrop(work, x: x0, y: y0, width: s, height: s);
   final sized = img.copyResize(crop, width: outSize, height: outSize);
-  final jpeg = Uint8List.fromList(img.encodeJpg(sized, quality: jpegQuality));
-  return HandCropResult(jpeg: jpeg, detected: detected, bbox: bbox);
+  return HandCropResult(
+    jpeg: Uint8List.fromList(img.encodeJpg(sized, quality: jpegQuality)),
+    detected: s >= 48,
+    bbox: bbox,
+  );
 }
 
-/// API historique : bytes JPEG prêts pour `/infer/spell`.
 Uint8List prepareSpellFrameBytes(List<int> raw, {String filename = 'frame.jpg'}) {
   return prepareHandSpellFrame(raw).jpeg;
+}
+
+img.Image _centerSquare(img.Image src, double fraction) {
+  final maxSide = math.min(src.width, src.height);
+  final side = (maxSide * fraction).round().clamp(1, maxSide).toInt();
+  final x0 = (src.width - side) ~/ 2;
+  final y0 = (src.height - side) ~/ 2;
+  return img.copyCrop(src, x: x0, y: y0, width: side, height: side);
 }
 
 ({int x, int y, int w, int h})? _detectHandBBox(img.Image src) {
@@ -80,11 +107,13 @@ Uint8List prepareSpellFrameBytes(List<int> raw, {String filename = 'frame.jpg'})
   final h = src.height;
   if (w < 16 || h < 16) return null;
 
-  // Grille pour vitesse (pas pixel-par-pixel plein).
   const step = 2;
   var minX = w, minY = h, maxX = 0, maxY = 0;
   var count = 0;
   double sumX = 0, sumY = 0;
+  // Score centre : préfère la main au milieu / bas du cadre.
+  final midX = w / 2.0;
+  final midY = h * 0.55;
 
   for (var y = 0; y < h; y += step) {
     for (var x = 0; x < w; x += step) {
@@ -93,11 +122,13 @@ Uint8List prepareSpellFrameBytes(List<int> raw, {String filename = 'frame.jpg'})
       final g = p.g.toInt();
       final b = p.b.toInt();
       if (!_isSkin(r, g, b)) continue;
-      // Pénalise le haut du cadre (visage).
-      if (y < h * 0.22) continue;
-      count++;
-      sumX += x;
-      sumY += y;
+      if (y < h * 0.20) continue; // visage
+      final dx = (x - midX) / midX;
+      final dy = (y - midY) / (h / 2.0);
+      final centerWeight = 1.0 - 0.45 * (dx * dx + dy * dy).clamp(0.0, 1.0);
+      count += 1;
+      sumX += x * centerWeight;
+      sumY += y * centerWeight;
       if (x < minX) minX = x;
       if (y < minY) minY = y;
       if (x > maxX) maxX = x;
@@ -106,29 +137,24 @@ Uint8List prepareSpellFrameBytes(List<int> raw, {String filename = 'frame.jpg'})
   }
 
   final area = (maxX - minX) * (maxY - minY);
-  if (count < 40 || area < (w * h) * 0.008) return null;
+  if (count < 50 || area < (w * h) * 0.01) return null;
 
-  // Centre de masse : affine le bbox vers la tache dominante.
   final cx = (sumX / count).round();
   final cy = (sumY / count).round();
-  final bw = (maxX - minX).clamp(24, w);
-  final bh = (maxY - minY).clamp(24, h);
-  // Préfère une zone centrée (main) vs coin.
-  final preferCx = (cx * 0.65 + (minX + maxX) / 2 * 0.35).round();
-  final preferCy = (cy * 0.65 + (minY + maxY) / 2 * 0.35).round();
-  final x0 = (preferCx - bw ~/ 2).clamp(0, w - bw);
-  final y0 = (preferCy - bh ~/ 2).clamp(0, h - bh);
+  final bw = (maxX - minX).clamp(32, w).toInt();
+  final bh = (maxY - minY).clamp(32, h).toInt();
+  final x0 = (cx - bw ~/ 2).clamp(0, w - bw).toInt();
+  final y0 = (cy - bh ~/ 2).clamp(0, h - bh).toInt();
   return (x: x0, y: y0, w: bw, h: bh);
 }
 
 bool _isSkin(int r, int g, int b) {
-  // Heuristique YCrCb / RGB classique (peau).
   final y = 0.299 * r + 0.587 * g + 0.114 * b;
   final cr = r - y;
   final cb = b - y;
   final yOk = y > 40 && y < 250;
-  final crOk = cr > 10 && cr < 85;
-  final cbOk = cb > -80 && cb < -5;
-  final rgbOk = r > 60 && g > 30 && b > 15 && r > g && r > b && (r - g) > 8;
+  final crOk = cr > 8 && cr < 90;
+  final cbOk = cb > -85 && cb < -2;
+  final rgbOk = r > 55 && g > 28 && b > 12 && r > g && r > b && (r - g) > 6;
   return yOk && ((crOk && cbOk) || rgbOk);
 }
