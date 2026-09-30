@@ -156,6 +156,9 @@ class InferenceResult {
   /// Identifiant de session d'épellation à renvoyer aux frames suivantes.
   final String? sessionId;
 
+  /// True si une main a été détectée dans la frame (prétraitement ML).
+  final bool handDetected;
+
   const InferenceResult({
     required this.ok,
     this.label,
@@ -169,6 +172,7 @@ class InferenceResult {
     this.committed,
     this.mode,
     this.sessionId,
+    this.handDetected = true,
   });
 
   factory InferenceResult.fromJson(Map<String, dynamic> json) {
@@ -189,7 +193,7 @@ class InferenceResult {
             )
           : null,
       errorCode: json['error'] as String?,
-      errorMessage: json['message'] as String?,
+      errorMessage: json['message'] as String? ?? json['detail'] as String?,
       topLabels: [
         for (final item in (prediction?['top'] as List? ?? const []))
           if (item is Map && item['label'] is String) item['label'] as String,
@@ -198,6 +202,8 @@ class InferenceResult {
       committed: prediction?['committed'] as String?,
       mode: prediction?['mode'] as String? ?? json['mode'] as String?,
       sessionId: json['session_id'] as String?,
+      handDetected: prediction?['hand_detected'] != false &&
+          json['hand_detected'] != false,
     );
   }
 

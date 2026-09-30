@@ -210,11 +210,14 @@ class _SignMediaState extends State<SignMedia> {
   }
 
   Widget _image(String url, Widget fallback) {
+    final animated = SignMedia.isAnimatedImage(url);
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.contain,
-      memCacheWidth: 720,
-      placeholder: (_, _) => const SizedBox.shrink(),
+      // memCacheWidth casse l'animation des GIFs (décodage bitmap figé).
+      memCacheWidth: animated ? null : 720,
+      fadeInDuration: animated ? Duration.zero : const Duration(milliseconds: 200),
+      placeholder: (_, _) => const Center(child: CircularProgressIndicator()),
       errorWidget: (_, _, _) => fallback,
     );
   }

@@ -84,6 +84,7 @@ inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
         committed: payload.committed ?? null,
         accepted: payload.accepted ?? false,
         mode: 'fingerspell',
+        hand_detected: payload.hand_detected ?? true,
       },
       session_id: payload.session_id,
       model: payload.model,

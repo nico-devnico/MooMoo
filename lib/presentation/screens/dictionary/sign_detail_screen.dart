@@ -209,7 +209,19 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
 
     final description = sign.description?.trim();
     final example = sign.exampleSentence?.trim();
-    final tags = sign.tags ?? const <String>[];
+    final rawTags = sign.tags ?? const <String>[];
+    final gloss = rawTags.isNotEmpty && !rawTags.first.startsWith('source:')
+        ? rawTags.first
+        : null;
+    final tags = [
+      for (final tag in rawTags)
+        if (tag != gloss && !tag.startsWith('source:')) tag,
+    ];
+    final sourceUrl = rawTags
+        .where((t) => t.startsWith('source:'))
+        .map((t) => t.substring('source:'.length))
+        .firstOrNull;
+    final isLocal = sign.id.startsWith('lsfb:');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,6 +230,16 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
           header: true,
           child: Text(sign.word, style: AppTextStyles.h1),
         ),
+        if (gloss != null) ...[
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            '${l10n.dictGloss} : $gloss',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.m),
         Wrap(
           spacing: AppSpacing.s,
@@ -272,13 +294,14 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
               fullWidth: false,
               onPressed: () => context.goNamed(AppRoutes.learningName),
             ),
-            AppButton(
-              label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
-              icon: isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
-              variant: AppButtonVariant.outline,
-              fullWidth: false,
-              onPressed: _togglingFavorite ? null : () => _toggleFavorite(isFavorite),
-            ),
+            if (!isLocal)
+              AppButton(
+                label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
+                icon: isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
+                variant: AppButtonVariant.outline,
+                fullWidth: false,
+                onPressed: _togglingFavorite ? null : () => _toggleFavorite(isFavorite),
+              ),
             KeyedSubtree(
               key: _shareKey,
               child: AppButton(
@@ -320,7 +343,7 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
         ],
         if (tags.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
-          _SectionTitle(l10n.dictTags),
+          _SectionTitle(l10n.dictTranslations),
           const SizedBox(height: AppSpacing.m),
           Wrap(
             spacing: AppSpacing.s,
@@ -333,6 +356,15 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
                   background: AppColors.neutral(context),
                 ),
             ],
+          ),
+        ],
+        if (sourceUrl != null && sourceUrl.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _SectionTitle(l10n.dictTags),
+          const SizedBox(height: AppSpacing.s),
+          SelectableText(
+            sourceUrl,
+            style: AppTextStyles.bodySmall.copyWith(color: secondary),
           ),
         ],
       ],

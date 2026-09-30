@@ -33,6 +33,7 @@ import '../../../domain/providers/three_d_settings_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
 import '../../../domain/translator/spelling_buffer.dart';
+import '../../../data/services/api_client.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
@@ -149,13 +150,26 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     }
   }
 
-  Future<XFile?> _captureFrame() async {
-    // On the web the camera only starts once translation is on: let
-    // CameraView subscribe to the provider before reading it.
-    await WidgetsBinding.instance.endOfFrame;
-    final controller = await ref.read(cameraStateProvider.future);
-    if (controller == null || !controller.value.isInitialized) return null;
-    return ref.read(cameraStateProvider.notifier).takePicture();
+  Future<XFile?> _captureFrame({Duration timeout = const Duration(seconds: 12)}) async {
+    // Sur le web la caméra ne démarre qu'une fois la traduction active :
+    // attendre l'init avant d'abandonner.
+    final deadline = DateTime.now().add(timeout);
+    while (mounted && DateTime.now().isBefore(deadline)) {
+      await WidgetsBinding.instance.endOfFrame;
+      try {
+        final controller = await ref.read(cameraStateProvider.future);
+        if (controller != null && controller.value.isInitialized) {
+          final busy = controller.value.isTakingPicture;
+          if (!busy) {
+            return ref.read(cameraStateProvider.notifier).takePicture();
+          }
+        }
+      } catch (_) {
+        // Provider encore en chargement / erreur temporaire.
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    return null;
   }
 
   Future<void> _runInference() async {
@@ -227,7 +241,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         _signStatus = _SignStatus.unavailable;
         _translationResult = null;
         _confidence = null;
-        _errorMessage = l10n.inferenceUnavailableMessage;
+        _errorMessage =
+            result.errorMessage ?? l10n.inferenceUnavailableMessage;
       }
     });
     if (ok) {
@@ -247,6 +262,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final run = ++_inferenceRun;
     _spellBuffer.reset();
     _spellSessionId = null;
+    // Réessaie même si un timeout précédent avait marqué l'API « down ».
+    ApiClient.resetAvailability();
 
     setState(() {
       _signStatus = _SignStatus.translating;
@@ -257,6 +274,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     });
 
     var resetSession = true;
+    var consecutiveFailures = 0;
     while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
       List<int>? bytes;
       String filename = 'frame.jpg';
@@ -272,11 +290,16 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       if (!mounted || run != _inferenceRun) return;
 
       if (bytes == null || bytes.isEmpty) {
-        setState(() {
-          _signStatus = _SignStatus.unavailable;
-          _errorMessage = l10n.translCameraUnavailable;
-        });
-        return;
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+          setState(() {
+            _signStatus = _SignStatus.unavailable;
+            _errorMessage = l10n.translCameraUnavailable;
+          });
+          return;
+        }
+        await Future<void>.delayed(_spellInterval);
+        continue;
       }
 
       final result = await ref.read(mlModelRepositoryProvider).inferSpell(
@@ -289,14 +312,23 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       if (!mounted || run != _inferenceRun) return;
 
       if (!result.ok) {
-        // Une frame ratée n'arrête pas la boucle : on signale et on continue.
+        consecutiveFailures++;
+        final hardFail = result.errorCode == 'backend_unavailable' ||
+            result.errorCode == 'ml_unavailable' ||
+            consecutiveFailures >= 5;
         setState(() {
-          _errorMessage = result.errorMessage ?? l10n.inferenceUnavailableMessage;
+          _errorMessage =
+              result.errorMessage ?? l10n.inferenceUnavailableMessage;
+          if (hardFail) {
+            _signStatus = _SignStatus.unavailable;
+          }
         });
+        if (hardFail) return;
         await Future<void>.delayed(_spellInterval);
         continue;
       }
 
+      consecutiveFailures = 0;
       _spellSessionId = result.sessionId ?? _spellSessionId;
       // Texte serveur prioritaire ; sinon assemblage local.
       String phrase = result.text ?? '';

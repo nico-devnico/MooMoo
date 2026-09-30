@@ -3977,7 +3977,7 @@ abstract class AppLocalizations {
   /// No description provided for @mlScreenSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Datasets, entraînements, expériences et registre des modèles par langue des signes'**
+  /// **'Datasets, entraînements, expériences, registre et modèles d\'épellation ASL'**
   String get mlScreenSubtitle;
 
   /// No description provided for @mlTabDatasets.
@@ -4003,6 +4003,192 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Registre'**
   String get mlTabRegistry;
+
+  /// No description provided for @mlTabFingerspell.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épellation'**
+  String get mlTabFingerspell;
+
+  /// No description provided for @mlFingerspellTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèles d\'épellation ASL'**
+  String get mlFingerspellTitle;
+
+  /// No description provided for @mlFingerspellSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez la version utilisée pour la traduction lettres → texte, et consultez les courbes d\'entraînement.'**
+  String get mlFingerspellSubtitle;
+
+  /// No description provided for @mlFingerspellEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun modèle d\'épellation'**
+  String get mlFingerspellEmptyTitle;
+
+  /// No description provided for @mlFingerspellEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Démarrez le service ML (uvicorn) pour charger les versions depuis ml/models/fingerspell.'**
+  String get mlFingerspellEmptyMessage;
+
+  /// No description provided for @mlFingerspellActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get mlFingerspellActive;
+
+  /// No description provided for @mlFingerspellActivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer ce modèle'**
+  String get mlFingerspellActivate;
+
+  /// No description provided for @mlFingerspellActivated.
+  ///
+  /// In fr, this message translates to:
+  /// **'{name} est maintenant le modèle actif'**
+  String mlFingerspellActivated(String name);
+
+  /// No description provided for @mlFingerspellAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision test : {value} %'**
+  String mlFingerspellAccuracy(String value);
+
+  /// No description provided for @mlFingerspellPerfTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Performances'**
+  String get mlFingerspellPerfTitle;
+
+  /// No description provided for @mlFingerspellChartAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision par époque'**
+  String get mlFingerspellChartAccuracy;
+
+  /// No description provided for @mlFingerspellTestAccuracy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision (holdout)'**
+  String get mlFingerspellTestAccuracy;
+
+  /// No description provided for @mlFingerspellTop3.
+  ///
+  /// In fr, this message translates to:
+  /// **'Top-3 (holdout)'**
+  String get mlFingerspellTop3;
+
+  /// No description provided for @mlFingerspellDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fiche du modèle'**
+  String get mlFingerspellDetailsTitle;
+
+  /// No description provided for @mlFingerspellFieldId.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiant'**
+  String get mlFingerspellFieldId;
+
+  /// No description provided for @mlFingerspellFieldVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version'**
+  String get mlFingerspellFieldVersion;
+
+  /// No description provided for @mlFingerspellFieldDataset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dataset'**
+  String get mlFingerspellFieldDataset;
+
+  /// No description provided for @mlFingerspellFieldDatasetDir.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier dataset'**
+  String get mlFingerspellFieldDatasetDir;
+
+  /// No description provided for @mlFingerspellFieldArchitecture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Architecture'**
+  String get mlFingerspellFieldArchitecture;
+
+  /// No description provided for @mlFingerspellFieldInput.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entrée'**
+  String get mlFingerspellFieldInput;
+
+  /// No description provided for @mlFingerspellFieldClasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classes'**
+  String get mlFingerspellFieldClasses;
+
+  /// No description provided for @mlFingerspellFieldEpochs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Époques'**
+  String get mlFingerspellFieldEpochs;
+
+  /// No description provided for @mlFingerspellFieldMaxPerClass.
+  ///
+  /// In fr, this message translates to:
+  /// **'Images / classe'**
+  String get mlFingerspellFieldMaxPerClass;
+
+  /// No description provided for @mlFingerspellFieldRuntime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Runtime'**
+  String get mlFingerspellFieldRuntime;
+
+  /// No description provided for @mlFingerspellFieldSize.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille TFLite'**
+  String get mlFingerspellFieldSize;
+
+  /// No description provided for @mlFingerspellFieldValAcc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précision validation'**
+  String get mlFingerspellFieldValAcc;
+
+  /// No description provided for @mlFingerspellFieldTflite.
+  ///
+  /// In fr, this message translates to:
+  /// **'TFLite disponible'**
+  String get mlFingerspellFieldTflite;
+
+  /// No description provided for @mlFingerspellNoHistory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune courbe d\'entraînement disponible pour cette version.'**
+  String get mlFingerspellNoHistory;
+
+  /// No description provided for @mlNo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non'**
+  String get mlNo;
+
+  /// No description provided for @dictGloss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Glosse'**
+  String get dictGloss;
+
+  /// No description provided for @dictTranslations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traductions'**
+  String get dictTranslations;
 
   /// No description provided for @mlClose.
   ///

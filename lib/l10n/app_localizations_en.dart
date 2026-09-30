@@ -2201,7 +2201,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mlScreenSubtitle =>
-      'Datasets, training jobs, experiments and model registry per sign language';
+      'Datasets, training jobs, experiments, registry and ASL fingerspell models';
 
   @override
   String get mlTabDatasets => 'Datasets';
@@ -2214,6 +2214,106 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mlTabRegistry => 'Registry';
+
+  @override
+  String get mlTabFingerspell => 'Fingerspell';
+
+  @override
+  String get mlFingerspellTitle => 'ASL fingerspelling models';
+
+  @override
+  String get mlFingerspellSubtitle =>
+      'Activate the version used for letter-to-text translation and review training curves.';
+
+  @override
+  String get mlFingerspellEmptyTitle => 'No fingerspell model';
+
+  @override
+  String get mlFingerspellEmptyMessage =>
+      'Start the ML service (uvicorn) to load versions from ml/models/fingerspell.';
+
+  @override
+  String get mlFingerspellActive => 'Active';
+
+  @override
+  String get mlFingerspellActivate => 'Activate this model';
+
+  @override
+  String mlFingerspellActivated(String name) {
+    return '$name is now the active model';
+  }
+
+  @override
+  String mlFingerspellAccuracy(String value) {
+    return 'Test accuracy: $value%';
+  }
+
+  @override
+  String get mlFingerspellPerfTitle => 'Performance';
+
+  @override
+  String get mlFingerspellChartAccuracy => 'Accuracy per epoch';
+
+  @override
+  String get mlFingerspellTestAccuracy => 'Accuracy (holdout)';
+
+  @override
+  String get mlFingerspellTop3 => 'Top-3 (holdout)';
+
+  @override
+  String get mlFingerspellDetailsTitle => 'Model details';
+
+  @override
+  String get mlFingerspellFieldId => 'Identifier';
+
+  @override
+  String get mlFingerspellFieldVersion => 'Version';
+
+  @override
+  String get mlFingerspellFieldDataset => 'Dataset';
+
+  @override
+  String get mlFingerspellFieldDatasetDir => 'Dataset folder';
+
+  @override
+  String get mlFingerspellFieldArchitecture => 'Architecture';
+
+  @override
+  String get mlFingerspellFieldInput => 'Input';
+
+  @override
+  String get mlFingerspellFieldClasses => 'Classes';
+
+  @override
+  String get mlFingerspellFieldEpochs => 'Epochs';
+
+  @override
+  String get mlFingerspellFieldMaxPerClass => 'Images / class';
+
+  @override
+  String get mlFingerspellFieldRuntime => 'Runtime';
+
+  @override
+  String get mlFingerspellFieldSize => 'TFLite size';
+
+  @override
+  String get mlFingerspellFieldValAcc => 'Validation accuracy';
+
+  @override
+  String get mlFingerspellFieldTflite => 'TFLite available';
+
+  @override
+  String get mlFingerspellNoHistory =>
+      'No training curve available for this version.';
+
+  @override
+  String get mlNo => 'No';
+
+  @override
+  String get dictGloss => 'Gloss';
+
+  @override
+  String get dictTranslations => 'Translations';
 
   @override
   String get mlClose => 'Close';

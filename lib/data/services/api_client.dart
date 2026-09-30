@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import '../../core/constants/api_config.dart';
 
@@ -58,18 +60,32 @@ class ApiClient {
     return Uri.parse('$baseUrl$normalized').replace(queryParameters: query);
   }
 
-  Future<T> _send<T>(Future<T> Function() request) async {
+  Future<T> _send<T>(
+    Future<T> Function() request, {
+    Duration? requestTimeout,
+    bool markUnreachableOnFailure = true,
+  }) async {
     if (isProbablyUnreachable) {
       throw ApiUnreachableException('API $baseUrl marquée injoignable');
     }
     try {
-      final result = await request().timeout(timeout);
+      final result = await request().timeout(requestTimeout ?? timeout);
       _unreachableUntil = null;
       return result;
     } on ApiException {
       rethrow;
+    } on TimeoutException catch (e) {
+      // Un timeout ML (1er chargement TF) n'est pas une API down.
+      if (markUnreachableOnFailure) {
+        _unreachableUntil = DateTime.now().add(_unreachableCooldown);
+      }
+      throw ApiUnreachableException('API $baseUrl délai dépassé : $e');
     } catch (e) {
-      _unreachableUntil = DateTime.now().add(_unreachableCooldown);
+      final soft = !markUnreachableOnFailure ||
+          e.toString().contains('TimeoutException');
+      if (!soft) {
+        _unreachableUntil = DateTime.now().add(_unreachableCooldown);
+      }
       throw ApiUnreachableException('API $baseUrl injoignable : $e');
     }
   }
@@ -78,32 +94,40 @@ class ApiClient {
     String path, {
     String? accessToken,
     Map<String, String>? query,
+    Duration? timeout,
   }) async {
-    return _send(() async {
-      final res = await _client.get(
-        _uri(path, query),
-        headers: _headers(accessToken),
-      );
-      return _decode(res);
-    });
+    return _send(
+      () async {
+        final res = await _client.get(
+          _uri(path, query),
+          headers: _headers(accessToken),
+        );
+        return _decode(res);
+      },
+      requestTimeout: timeout,
+    );
   }
 
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, dynamic>? body,
     String? accessToken,
+    Duration? timeout,
   }) async {
-    return _send(() async {
-      final res = await _client.post(
-        _uri(path),
-        headers: {
-          ..._headers(accessToken),
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body ?? {}),
-      );
-      return _decode(res);
-    });
+    return _send(
+      () async {
+        final res = await _client.post(
+          _uri(path),
+          headers: {
+            ..._headers(accessToken),
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body ?? {}),
+        );
+        return _decode(res);
+      },
+      requestTimeout: timeout,
+    );
   }
 
   Future<Map<String, dynamic>> delete(
@@ -126,22 +150,29 @@ class ApiClient {
     String fieldName = 'file',
     Map<String, String>? fields,
     String? accessToken,
+    Duration? timeout,
+    bool markUnreachableOnFailure = true,
   }) async {
-    return _send(() async {
-      final req = http.MultipartRequest('POST', _uri(path));
-      if (accessToken != null && accessToken.isNotEmpty) {
-        req.headers['Authorization'] = 'Bearer $accessToken';
-      }
-      if (fields != null) {
-        req.fields.addAll(fields);
-      }
-      req.files.add(
-        http.MultipartFile.fromBytes(fieldName, fileBytes, filename: filename),
-      );
-      final streamed = await _client.send(req);
-      final res = await http.Response.fromStream(streamed);
-      return _decode(res);
-    });
+    return _send(
+      () async {
+        final req = http.MultipartRequest('POST', _uri(path));
+        if (accessToken != null && accessToken.isNotEmpty) {
+          req.headers['Authorization'] = 'Bearer $accessToken';
+        }
+        if (fields != null) {
+          req.fields.addAll(fields);
+        }
+        req.files.add(
+          http.MultipartFile.fromBytes(fieldName, fileBytes, filename: filename),
+        );
+        final streamed = await _client.send(req);
+        final res = await http.Response.fromStream(streamed);
+        return _decode(res);
+      },
+      // L'inférence ML peut dépasser 5 s au premier chargement TensorFlow.
+      requestTimeout: timeout ?? const Duration(seconds: 60),
+      markUnreachableOnFailure: markUnreachableOnFailure,
+    );
   }
 
   Map<String, String> _headers(String? accessToken) {

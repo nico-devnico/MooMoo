@@ -79,13 +79,14 @@ def classify_frame(
         "top": pred["top"],
         "latency_ms": pred["latency_ms"],
         "runtime": pred["runtime"],
+        "hand_detected": pred.get("hand_detected", True),
         "text": update["text"],
         "committed": update["committed"],
         "accepted": update["accepted"],
         "model": {
-            "id": "fingerspell-asl",
+            "id": pred.get("model_id") or "fingerspell-asl",
             "name": "ASL Fingerspell CNN-BiLSTM",
-            "version": "1.0.0",
+            "version": pred.get("model_id") or "1.0.0",
             "dataset": "asl_alphabet",
         },
     }

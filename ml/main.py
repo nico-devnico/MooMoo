@@ -15,11 +15,28 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 from moomoo_ml import config, db
 from moomoo_ml.datasets.discovery import media_kind
 
-app = FastAPI(title="MooMoo ML", version="1.0.0")
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    # Précharge le modèle d'épellation pour que le 1er appel client ne timeout pas.
+    try:
+        from moomoo_ml.fingerspell import registry
+        from moomoo_ml.fingerspell.predictor import get_predictor
+
+        registry.ensure_layout()
+        warmup_ms = get_predictor().warmup()
+        print(f"[fingerspell] modèle prêt (warmup {warmup_ms:.1f} ms)")
+    except Exception as exc:
+        print(f"[fingerspell] préchargement impossible : {exc}")
+    yield
+
+
+app = FastAPI(title="MooMoo ML", version="1.0.0", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,6 +72,7 @@ def health():
     # Modèle d'épellation ASL (lettres → phrases), hors registre production.
     try:
         from moomoo_ml.fingerspell.predictor import default_model_dir, get_predictor
+        from moomoo_ml.fingerspell import registry
 
         pred = get_predictor()
         status["fingerspell"] = {
@@ -62,6 +80,8 @@ def health():
             "runtime": pred.runtime,
             "classes": len(pred.labels),
             "model_dir": str(default_model_dir()),
+            "active": registry.active_id(),
+            "dataset_dir": str(registry.DATASET_DIR),
         }
     except Exception as exc:
         status["fingerspell"] = {"available": False, "detail": str(exc)}
@@ -110,6 +130,47 @@ async def infer_spell(
     except Exception as exc:
         return _unavailable("spell_failed", str(exc), 500)
     return result
+
+
+@app.get("/fingerspell/models")
+def fingerspell_models():
+    """Liste les versions d'épellation et celle active."""
+    from moomoo_ml.fingerspell import registry
+
+    try:
+        models = registry.list_versions()
+        return {"ok": True, "active": registry.active_id(), "models": models}
+    except Exception as exc:
+        return _unavailable("fingerspell_registry", str(exc), 500)
+
+
+@app.get("/fingerspell/models/{model_id}")
+def fingerspell_model_detail(model_id: str):
+    from moomoo_ml.fingerspell import registry
+
+    try:
+        return {"ok": True, "model": registry.describe(model_id)}
+    except FileNotFoundError as exc:
+        return _unavailable("not_found", str(exc), 404)
+    except Exception as exc:
+        return _unavailable("fingerspell_registry", str(exc), 500)
+
+
+@app.post("/fingerspell/models/{model_id}/activate")
+def fingerspell_activate(model_id: str):
+    """Active une version d'épellation (recharge le prédicteur en mémoire)."""
+    from moomoo_ml.fingerspell import registry
+    from moomoo_ml.fingerspell.predictor import reload_predictor
+
+    try:
+        model = registry.set_active(model_id)
+        pred = reload_predictor()
+        pred.warmup()
+        return {"ok": True, "model": model, "runtime": pred.runtime}
+    except FileNotFoundError as exc:
+        return _unavailable("not_found", str(exc), 404)
+    except Exception as exc:
+        return _unavailable("activate_failed", str(exc), 500)
 
 
 @app.post("/infer")

@@ -18,6 +18,8 @@ import 'ml/ml_datasets_tab.dart';
 import 'ml/ml_experiments_tab.dart';
 import 'ml/ml_jobs_tab.dart';
 import 'ml/ml_registry_tab.dart';
+import 'ml/ml_fingerspell_tab.dart';
+import '../../../domain/providers/fingerspell_provider.dart';
 
 /// Refresh cadence while a job is queued or running.
 const _pollInterval = Duration(seconds: 3);
@@ -35,7 +37,7 @@ class AdminModelsScreen extends ConsumerStatefulWidget {
 
 class _AdminModelsScreenState extends ConsumerState<AdminModelsScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 4, vsync: this);
+  late final TabController _tabs = TabController(length: 5, vsync: this);
   Timer? _poll;
 
   @override
@@ -108,7 +110,10 @@ class _AdminModelsScreenState extends ConsumerState<AdminModelsScreen>
                   MlIconButton(
                     icon: AppIcons.refresh,
                     tooltip: l10n.admxRefresh,
-                    onPressed: () => refreshMlTraining(ref),
+                    onPressed: () {
+                      refreshMlTraining(ref);
+                      ref.invalidate(fingerspellModelsProvider);
+                    },
                   ),
                 ],
               ),
@@ -150,6 +155,10 @@ class _AdminModelsScreenState extends ConsumerState<AdminModelsScreen>
                       icon: const Icon(PhosphorIconsRegular.package, size: 20),
                       text: l10n.mlTabRegistry,
                     ),
+                    Tab(
+                      icon: const Icon(PhosphorIconsRegular.hand, size: 20),
+                      text: l10n.mlTabFingerspell,
+                    ),
                   ],
                 ),
               ),
@@ -163,6 +172,7 @@ class _AdminModelsScreenState extends ConsumerState<AdminModelsScreen>
                 MlJobsTab(onJobQueued: _goToJobs),
                 const MlExperimentsTab(),
                 MlRegistryTab(onJobQueued: _goToJobs),
+                const MlFingerspellTab(),
               ],
             ),
           ),

@@ -2216,7 +2216,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mlScreenSubtitle =>
-      'Datasets, entraînements, expériences et registre des modèles par langue des signes';
+      'Datasets, entraînements, expériences, registre et modèles d\'épellation ASL';
 
   @override
   String get mlTabDatasets => 'Datasets';
@@ -2229,6 +2229,106 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mlTabRegistry => 'Registre';
+
+  @override
+  String get mlTabFingerspell => 'Épellation';
+
+  @override
+  String get mlFingerspellTitle => 'Modèles d\'épellation ASL';
+
+  @override
+  String get mlFingerspellSubtitle =>
+      'Activez la version utilisée pour la traduction lettres → texte, et consultez les courbes d\'entraînement.';
+
+  @override
+  String get mlFingerspellEmptyTitle => 'Aucun modèle d\'épellation';
+
+  @override
+  String get mlFingerspellEmptyMessage =>
+      'Démarrez le service ML (uvicorn) pour charger les versions depuis ml/models/fingerspell.';
+
+  @override
+  String get mlFingerspellActive => 'Actif';
+
+  @override
+  String get mlFingerspellActivate => 'Activer ce modèle';
+
+  @override
+  String mlFingerspellActivated(String name) {
+    return '$name est maintenant le modèle actif';
+  }
+
+  @override
+  String mlFingerspellAccuracy(String value) {
+    return 'Précision test : $value %';
+  }
+
+  @override
+  String get mlFingerspellPerfTitle => 'Performances';
+
+  @override
+  String get mlFingerspellChartAccuracy => 'Précision par époque';
+
+  @override
+  String get mlFingerspellTestAccuracy => 'Précision (holdout)';
+
+  @override
+  String get mlFingerspellTop3 => 'Top-3 (holdout)';
+
+  @override
+  String get mlFingerspellDetailsTitle => 'Fiche du modèle';
+
+  @override
+  String get mlFingerspellFieldId => 'Identifiant';
+
+  @override
+  String get mlFingerspellFieldVersion => 'Version';
+
+  @override
+  String get mlFingerspellFieldDataset => 'Dataset';
+
+  @override
+  String get mlFingerspellFieldDatasetDir => 'Dossier dataset';
+
+  @override
+  String get mlFingerspellFieldArchitecture => 'Architecture';
+
+  @override
+  String get mlFingerspellFieldInput => 'Entrée';
+
+  @override
+  String get mlFingerspellFieldClasses => 'Classes';
+
+  @override
+  String get mlFingerspellFieldEpochs => 'Époques';
+
+  @override
+  String get mlFingerspellFieldMaxPerClass => 'Images / classe';
+
+  @override
+  String get mlFingerspellFieldRuntime => 'Runtime';
+
+  @override
+  String get mlFingerspellFieldSize => 'Taille TFLite';
+
+  @override
+  String get mlFingerspellFieldValAcc => 'Précision validation';
+
+  @override
+  String get mlFingerspellFieldTflite => 'TFLite disponible';
+
+  @override
+  String get mlFingerspellNoHistory =>
+      'Aucune courbe d\'entraînement disponible pour cette version.';
+
+  @override
+  String get mlNo => 'Non';
+
+  @override
+  String get dictGloss => 'Glosse';
+
+  @override
+  String get dictTranslations => 'Traductions';
 
   @override
   String get mlClose => 'Fermer';

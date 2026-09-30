@@ -12,21 +12,22 @@ export const TARGET_FIELDS = [
 ];
 
 const SYNONYMS = {
-  word: ['word', 'mot', 'sign', 'signe', 'name', 'nom', 'label', 'libelle', 'title', 'titre',
-    'gloss', 'glose', 'term', 'terme', 'entry', 'entree', 'lemma', 'lemme'],
+  word: ['word', 'mot', 'sign', 'signe', 'name', 'nom', 'nom_signe', 'label', 'libelle', 'title', 'titre',
+    'term', 'terme', 'entry', 'entree', 'lemma', 'lemme'],
   description: ['description', 'desc', 'definition', 'meaning', 'sens', 'explication',
-    'explanation', 'notes', 'note', 'details'],
+    'explanation', 'notes', 'note', 'details', 'translations'],
   category: ['category', 'categorie', 'categories', 'theme', 'topic', 'groupe', 'group',
     'domain', 'domaine', 'rubrique', 'cat'],
   language: ['language', 'langue', 'lang', 'sign_language', 'langue_des_signes', 'code_langue',
     'language_code', 'locale'],
   video_url: ['video', 'video_url', 'videourl', 'url_video', 'lien_video', 'video_link',
-    'media', 'media_url', 'mediaurl', 'url', 'lien', 'link', 'mp4', 'source', 'src', 'file'],
+    'media', 'media_url', 'mediaurl', 'url', 'lien', 'link', 'mp4', 'source', 'src', 'file',
+    'gif', 'gif_url', 'gifurl'],
   thumbnail_url: ['thumbnail', 'thumbnail_url', 'thumb', 'image', 'image_url', 'img', 'picture',
     'poster', 'vignette', 'miniature', 'photo'],
-  tags: ['tags', 'tag', 'keywords', 'mots_cles', 'motscles', 'labels', 'etiquettes'],
+  tags: ['tags', 'tag', 'keywords', 'mots_cles', 'motscles', 'labels', 'etiquettes', 'gloss', 'glose'],
   example_sentence: ['example', 'exemple', 'example_sentence', 'phrase', 'phrase_exemple',
-    'sentence', 'usage', 'contexte'],
+    'sentence', 'usage', 'contexte', 'dico_url'],
   difficulty_level: ['difficulty', 'difficulty_level', 'difficulte', 'niveau', 'level'],
 };
 

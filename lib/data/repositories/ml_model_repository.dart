@@ -169,11 +169,13 @@ class MlModelRepositoryImpl implements MlModelRepository {
         res = await _api.postMultipart(
           '/api/infer',
           fileBytes: fileBytes,
-          filename: filename ?? 'frame.gif',
+          filename: filename ?? 'clip.mp4',
           fields: {
             if (hint != null && hint.isNotEmpty) 'hint': hint,
           },
           accessToken: _token,
+          timeout: const Duration(seconds: 90),
+          markUnreachableOnFailure: false,
         );
       } else {
         res = await _api.postJson(
@@ -211,6 +213,8 @@ class MlModelRepositoryImpl implements MlModelRepository {
           if (reset) 'reset': 'true',
         },
         accessToken: _token,
+        timeout: const Duration(seconds: 60),
+        markUnreachableOnFailure: false,
       );
       return InferenceResult.fromJson(res);
     } on ApiException catch (e) {

@@ -28,7 +28,15 @@ Storage).
 # Worker: analysis, preprocessing, training, search, evaluation, TFLite
 .venv\Scripts\python -m moomoo_ml.worker          # --once to process a single job
 
-# Inference API used by the Node backend (/api/infer)
+# Inference API (libère le port 8000 s'il est déjà pris — évite WinError 10048)
+start_api.bat
+# ou : powershell -File start_api.ps1
+```
+
+Si vous lancez uvicorn à la main et que le port est occupé :
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }
 .venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -75,19 +83,25 @@ promoted to production.
 ### Fingerspelling (ASL alphabet → phrase)
 
 Still images are classified by the bundled CNN-BiLSTM in
-`ml/models/fingerspell/` (trained from `dataset/`). Use:
+`ml/models/fingerspell/` (trained from `ml/dataset/`). Use:
 
 ```bash
 # One frame + session buffer (space / del / letters)
 curl -F file=@frame.jpg -F session_id=demo http://127.0.0.1:8000/infer/spell
+
+# List / activate versions (admin UI + API)
+curl http://127.0.0.1:8000/fingerspell/models
+curl -X POST http://127.0.0.1:8000/fingerspell/models/asl-lstm-v1/activate
 ```
 
-Or `POST /api/infer/spell` via the Node backend. The Flutter translator captures
-frames in a loop while translation is on and assembles the phrase live.
+Or `POST /api/infer/spell` and `/api/fingerspell/*` via the Node backend. The
+Flutter translator captures frames in a loop while translation is on and
+assembles the phrase live. Admins switch the active version from **Modèles →
+Épellation**.
 
-Training images stay under `dataset/asl_alphabet_train/` (gitignored). Retrain
-with `cd dataset && python train.py` then copy `asl_lstm_mobile.tflite` and
-`labels.json` into `ml/models/fingerspell/`.
+Training images live under `ml/dataset/asl_alphabet_train/` (gitignored).
+Retrain with `cd ml/dataset && python train.py`, then register the new TFLite
+under `ml/models/fingerspell/versions/<id>/`.
 
 ## Tests
 

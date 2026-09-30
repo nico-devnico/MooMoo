@@ -96,5 +96,6 @@ flutter:
     - assets/models/
     - assets/images/onboarding/
     - assets/images/empty_state/
+    - assets/dictionnaire/
   
   generate: true

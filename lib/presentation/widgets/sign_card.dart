@@ -149,14 +149,23 @@ class SignCard extends StatelessWidget {
     return ExcludeSemantics(
       child: Builder(
         builder: (context) {
-          if (sign.thumbnailUrl != null) {
+          final url = sign.thumbnailUrl ??
+              (sign.videoUrl != null &&
+                      (sign.videoUrl!.toLowerCase().contains('.gif') ||
+                          sign.videoUrl!.toLowerCase().contains('.webp'))
+                  ? sign.videoUrl
+                  : null);
+          if (url != null) {
+            final animated = url.toLowerCase().contains('.gif') ||
+                url.toLowerCase().contains('.webp');
             return CachedNetworkImage(
-              imageUrl: sign.thumbnailUrl!,
+              imageUrl: url,
               fit: BoxFit.cover,
               width: double.infinity,
-              // Grid tiles never show more than this; decoding the full frame
-              // for every card wastes memory while scrolling.
-              memCacheWidth: 480,
+              // Ne pas redimensionner les GIFs : sinon ils restent figés.
+              memCacheWidth: animated ? null : 480,
+              fadeInDuration:
+                  animated ? Duration.zero : const Duration(milliseconds: 200),
               placeholder: (context, url) =>
                   Container(color: AppColors.neutral(context)),
               errorWidget: (context, url, error) => _buildPlaceholder(context),

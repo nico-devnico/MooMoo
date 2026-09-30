@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { modelsRouter } from './routes/models.js';
 import { inferRouter } from './routes/infer.js';
+import { fingerspellRouter } from './routes/fingerspell.js';
 import { healthRouter } from './routes/health.js';
 import { dictionaryRouter } from './routes/dictionary.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
@@ -28,6 +29,7 @@ app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/dictionary', requireAuth, maintenanceGuard, dictionaryRouter);
 app.use('/api/models', optionalAuth, maintenanceGuard, modelsRouter);
 app.use('/api/infer', optionalAuth, maintenanceGuard, inferRouter);
+app.use('/api/fingerspell', requireAuth, maintenanceGuard, fingerspellRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ ok: false, error: 'not_found', message: genericMessage(404) });

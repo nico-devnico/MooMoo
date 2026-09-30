@@ -58,9 +58,9 @@ def test_predictor_loads_and_classifies_holdout():
     assert len(pred.labels) == 29
     assert pred.runtime in ("tflite", "keras")
 
-    # Image de test du jeu holdout si disponible.
+    # Image de test du jeu holdout si disponible (ml/dataset/…).
     holdout = (
-        Path(__file__).resolve().parents[2]
+        Path(__file__).resolve().parents[1]
         / "dataset"
         / "asl_alphabet_test"
         / "asl_alphabet_test"
@@ -85,7 +85,7 @@ def test_classify_frame_session_assembles_text():
     pytest.importorskip("tensorflow", reason="TensorFlow requis pour l'interpréteur TFLite")
 
     holdout_dir = (
-        Path(__file__).resolve().parents[2]
+        Path(__file__).resolve().parents[1]
         / "dataset"
         / "asl_alphabet_test"
         / "asl_alphabet_test"

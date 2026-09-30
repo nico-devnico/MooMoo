@@ -704,12 +704,14 @@ class SignResultsSliver extends ConsumerWidget {
                       AppRoutes.signDetailName,
                       pathParameters: {'id': sign.id},
                     ),
-                    onFavoriteTap: () => toggleSignFavorite(
-                      context,
-                      ref,
-                      sign,
-                      isFavorite: isFavorite,
-                    ),
+                    onFavoriteTap: sign.id.startsWith('lsfb:')
+                        ? null
+                        : () => toggleSignFavorite(
+                              context,
+                              ref,
+                              sign,
+                              isFavorite: isFavorite,
+                            ),
                   );
                 },
                 childCount: items.length,

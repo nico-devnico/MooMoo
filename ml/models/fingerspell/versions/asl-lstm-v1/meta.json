@@ -1,0 +1,7 @@
+{
+  "id": "asl-lstm-v1",
+  "name": "ASL CNN-BiLSTM",
+  "version": "1.0.0",
+  "dataset": "asl_alphabet",
+  "runtime": "tflite"
+}
