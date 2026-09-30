@@ -1,0 +1,10 @@
+﻿OK   ml.health ΓÇö moomoo-ml
+OK   api.health ΓÇö database=ok
+OK   api.signup ΓÇö user=71ef8728-f3cf-4be2-a88b-7a0806f6854c session=true warn=
+OK   api.login ΓÇö session=true
+OK   api.me ΓÇö profile=71ef8728-f3cf-4be2-a88b-7a0806f6854c is_admin=false
+OK   api.models ΓÇö count=0
+OK   api.infer.spell ΓÇö label=A conf=1.000 ms=3.05
+cleanup: 1 compte de test supprim├⌐
+
+passed=7 failed=0

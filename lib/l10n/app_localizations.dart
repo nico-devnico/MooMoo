@@ -3515,7 +3515,7 @@ abstract class AppLocalizations {
   /// No description provided for @translSpellingHint.
   ///
   /// In fr, this message translates to:
-  /// **'Épelez lettre par lettre. « space » ajoute un espace, « del » efface.'**
+  /// **'Montrez chaque lettre clairement devant la caméra. La traduction lit le flux vidéo en continu (« space » = espace, « del » = effacer).'**
   String get translSpellingHint;
 
   /// No description provided for @translLastLetter.

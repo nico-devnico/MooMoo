@@ -1941,7 +1941,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get translSpellingHint =>
-      'Épelez lettre par lettre. « space » ajoute un espace, « del » efface.';
+      'Montrez chaque lettre clairement devant la caméra. La traduction lit le flux vidéo en continu (« space » = espace, « del » = effacer).';
 
   @override
   String translLastLetter(String letter) {

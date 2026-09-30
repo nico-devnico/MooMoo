@@ -107,3 +107,65 @@ def classify_frame(
             "dataset": "asl_alphabet",
         },
     }
+
+
+def classify_media(
+    data: bytes,
+    *,
+    filename: str = "frame.jpg",
+    session_id: str | None = None,
+    threshold: float = 0.55,
+    reset: bool = False,
+    single_shot: bool = False,
+) -> dict:
+    """Classifie une image OU un clip vidéo (flux caméra temps réel).
+
+    Pour une vidéo : échantillonne plusieurs frames et les enchaîne dans la
+    même session d'épellation — c'est le chemin live appareil.
+    """
+    from .video_frames import is_video_filename, sample_jpeg_frames
+
+    if not is_video_filename(filename):
+        return classify_frame(
+            data,
+            session_id=session_id,
+            threshold=threshold,
+            reset=reset,
+            single_shot=single_shot,
+        )
+
+    frames = sample_jpeg_frames(data, filename=filename, max_frames=5)
+    if not frames:
+        # Fallback : tenter comme image (certains webm courts).
+        return classify_frame(
+            data,
+            session_id=session_id,
+            threshold=threshold,
+            reset=reset,
+            single_shot=single_shot,
+        )
+
+    # Clip live : hold allégé (plusieurs frames du même signe dans le clip).
+    result: dict | None = None
+    sid = session_id
+    do_reset = reset
+    for i, frame in enumerate(frames):
+        result = classify_frame(
+            frame,
+            session_id=sid,
+            threshold=threshold,
+            reset=do_reset and i == 0,
+            single_shot=False,
+        )
+        sid = result.get("session_id") or sid
+        do_reset = False
+        # Accélère le gate pour les frames suivantes du même clip.
+        if i == 0 and sid:
+            _, buf = _store.get(sid)
+            buf.gate.min_hold = max(1, min(buf.gate.min_hold, 2))
+            buf.gate.cooldown_s = min(buf.gate.cooldown_s, 0.25)
+
+    assert result is not None
+    result["frames_scored"] = len(frames)
+    result["source"] = "video_clip"
+    return result

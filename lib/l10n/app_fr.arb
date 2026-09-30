@@ -657,7 +657,7 @@
   "@translFileSelected": { "placeholders": { "name": { "type": "String" } } },
   "translResultLabel": "Texte traduit",
   "translResultPlaceholder": "Le texte traduit s'affichera ici.",
-  "translSpellingHint": "Épelez lettre par lettre. « space » ajoute un espace, « del » efface.",
+  "translSpellingHint": "Montrez chaque lettre clairement devant la caméra. La traduction lit le flux vidéo en continu (« space » = espace, « del » = effacer).",
   "translLastLetter": "Lettre : {letter}",
   "@translLastLetter": {
     "placeholders": {

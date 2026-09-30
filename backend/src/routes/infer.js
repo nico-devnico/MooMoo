@@ -46,22 +46,25 @@ async function forwardToMl(path, form) {
   return { payload, started };
 }
 
-/** Épellation ASL temps réel : image → lettre + phrase (session_id). */
+/** Épellation ASL temps réel : image ou clip vidéo → lettre + phrase. */
 inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(422).json({
         ok: false,
         error: 'no_input',
-        message: 'Une image de la main est requise pour l\'épellation.',
+        message: 'Une image ou une courte vidéo de la main est requise.',
       });
     }
 
+    const name = req.file.originalname || 'frame.jpg';
+    const mime = req.file.mimetype
+      || (/\.(mp4|webm|mov|avi|mkv)$/i.test(name) ? 'video/mp4' : 'image/jpeg');
     const form = new FormData();
     form.append(
       'file',
-      new Blob([req.file.buffer], { type: req.file.mimetype || 'image/jpeg' }),
-      req.file.originalname || 'frame.jpg',
+      new Blob([req.file.buffer], { type: mime }),
+      name,
     );
     if (req.body?.session_id) form.append('session_id', String(req.body.session_id));
     if (req.body?.threshold) form.append('threshold', String(req.body.threshold));
@@ -86,6 +89,8 @@ inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
         accepted: payload.accepted ?? false,
         mode: 'fingerspell',
         hand_detected: payload.hand_detected ?? true,
+        frames_scored: payload.frames_scored,
+        source: payload.source,
       },
       session_id: payload.session_id,
       model: payload.model,

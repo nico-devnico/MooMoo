@@ -83,16 +83,37 @@ async function run() {
     return `count=${(j.models || []).length}`;
   }))) fails++; else results++;
 
-  if (!(await check('api.infer', async () => {
+  if (!(await check('api.infer.spell', async () => {
+    const { readFileSync, existsSync } = await import('node:fs');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+    const img = join(root, 'ml/dataset/asl_alphabet_test/asl_alphabet_test/A_test.jpg');
+    if (!existsSync(img)) {
+      // Pas d'image holdout : un 503 motion sans fichier reste acceptable.
+      const form = new FormData();
+      form.append('hint', 'merci');
+      const r = await fetch(`${API}/api/infer`, { method: 'POST', body: form });
+      const j = await r.json();
+      if (r.status === 503 && j.ok === false) return `unavailable (${j.error})`;
+      if (!r.ok) throw new Error(`${r.status} ${j.message || JSON.stringify(j)}`);
+      return `label=${j.prediction?.label}`;
+    }
     const form = new FormData();
-    form.append('hint', 'merci');
-    const r = await fetch(`${API}/api/infer`, { method: 'POST', body: form });
+    form.append('file', new Blob([readFileSync(img)], { type: 'image/jpeg' }), 'hand.jpg');
+    form.append('single_shot', 'true');
+    form.append('reset', 'true');
+    const r = await fetch(`${API}/api/infer/spell`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
     const j = await r.json();
-    // Until a real model is served, an explicit 503 is the expected answer.
-    if (r.status === 503 && j.ok === false) return `unavailable (${j.error})`;
     if (!r.ok) throw new Error(`${r.status} ${j.message || JSON.stringify(j)}`);
-    if (j.prediction?.label === 'merci') throw new Error('label echoes the hint');
-    return `label=${j.prediction?.label} conf=${j.prediction?.confidence}`;
+    const label = j.prediction?.label || j.label;
+    const conf = j.prediction?.confidence ?? j.confidence;
+    if (!label) throw new Error('pas de label');
+    return `label=${label} conf=${Number(conf).toFixed(3)} ms=${j.prediction?.latency_ms ?? '?'}`;
   }))) fails++; else results++;
 
   await removeTestAccount();

@@ -114,7 +114,11 @@ def _center_square(rgb: np.ndarray, fraction: float = 1.0) -> np.ndarray:
 
 
 def match_training_brightness(rgb: np.ndarray, target_mean: float = TARGET_MEAN) -> np.ndarray:
-    """Correction douce — une retouche trop forte biaise vers N/M/P/Z."""
+    """Correction douce près de la cible ; plus forte si très sombre/clair.
+
+    Une retouche trop agressive sur des frames déjà correctes biaise vers
+    N/M/P/Z, mais un crop caméra trop sombre doit quand même remonter.
+    """
     arr = rgb.astype(np.float32)
     mean = float(arr.mean())
     if mean < 1e-3:
@@ -122,8 +126,14 @@ def match_training_brightness(rgb: np.ndarray, target_mean: float = TARGET_MEAN)
     if abs(mean - target_mean) <= BRIGHTNESS_TOLERANCE:
         return rgb
     delta = target_mean - mean
-    scale = float(np.clip(1.0 + 0.12 * (delta / max(target_mean, 1.0)), 0.88, 1.22))
-    out = arr * scale + delta * 0.15
+    strength = float(np.clip(abs(delta) / 90.0, 0.25, 1.0))
+    scale = float(
+        np.clip(1.0 + 0.45 * strength * (delta / max(target_mean, 1.0)), 0.72, 1.75)
+    )
+    out = arr * scale + delta * (0.15 + 0.55 * strength)
+    m2 = float(out.mean())
+    if m2 > 1e-3 and abs(m2 - target_mean) > 22:
+        out *= target_mean / m2
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
@@ -163,17 +173,17 @@ def candidate_crops(data: bytes) -> list[HandCrop]:
     out: list[HandCrop] = []
 
     if max(h, w) <= CLOSEUP_MAX_SIDE:
+        # Crop client déjà main-only : une seule passe (vitesse live).
         crop = _center_square(rgb) if h != w else rgb
         out.append(HandCrop(rgb=match_training_brightness(crop), detected=True, bbox=None))
-        out.append(HandCrop(rgb=crop, detected=True, bbox=None))
         return out
 
     primary = prepare_hand_image(data)
     out.append(primary)
 
-    for frac in (0.55, 0.70, 0.85):
+    # Live plein cadre : 2 candidats max (centre + peau) pour la latence.
+    for frac in (0.65, 0.80):
         center = _center_square(rgb, fraction=frac)
-        # Détection peau aussi sur le centre (main souvent au milieu).
         bbox = detect_hand_bbox(center)
         if bbox is not None:
             hand = _square_crop(center, bbox)
@@ -185,10 +195,9 @@ def candidate_crops(data: bytes) -> list[HandCrop]:
                         bbox=bbox,
                     )
                 )
-        out.append(HandCrop(rgb=center, detected=False, bbox=None))
+                break
         out.append(HandCrop(rgb=match_training_brightness(center), detected=False, bbox=None))
 
-    # Déduplique par taille (évite N passes inutiles).
     seen: set[tuple[int, int]] = set()
     unique: list[HandCrop] = []
     for crop in out:
@@ -197,4 +206,4 @@ def candidate_crops(data: bytes) -> list[HandCrop]:
             continue
         seen.add(key)
         unique.append(crop)
-    return unique[:6]
+    return unique[:3]

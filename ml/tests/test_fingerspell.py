@@ -147,3 +147,81 @@ def test_train_job_status_idle():
 
     st = train_job.status()
     assert st["status"] in ("idle", "running", "succeeded", "failed")
+
+
+def test_sample_jpeg_frames_from_synthetic_video(tmp_path):
+    import cv2
+    import numpy as np
+    from moomoo_ml.fingerspell.video_frames import sample_jpeg_frames
+
+    path = tmp_path / "clip.mp4"
+    writer = cv2.VideoWriter(
+        str(path),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        10.0,
+        (160, 120),
+    )
+    for i in range(20):
+        frame = np.full((120, 160, 3), 40 + i * 5, dtype=np.uint8)
+        # Tache peau approximative au centre.
+        frame[40:90, 50:110] = (180, 140, 110)
+        writer.write(frame)
+    writer.release()
+
+    frames = sample_jpeg_frames(path.read_bytes(), filename="clip.mp4", max_frames=6)
+    assert len(frames) >= 3
+    # Chaque frame doit être un JPEG décodable.
+    for blob in frames:
+        arr = np.frombuffer(blob, dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        assert img is not None
+
+
+def test_classify_media_video_assembles_letters(tmp_path):
+    import cv2
+    import numpy as np
+    from moomoo_ml.fingerspell.predictor import default_model_dir
+    from moomoo_ml.fingerspell.service import classify_media
+
+    model_dir = default_model_dir()
+    if not (model_dir / "model.tflite").exists() and not (
+        model_dir / "asl_lstm_mobile.tflite"
+    ).exists():
+        pytest.skip("modèle fingerspell absent")
+
+    holdout = (
+        Path(__file__).resolve().parents[1]
+        / "dataset"
+        / "asl_alphabet_test"
+        / "asl_alphabet_test"
+        / "A_test.jpg"
+    )
+    if not holdout.exists():
+        pytest.skip("image de test A absente")
+
+    # Fabrique un mini « clip » en répétant l'image holdout comme frames JPEG
+    # collées via VideoWriter (simulation flux caméra).
+    img = cv2.imread(str(holdout))
+    assert img is not None
+    h, w = img.shape[:2]
+    path = tmp_path / "a_sign.mp4"
+    writer = cv2.VideoWriter(
+        str(path),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        8.0,
+        (w, h),
+    )
+    for _ in range(12):
+        writer.write(img)
+    writer.release()
+
+    result = classify_media(
+        path.read_bytes(),
+        filename="a_sign.mp4",
+        session_id="live-test",
+        reset=True,
+        threshold=0.35,
+    )
+    assert result["ok"]
+    assert result.get("frames_scored", 0) >= 2
+    assert result["label"].upper() == "A" or "A" in (result.get("text") or "")

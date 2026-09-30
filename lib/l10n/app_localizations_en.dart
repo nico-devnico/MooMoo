@@ -1927,7 +1927,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translSpellingHint =>
-      'Fingerspell letter by letter. “space” adds a space, “del” deletes.';
+      'Hold each letter clearly in front of the camera. Translation reads the live video stream continuously (“space” = space, “del” = delete).';
 
   @override
   String translLastLetter(String letter) {

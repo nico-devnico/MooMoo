@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:chewie/chewie.dart';
@@ -89,9 +90,6 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   /// Dernière lettre détectée (affichage live).
   String? _lastLetter;
 
-  /// Intervalle entre deux captures pendant la traduction temps réel.
-  static const _spellInterval = Duration(milliseconds: 320);
-
   /// One history session per direction for the time the screen is open.
   final Map<String, String> _sessions = {};
 
@@ -151,35 +149,13 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     }
   }
 
-  Future<XFile?> _captureFrame({Duration timeout = const Duration(seconds: 12)}) async {
-    // Sur le web la caméra ne démarre qu'une fois la traduction active :
-    // attendre l'init avant d'abandonner.
-    final deadline = DateTime.now().add(timeout);
-    while (mounted && DateTime.now().isBefore(deadline)) {
-      await WidgetsBinding.instance.endOfFrame;
-      try {
-        final controller = await ref.read(cameraStateProvider.future);
-        if (controller != null && controller.value.isInitialized) {
-          final busy = controller.value.isTakingPicture;
-          if (!busy) {
-            return ref.read(cameraStateProvider.notifier).takePicture();
-          }
-        }
-      } catch (_) {
-        // Provider encore en chargement / erreur temporaire.
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-    }
-    return null;
-  }
-
   Future<void> _runInference() async {
     // Fichier importé (image/vidéo) : une seule passe.
     if (_selectedFile != null) {
       await _runOnceFromFile();
       return;
     }
-    // Caméra : boucle d'épellation temps réel (lettres → phrase).
+    // Caméra : clips vidéo courts en continu → traduction temps réel.
     await _runSpellLoop();
   }
 
@@ -217,14 +193,14 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final isImage = _isImage ||
         (filename != null &&
             RegExp(r'\.(jpe?g|png|webp|bmp)$', caseSensitive: false).hasMatch(filename));
-    // Recadrage centre pour imports plein cadre — le preview UI reste intact.
+    // Crop main uniquement (preview UI reste l'image originale).
     final spellBytes = isImage
-        ? prepareSpellFrameBytes(bytes, filename: filename ?? 'frame.jpg')
+        ? prepareHandSpellFrame(bytes).jpeg
         : bytes;
     final result = isImage
         ? await ref.read(mlModelRepositoryProvider).inferSpell(
               fileBytes: spellBytes,
-              filename: filename ?? 'frame.jpg',
+              filename: 'hand.jpg',
               reset: true,
               threshold: 0.35,
               singleShot: true,
@@ -273,13 +249,12 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     }
   }
 
-  /// Capture des frames en continu et assemble la phrase par épellation.
+  /// Flux caméra live : détecte la main, envoie uniquement le crop au ML.
   Future<void> _runSpellLoop() async {
     final l10n = AppLocalizations.of(context)!;
     final run = ++_inferenceRun;
     _spellBuffer.reset();
     _spellSessionId = null;
-    // Réessaie même si un timeout précédent avait marqué l'API « down ».
     ApiClient.resetAvailability();
 
     setState(() {
@@ -290,83 +265,102 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       _lastLetter = null;
     });
 
+    final deadline = DateTime.now().add(const Duration(seconds: 12));
+    while (mounted && DateTime.now().isBefore(deadline)) {
+      try {
+        final c = await ref.read(cameraStateProvider.future);
+        if (c != null && c.value.isInitialized) break;
+      } catch (_) {}
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    if (!mounted || run != _inferenceRun) return;
+
     var resetSession = true;
     var consecutiveFailures = 0;
-    while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
-      List<int>? bytes;
-      String filename = 'frame.jpg';
-      try {
-        final file = await _captureFrame();
-        if (file != null) {
-          bytes = await file.readAsBytes();
-          filename = file.name.isNotEmpty ? file.name : 'frame.jpg';
-        }
-      } catch (_) {
-        bytes = null;
-      }
-      if (!mounted || run != _inferenceRun) return;
+    var inferBusy = false;
+    final cam = ref.read(cameraStateProvider.notifier);
 
-      if (bytes == null || bytes.isEmpty) {
-        consecutiveFailures++;
-        if (consecutiveFailures >= 3) {
+    Future<void> handleHandJpeg(Uint8List jpeg, {required bool handDetected}) async {
+      if (!mounted || run != _inferenceRun || inferBusy) return;
+      if (!ref.read(translatorStateProvider)) return;
+      inferBusy = true;
+      try {
+        final result = await ref.read(mlModelRepositoryProvider).inferSpell(
+              fileBytes: jpeg,
+              filename: 'hand.jpg',
+              sessionId: _spellSessionId,
+              reset: resetSession,
+              threshold: 0.42,
+            );
+        resetSession = false;
+        if (!mounted || run != _inferenceRun) return;
+        if (!result.ok) {
+          consecutiveFailures++;
+          final hardFail = result.errorCode == 'backend_unavailable' ||
+              result.errorCode == 'ml_unavailable' ||
+              consecutiveFailures >= 8;
           setState(() {
-            _signStatus = _SignStatus.unavailable;
-            _errorMessage = l10n.translCameraUnavailable;
+            _errorMessage =
+                result.errorMessage ?? l10n.inferenceUnavailableMessage;
+            if (hardFail) _signStatus = _SignStatus.unavailable;
           });
+          if (hardFail) {
+            ref.read(translatorStateProvider.notifier).stop();
+          }
           return;
         }
-        await Future<void>.delayed(_spellInterval);
-        continue;
-      }
-
-      final spellBytes = prepareSpellFrameBytes(bytes, filename: filename);
-      final result = await ref.read(mlModelRepositoryProvider).inferSpell(
-            fileBytes: spellBytes,
-            filename: filename,
-            sessionId: _spellSessionId,
-            reset: resetSession,
-          );
-      resetSession = false;
-      if (!mounted || run != _inferenceRun) return;
-
-      if (!result.ok) {
-        consecutiveFailures++;
-        final hardFail = result.errorCode == 'backend_unavailable' ||
-            result.errorCode == 'ml_unavailable' ||
-            consecutiveFailures >= 5;
+        consecutiveFailures = 0;
+        _spellSessionId = result.sessionId ?? _spellSessionId;
+        String phrase = result.text?.trim() ?? '';
+        if (phrase.isEmpty &&
+            result.label != null &&
+            result.confidence != null &&
+            result.label!.toLowerCase() != 'nothing') {
+          _spellBuffer.update(result.label, result.confidence!);
+          phrase = _spellBuffer.text;
+        }
         setState(() {
-          _errorMessage =
-              result.errorMessage ?? l10n.inferenceUnavailableMessage;
-          if (hardFail) {
-            _signStatus = _SignStatus.unavailable;
-          }
+          _signStatus = _SignStatus.translating;
+          _translationResult = phrase;
+          _confidence = result.confidence;
+          _lastLetter = result.committed ?? result.label;
+          _errorMessage = null;
         });
-        if (hardFail) return;
-        await Future<void>.delayed(_spellInterval);
-        continue;
+      } finally {
+        inferBusy = false;
       }
+    }
 
-      consecutiveFailures = 0;
-      _spellSessionId = result.sessionId ?? _spellSessionId;
-      // Texte serveur prioritaire ; sinon assemblage local.
-      String phrase = result.text?.trim() ?? '';
-      if (phrase.isEmpty &&
-          result.label != null &&
-          result.confidence != null &&
-          result.label!.toLowerCase() != 'nothing') {
-        _spellBuffer.update(result.label, result.confidence!);
-        phrase = _spellBuffer.text;
+    final streamed = await cam.startHandFrameStream(
+      (jpeg, {required handDetected}) {
+        unawaited(handleHandJpeg(jpeg, handDetected: handDetected));
+      },
+    );
+
+    if (!streamed) {
+      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+        final still = await cam.captureHandStill();
+        if (!mounted || run != _inferenceRun) break;
+        if (still == null) {
+          consecutiveFailures++;
+          if (consecutiveFailures >= 3) {
+            setState(() {
+              _signStatus = _SignStatus.unavailable;
+              _errorMessage = l10n.translCameraUnavailable;
+            });
+            break;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+          continue;
+        }
+        await handleHandJpeg(still.jpeg, handDetected: still.handDetected);
+        await Future<void>.delayed(CameraState.frameInterval);
       }
-
-      setState(() {
-        _signStatus = _SignStatus.translating;
-        _translationResult = phrase;
-        _confidence = result.confidence;
-        _lastLetter = result.committed ?? result.label;
-        _errorMessage = null;
-      });
-
-      await Future<void>.delayed(_spellInterval);
+    } else {
+      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      await cam.stopHandFrameStream();
     }
 
     if (!mounted || run != _inferenceRun) return;
@@ -387,7 +381,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
 
   void _start() => ref.read(translatorStateProvider.notifier).start();
 
-  void _stop() => ref.read(translatorStateProvider.notifier).stop();
+  void _stop() {
+    unawaited(ref.read(cameraStateProvider.notifier).stopHandFrameStream());
+    ref.read(translatorStateProvider.notifier).stop();
+  }
 
   void _setMode(TranslationMode mode) {
     if (ref.read(translationModeStateProvider) == mode) return;
