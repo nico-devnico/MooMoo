@@ -23,56 +23,75 @@ class CameraState extends _$CameraState {
   /// Intervalle min entre deux envois ML (latence réseau + inférence).
   static const frameInterval = Duration(milliseconds: 280);
 
+  /// Lazy: no camera until [ensureCamera] (text→sign must never open it).
   @override
-  FutureOr<CameraController?> build() async {
+  FutureOr<CameraController?> build() {
     ref.onDispose(() {
       unawaited(stopHandFrameStream());
-      _active?.dispose();
+      final c = _active;
       _active = null;
+      c?.dispose();
     });
+    return null;
+  }
 
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return null;
+  /// Opens the front camera if needed. Safe to call repeatedly.
+  Future<CameraController?> ensureCamera() async {
+    final existing = _active ?? state.value;
+    if (existing != null && existing.value.isInitialized) {
+      return existing;
+    }
 
-    final controller = CameraController(
-      cameras.firstWhere(
+    state = const AsyncLoading();
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        state = const AsyncData(null);
+        return null;
+      }
+
+      final description = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
-      ),
-      _capturePreset,
-      enableAudio: false,
-      imageFormatGroup: kIsWeb
-          ? ImageFormatGroup.jpeg
-          : ImageFormatGroup.yuv420,
-    );
+      );
 
-    try {
-      await controller.initialize();
-      _active = controller;
-      return controller;
-    } catch (e) {
-      // Repli sans format forcé (web / appareils capricieux).
+      final controller = CameraController(
+        description,
+        _capturePreset,
+        enableAudio: false,
+        imageFormatGroup: kIsWeb
+            ? ImageFormatGroup.jpeg
+            : ImageFormatGroup.yuv420,
+      );
+
       try {
+        await controller.initialize();
+        _active = controller;
+        state = AsyncData(controller);
+        return controller;
+      } catch (e) {
+        // Repli sans format forcé (web / appareils capricieux).
+        try {
+          await controller.dispose();
+        } catch (_) {}
         final fallback = CameraController(
-          cameras.firstWhere(
-            (camera) => camera.lensDirection == CameraLensDirection.front,
-            orElse: () => cameras.first,
-          ),
+          description,
           _capturePreset,
           enableAudio: false,
         );
         await fallback.initialize();
         _active = fallback;
+        state = AsyncData(fallback);
         return fallback;
-      } catch (_) {
-        controller.dispose();
-        return null;
       }
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return null;
     }
   }
 
   Future<void> switchCamera() async {
-    final controller = state.value;
+    final controller = _active ?? state.value;
     if (controller == null) return;
     await stopHandFrameStream();
 
@@ -109,14 +128,14 @@ class CameraState extends _$CameraState {
   }
 
   Future<XFile?> takePicture() async {
-    final controller = state.value;
+    final controller = _active ?? state.value;
     if (controller == null || !controller.value.isInitialized) return null;
     if (controller.value.isStreamingImages) return null;
     return controller.takePicture();
   }
 
   Future<void> startVideoRecording() async {
-    final controller = state.value;
+    final controller = _active ?? state.value;
     if (controller == null || !controller.value.isInitialized) return;
     if (controller.value.isRecordingVideo) return;
     await controller.startVideoRecording();
@@ -124,7 +143,7 @@ class CameraState extends _$CameraState {
   }
 
   Future<XFile?> stopVideoRecording() async {
-    final controller = state.value;
+    final controller = _active ?? state.value;
     if (controller == null || !controller.value.isInitialized) return null;
     if (!controller.value.isRecordingVideo) return null;
     final file = await controller.stopVideoRecording();
@@ -133,7 +152,7 @@ class CameraState extends _$CameraState {
   }
 
   Future<void> setZoomLevel(double zoom) async {
-    final controller = state.value;
+    final controller = _active ?? state.value;
     if (controller == null || !controller.value.isInitialized) return;
     await controller.setZoomLevel(zoom);
   }
@@ -142,7 +161,7 @@ class CameraState extends _$CameraState {
   Future<bool> startHandFrameStream(
     void Function(Uint8List handJpeg, {required bool handDetected}) onFrame,
   ) async {
-    final controller = state.value;
+    final controller = await ensureCamera();
     if (controller == null || !controller.value.isInitialized) return false;
     if (_streaming) {
       _onHandFrame = onFrame;
@@ -182,6 +201,24 @@ class CameraState extends _$CameraState {
     if (state.hasValue) state = AsyncData(controller);
   }
 
+  /// Arrête le flux et dispose le [CameraController] (LED Windows / indicateur OS).
+  /// Does not re-open the camera: [build] stays at null until [ensureCamera].
+  Future<void> releaseCamera() async {
+    await stopHandFrameStream();
+    final controller = _active;
+    _active = null;
+    if (state.hasValue || state.isLoading) {
+      state = const AsyncData(null);
+    }
+    await Future<void>.delayed(Duration.zero);
+    if (controller == null) return;
+    try {
+      await controller.dispose();
+    } catch (e) {
+      debugPrint('[camera] dispose failed: $e');
+    }
+  }
+
   Future<void> _onCameraImage(CameraImage image) async {
     if (_frameBusy || _onHandFrame == null) return;
     final now = DateTime.now();
@@ -191,7 +228,8 @@ class CameraState extends _$CameraState {
     try {
       final jpeg = await cameraImageToJpeg(image, quality: 90);
       if (jpeg == null || _onHandFrame == null) return;
-      final mirror = state.value?.description.lensDirection == CameraLensDirection.front;
+      final mirror = (_active ?? state.value)?.description.lensDirection ==
+          CameraLensDirection.front;
       final hand = prepareHandSpellFrame(
         jpeg,
         outSize: 256,
@@ -206,7 +244,7 @@ class CameraState extends _$CameraState {
 
   /// Capture one-shot JPEG (même qualité qu'un import) → crop main.
   Future<({Uint8List jpeg, bool handDetected})?> captureHandStill() async {
-    final controller = state.value;
+    final controller = await ensureCamera();
     final file = await takePicture();
     if (file == null) return null;
     final bytes = await file.readAsBytes();

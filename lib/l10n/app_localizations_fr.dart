@@ -1980,6 +1980,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translSearching => 'Recherche du signe…';
 
   @override
+  String get translComposing =>
+      'Téléchargement des vidéos et extraction des landmarks…';
+
+  @override
+  String get translComposeFailed =>
+      'Impossible de composer la séquence de signes.';
+
+  @override
+  String translComposePartial(String words) {
+    return 'Certains mots n\'ont pas pu être inclus : $words';
+  }
+
+  @override
   String get translEmptyPrompt =>
       'Écrivez un mot ou une phrase pour voir le signe correspondant.';
 

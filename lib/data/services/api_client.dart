@@ -112,6 +112,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? accessToken,
     Duration? timeout,
+    bool markUnreachableOnFailure = true,
   }) async {
     return _send(
       () async {
@@ -126,6 +127,7 @@ class ApiClient {
         return _decode(res);
       },
       requestTimeout: timeout,
+      markUnreachableOnFailure: markUnreachableOnFailure,
     );
   }
 

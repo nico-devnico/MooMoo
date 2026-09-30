@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
 import '../../../domain/providers/app_settings_provider.dart';
+import '../../../domain/providers/camera_provider.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_nav_bar.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -61,6 +64,8 @@ class MainShell extends ConsumerWidget {
     if (isActive) {
       ref.read(translatorStateProvider.notifier).stop();
       ref.read(speechControllerProvider.notifier).stopListening();
+      // Libère le capteur immédiatement (indicateur OS / LED Windows).
+      unawaited(ref.read(cameraStateProvider.notifier).releaseCamera());
       return;
     }
 

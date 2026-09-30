@@ -3578,6 +3578,24 @@ abstract class AppLocalizations {
   /// **'Recherche du signe…'**
   String get translSearching;
 
+  /// No description provided for @translComposing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement des vidéos et extraction des landmarks…'**
+  String get translComposing;
+
+  /// No description provided for @translComposeFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de composer la séquence de signes.'**
+  String get translComposeFailed;
+
+  /// No description provided for @translComposePartial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certains mots n\'ont pas pu être inclus : {words}'**
+  String translComposePartial(String words);
+
   /// No description provided for @translEmptyPrompt.
   ///
   /// In fr, this message translates to:

@@ -1966,6 +1966,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get translSearching => 'Looking up the sign…';
 
   @override
+  String get translComposing => 'Downloading videos and extracting landmarks…';
+
+  @override
+  String get translComposeFailed => 'Could not compose the sign sequence.';
+
+  @override
+  String translComposePartial(String words) {
+    return 'Some words could not be included: $words';
+  }
+
+  @override
   String get translEmptyPrompt =>
       'Type a word or a sentence to see the matching sign.';
 

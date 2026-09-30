@@ -105,6 +105,65 @@ inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
   }
 });
 
+/** Texte → signes : télécharge les médias du dico, extrait et concatène les landmarks. */
+inferRouter.post('/compose-landmarks', async (req, res, next) => {
+  try {
+    const clips = req.body?.clips ?? req.body?.media ?? req.body?.urls;
+    if (!Array.isArray(clips) || clips.length === 0) {
+      return res.status(422).json({
+        ok: false,
+        error: 'invalid_request',
+        message: 'Une liste de clips {word, url} est requise.',
+      });
+    }
+
+    let mlRes;
+    try {
+      mlRes = await fetch(`${ML_SERVICE_URL}/compose-landmarks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          clips,
+          fps: req.body?.fps,
+          gap_frames: req.body?.gap_frames,
+          max_frames_per_clip: req.body?.max_frames_per_clip,
+          include_face: req.body?.include_face,
+        }),
+      });
+    } catch (e) {
+      console.error(`[infer/compose] ML unreachable (${ML_SERVICE_URL}):`, e.message);
+      return res.status(503).json({
+        ok: false,
+        error: 'ml_unavailable',
+        message: 'La composition des signes est momentanément indisponible. Réessayez plus tard.',
+      });
+    }
+
+    const payload = await mlRes.json().catch(() => ({}));
+    if (!mlRes.ok || payload.ok === false) {
+      return res.status(mlRes.ok ? 422 : (mlRes.status >= 500 ? 502 : mlRes.status)).json({
+        ok: false,
+        error: payload.error || 'compose_failed',
+        message: payload.detail || payload.message
+          || 'Impossible de composer la séquence de signes.',
+        missing: payload.missing || [],
+      });
+    }
+
+    res.json({
+      ok: true,
+      fps: payload.fps,
+      frames: payload.frames,
+      frame_count: payload.frame_count,
+      segments: payload.segments || [],
+      missing: payload.missing || [],
+      layout: payload.layout,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 inferRouter.post('/', upload.single('file'), async (req, res, next) => {
   try {
     const client =

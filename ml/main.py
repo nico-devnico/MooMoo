@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import Body, FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -209,6 +209,32 @@ def fingerspell_train(
     result = train_job.start(max_per_class=max_per_class, epochs=epochs)
     if not result.get("ok"):
         return JSONResponse(result, status_code=409)
+    return result
+
+
+@app.post("/compose-landmarks")
+async def compose_landmarks(payload: dict = Body(...)):
+    """Text→sign: download dictionary clips, extract Holistic landmarks, concatenate.
+
+    Body: `{ "clips": [{"word": "bonjour", "url": "https://…"}, …], "fps"?, "gap_frames"? }`.
+    Returns `{ frames, fps, segments, missing }` in the shape SignLandmarks.parse accepts.
+    """
+    from moomoo_ml.compose import compose_landmarks as _compose
+
+    try:
+        result = _compose(
+            payload,
+            fps=float(payload.get("fps") or 15),
+            gap_frames=int(payload.get("gap_frames") or 4),
+            max_frames_per_clip=int(payload.get("max_frames_per_clip") or 160),
+            include_face=bool(payload.get("include_face") or False),
+        )
+    except ValueError as exc:
+        return _unavailable("invalid_request", str(exc), 422)
+    except Exception as exc:
+        return _unavailable("compose_failed", str(exc), 500)
+    if not result.get("ok"):
+        return JSONResponse(status_code=422, content=result)
     return result
 
 

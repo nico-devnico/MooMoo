@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/landmark_compose.dart';
 import '../models/ml_model.dart';
 import '../services/api_client.dart';
 
@@ -27,6 +28,9 @@ abstract class MlModelRepository {
     bool? handDetected,
     bool live = false,
   });
+
+  /// Texte → signes : télécharge les médias, extrait et concatène les landmarks.
+  Future<LandmarkComposeResult> composeLandmarks(List<TextToSignClip> clips);
 }
 
 class MlModelRepositoryImpl implements MlModelRepository {
@@ -231,6 +235,32 @@ class MlModelRepositoryImpl implements MlModelRepository {
       return InferenceResult.unavailable(e.message);
     } catch (e) {
       return InferenceResult.unavailable(e.toString());
+    }
+  }
+
+  @override
+  Future<LandmarkComposeResult> composeLandmarks(List<TextToSignClip> clips) async {
+    if (clips.isEmpty) {
+      return LandmarkComposeResult.unavailable('Aucun média à composer.');
+    }
+    try {
+      ApiClient.resetAvailability();
+      final res = await _api.postJson(
+        '/api/infer/compose-landmarks',
+        accessToken: _token,
+        timeout: const Duration(seconds: 180),
+        markUnreachableOnFailure: false,
+        body: {
+          'clips': [for (final c in clips) c.toJson()],
+          'fps': 15,
+          'gap_frames': 4,
+        },
+      );
+      return LandmarkComposeResult.fromJson(res);
+    } on ApiException catch (e) {
+      return LandmarkComposeResult.unavailable(e.message);
+    } catch (e) {
+      return LandmarkComposeResult.unavailable(e.toString());
     }
   }
 }

@@ -18,6 +18,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../data/local/lsfb_dictionary_asset.dart';
+import '../../../data/models/landmark_compose.dart';
 import '../../../data/models/sign.dart';
 import '../../../data/models/sign_landmarks.dart';
 import '../../../data/repositories/session_repository.dart';
@@ -28,6 +30,7 @@ import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/character_provider.dart';
 import '../../../domain/providers/error_text.dart';
 import '../../../domain/providers/ml_model_provider.dart';
+import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/session_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
 import '../../../domain/providers/sign_view_provider.dart';
@@ -36,6 +39,7 @@ import '../../../domain/providers/three_d_settings_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
 import '../../../domain/translator/spelling_buffer.dart';
+import '../../../domain/translator/text_to_sign_composer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
@@ -112,7 +116,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     _chewieController?.dispose();
     final container = _container;
     // Providers must not change while the tree is being torn down.
-    Future.microtask(() => container.read(translatorStateProvider.notifier).stop());
+    Future.microtask(() {
+      container.read(translatorStateProvider.notifier).stop();
+      unawaited(container.read(cameraStateProvider.notifier).releaseCamera());
+    });
     for (final id in _sessions.values) {
       _sessionRepository.closeSession(id).catchError((_) {});
     }
@@ -267,7 +274,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final deadline = DateTime.now().add(const Duration(seconds: 12));
     while (mounted && DateTime.now().isBefore(deadline)) {
       try {
-        final c = await ref.read(cameraStateProvider.future);
+        final c = await ref.read(cameraStateProvider.notifier).ensureCamera();
         if (c != null && c.value.isInitialized) break;
       } catch (_) {}
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -334,39 +341,47 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       }
     }
 
-    // Stream d'abord (même preprocess 256 + miroir que l'import) ; stills en secours.
-    final streamed = await cam.startHandFrameStream(
-      (jpeg, {required handDetected}) {
-        unawaited(handleHandJpeg(jpeg, handDetected: handDetected));
-      },
-    );
-
-    if (streamed) {
-      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-      }
-      await cam.stopHandFrameStream();
-    } else {
-      while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
-        final still = await cam.captureHandStill();
-        if (!mounted || run != _inferenceRun) break;
-        if (still == null) {
-          consecutiveFailures++;
-          if (consecutiveFailures >= 3) {
-            setState(() {
-              _signStatus = _SignStatus.unavailable;
-              _errorMessage = l10n.translCameraUnavailable;
-            });
-            break;
-          }
-          await Future<void>.delayed(const Duration(milliseconds: 220));
-          continue;
+    // Photos JPEG (comme l'import) en priorité pour la même précision ;
+    // stream YUV en secours si takePicture échoue (web / certains drivers).
+    var useStream = false;
+    while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+      if (useStream) break;
+      final still = await cam.captureHandStill();
+      if (!mounted || run != _inferenceRun) break;
+      if (still == null) {
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+          useStream = true;
+          consecutiveFailures = 0;
+          break;
         }
-        consecutiveFailures = 0;
-        await handleHandJpeg(still.jpeg, handDetected: still.handDetected);
-        await Future<void>.delayed(CameraState.frameInterval);
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        continue;
+      }
+      consecutiveFailures = 0;
+      await handleHandJpeg(still.jpeg, handDetected: still.handDetected);
+      await Future<void>.delayed(CameraState.frameInterval);
+    }
+
+    if (useStream && mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+      final streamed = await cam.startHandFrameStream(
+        (jpeg, {required handDetected}) {
+          unawaited(handleHandJpeg(jpeg, handDetected: handDetected));
+        },
+      );
+      if (streamed) {
+        while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+      } else if (mounted) {
+        setState(() {
+          _signStatus = _SignStatus.unavailable;
+          _errorMessage = l10n.translCameraUnavailable;
+        });
       }
     }
+
+    await cam.releaseCamera();
 
     if (!mounted || run != _inferenceRun) return;
     final finalText = (_translationResult ?? '').trim();
@@ -387,8 +402,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   void _start() => ref.read(translatorStateProvider.notifier).start();
 
   void _stop() {
-    unawaited(ref.read(cameraStateProvider.notifier).stopHandFrameStream());
+    // Stop d'abord l'UI (plus de CameraPreview), puis libère le capteur.
     ref.read(translatorStateProvider.notifier).stop();
+    unawaited(ref.read(cameraStateProvider.notifier).releaseCamera());
   }
 
   void _setMode(TranslationMode mode) {
@@ -1280,10 +1296,17 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   /// so the history only keeps finished phrases.
   bool _recordPending = false;
 
+  bool _composing = false;
+  LandmarkComposeResult? _composeResult;
+  String? _composeError;
+  int _composeRun = 0;
+
   void _setQuery(String value) {
     setState(() {
       _activeWord = null;
       _selectedSignId = null;
+      _composeResult = null;
+      _composeError = null;
     });
     widget.onQueryChanged(value);
   }
@@ -1292,9 +1315,11 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     _recordPending = widget.controller.text.trim().isNotEmpty;
     _setQuery(widget.controller.text);
     widget.focusNode.requestFocus();
+    unawaited(_composePhrase(widget.controller.text));
   }
 
   void _clear() {
+    ++_composeRun;
     widget.controller.clear();
     _setQuery('');
     widget.focusNode.requestFocus();
@@ -1313,8 +1338,74 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
         widget.controller.text = text;
         _recordPending = text.trim().isNotEmpty;
         _setQuery(text);
+        unawaited(_composePhrase(text));
       },
     );
+  }
+
+  Future<int?> _preferredLanguageId() async {
+    final code = ref.read(userProfileProvider).value?.preferredSignLanguage;
+    if (code == null || code.isEmpty) return null;
+    if (code.toUpperCase() == LsfbDictionaryAsset.languageCode) {
+      final languages = await ref.read(signLanguagesProvider.future);
+      for (final l in languages) {
+        if (l.code.toUpperCase() == LsfbDictionaryAsset.languageCode) return l.id;
+      }
+      return LsfbDictionaryAsset.lsfbLanguageId;
+    }
+    final languages = await ref.read(signLanguagesProvider.future);
+    for (final l in languages) {
+      if (l.code.toUpperCase() == code.toUpperCase()) return l.id;
+    }
+    return null;
+  }
+
+  Future<void> _composePhrase(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final run = ++_composeRun;
+    setState(() {
+      _composing = true;
+      _composeError = null;
+      _composeResult = null;
+    });
+    // Phrase landmarks are the primary text→sign output.
+    unawaited(
+      ref.read(signViewModeProvider.notifier).setMode(SignViewModeEnum.landmarks),
+    );
+
+    try {
+      final languageId = await _preferredLanguageId();
+      if (!mounted || run != _composeRun) return;
+      final composer = TextToSignComposer(
+        dictionary: ref.read(dictionaryRepositoryProvider),
+        ml: ref.read(mlModelRepositoryProvider),
+      );
+      final result = await composer.compose(trimmed, languageId: languageId);
+      if (!mounted || run != _composeRun) return;
+      setState(() {
+        _composing = false;
+        _composeResult = result.ok ? result : null;
+        _composeError = result.ok
+            ? null
+            : (result.errorMessage ?? AppLocalizations.of(context)!.translComposeFailed);
+      });
+      if (result.ok && _recordPending) {
+        _recordPending = false;
+        final ids = [
+          for (final s in result.segments)
+            if (s.signId != null) s.signId!,
+        ];
+        widget.onTranslated(trimmed, ids);
+      }
+    } catch (e) {
+      if (!mounted || run != _composeRun) return;
+      setState(() {
+        _composing = false;
+        _composeResult = null;
+        _composeError = e.toString();
+      });
+    }
   }
 
   @override
@@ -1327,6 +1418,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
         widget.controller.text = next;
         _recordPending = true;
         _setQuery(next);
+        unawaited(_composePhrase(next));
       }
     });
 
@@ -1334,10 +1426,9 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     final viewMode = ref.watch(signViewModeProvider).value ?? SignViewModeEnum.video;
 
     final trimmed = widget.query.trim();
-    final words = trimmed.isEmpty
-        ? const <String>[]
-        : trimmed.split(RegExp(r'\s+')).toSet().toList(growable: false);
-    // A phrase is translated word by word: one word is looked up at a time.
+    final words = tokenizePhrase(trimmed);
+    // A phrase is translated word by word when browsing videos; compose covers
+    // the full phrase as landmarks.
     final lookup = words.length > 1
         ? (words.contains(_activeWord) ? _activeWord! : words.first)
         : trimmed;
@@ -1352,10 +1443,15 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     final searching = resultsAsync != null && resultsAsync.isLoading && signs.isEmpty;
     final failed = resultsAsync != null && resultsAsync.hasError && signs.isEmpty;
 
+    final composed = _composeResult;
+    final composedOk = composed != null && composed.ok && !composed.landmarks.isEmpty;
+
     if (_recordPending &&
         trimmed.isNotEmpty &&
+        !composedOk &&
         resultsAsync != null &&
-        !resultsAsync.isLoading) {
+        !resultsAsync.isLoading &&
+        !_composing) {
       _recordPending = false;
       final ids = selected == null ? const <String>[] : [selected.id];
       WidgetsBinding.instance.addPostFrameCallback((_) => widget.onTranslated(trimmed, ids));
@@ -1383,12 +1479,35 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
           )
         : null;
 
-    final alternatives = signs.length > 1
+    final segmentChips = composedOk && composed.segments.length > 1
+        ? _ChipGroup(
+            label: l10n.translMatches,
+            options: [
+              for (final s in composed.segments)
+                (s.signId ?? s.word, s.word.isEmpty ? '·' : s.word),
+            ],
+            selected: null,
+            onSelected: (_) {},
+          )
+        : null;
+
+    final alternatives = !composedOk && signs.length > 1
         ? _ChipGroup(
             label: l10n.translMatches,
             options: [for (final s in signs.take(12)) (s.id, s.word)],
             selected: selected?.id,
             onSelected: (id) => setState(() => _selectedSignId = id),
+          )
+        : null;
+
+    final missingNote = composed != null && composed.missing.isNotEmpty
+        ? Text(
+            l10n.translComposePartial(
+              composed.missing.map((m) => m.word).join(', '),
+            ),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
           )
         : null;
 
@@ -1398,10 +1517,12 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
           child: Semantics(
             liveRegion: true,
             child: Text(
-              displaySign?.word ?? l10n.translViewModeLabel,
-              maxLines: 1,
+              composedOk
+                  ? _composeTitle(composed, trimmed)
+                  : (displaySign?.word ?? l10n.translViewModeLabel),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: displaySign == null
+              style: (!composedOk && displaySign == null)
                   ? AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w600,
@@ -1418,17 +1539,22 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     final stage = _SignStage(
       viewMode: viewMode,
       lookup: lookup,
-      searching: searching,
-      failed: failed,
+      searching: searching || _composing,
+      searchingLabel: _composing ? l10n.translComposing : null,
+      failed: failed || (_composeError != null && !composedOk && !_composing),
+      failedTitle: _composeError,
       sign: displaySign,
       detailLoading: detailAsync?.isLoading ?? false,
+      composedLandmarks: composedOk ? composed.landmarks : null,
     );
 
     final description = displaySign?.description?.trim() ?? '';
     final details = [
-      if (description.isNotEmpty)
+      if (description.isNotEmpty && !composedOk)
         Text(description, style: AppTextStyles.bodyLarge),
+      ?segmentChips,
       ?alternatives,
+      ?missingNote,
     ];
 
     return LayoutBuilder(
@@ -1516,11 +1642,15 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
     for (final sign in signs) {
       if (sign.id == _selectedSignId) return sign;
     }
-    final target = lookup.toLowerCase();
-    for (final sign in signs) {
-      if (sign.word.toLowerCase() == target) return sign;
-    }
-    return signs.first;
+    return pickBestSign(signs, lookup);
+  }
+
+  String _composeTitle(LandmarkComposeResult composed, String fallback) {
+    final parts = [
+      for (final s in composed.segments)
+        if (s.word.isNotEmpty) s.word,
+    ];
+    return parts.isEmpty ? fallback : parts.join(' · ');
   }
 }
 
@@ -1760,19 +1890,26 @@ class _SignStage extends StatelessWidget {
     required this.failed,
     required this.sign,
     required this.detailLoading,
+    this.searchingLabel,
+    this.failedTitle,
+    this.composedLandmarks,
   });
 
   final SignViewModeEnum viewMode;
   final String lookup;
   final bool searching;
+  final String? searchingLabel;
   final bool failed;
+  final String? failedTitle;
   final Sign? sign;
   final bool detailLoading;
+  final SignLandmarks? composedLandmarks;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final current = sign;
+    final composed = composedLandmarks;
     const loading = Skeleton(
       child: SkeletonBlock(height: double.infinity, radius: AppRadius.l),
     );
@@ -1796,11 +1933,18 @@ class _SignStage extends StatelessWidget {
       );
     } else if (searching) {
       content = Skeleton(
-        label: l10n.translSearching,
+        label: searchingLabel ?? l10n.translSearching,
         child: const SkeletonBlock(height: double.infinity, radius: AppRadius.l),
       );
     } else if (failed) {
-      content = _StagePlaceholder(icon: AppIcons.error, title: l10n.errorGeneric);
+      content = _StagePlaceholder(
+        icon: AppIcons.error,
+        title: failedTitle ?? l10n.errorGeneric,
+      );
+    } else if (composed != null &&
+        !composed.isEmpty &&
+        viewMode == SignViewModeEnum.landmarks) {
+      content = LandmarkViewer(landmarks: composed);
     } else if (current == null) {
       content = _StagePlaceholder(
         icon: lookup.isEmpty ? AppIcons.signLanguage : AppIcons.search,
@@ -1820,7 +1964,9 @@ class _SignStage extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: current == null ? null : l10n.translShownSign(current.word),
+      label: composed != null && !composed.isEmpty
+          ? l10n.landmarksLabel
+          : (current == null ? null : l10n.translShownSign(current.word)),
       child: AppPanel(
         padding: EdgeInsets.zero,
         child: AnimatedSwitcher(
@@ -1830,7 +1976,7 @@ class _SignStage extends StatelessWidget {
             key: ValueKey(
               viewMode == SignViewModeEnum.model3d
                   ? viewMode
-                  : '$viewMode-${current?.id ?? lookup}-$searching-$failed',
+                  : '$viewMode-${composed?.frames.length ?? current?.id ?? lookup}-$searching-$failed',
             ),
             child: content,
           ),

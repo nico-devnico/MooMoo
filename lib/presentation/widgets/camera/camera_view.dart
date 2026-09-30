@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +29,7 @@ class CameraView extends ConsumerStatefulWidget {
 class _CameraViewState extends ConsumerState<CameraView> {
   late final AppLifecycleListener _lifecycle;
   bool _appVisible = true;
+  bool _opening = false;
   double _baseScale = 1.0;
   double _currentScale = 1.0;
 
@@ -48,20 +51,25 @@ class _CameraViewState extends ConsumerState<CameraView> {
     super.dispose();
   }
 
+  Future<void> _openIfNeeded() async {
+    if (_opening || !mounted) return;
+    final current = ref.read(cameraStateProvider).value;
+    if (current != null && current.value.isInitialized) return;
+    _opening = true;
+    try {
+      await ref.read(cameraStateProvider.notifier).ensureCamera();
+    } finally {
+      _opening = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isActive = widget.active ?? ref.watch(translatorStateProvider) == true;
 
-    // Not watching the auto-dispose provider releases the camera: nothing to
-    // film while the tab is hidden (the shell keeps it mounted) or the app is
-    // in the background.
-    if (!_appVisible || !TickerMode.valuesOf(context).enabled) {
-      return const ColoredBox(color: Colors.black);
-    }
-
-    // The browser asks for camera permission: only when the user starts.
-    if (kIsWeb && !isActive) {
+    // N'ouvrir le capteur que pendant une session active (web ET desktop).
+    if (!isActive) {
       return _CameraMessage(
         icon: PhosphorIconsRegular.videoCameraSlash,
         title: l10n.translCameraIdleTitle,
@@ -69,55 +77,69 @@ class _CameraViewState extends ConsumerState<CameraView> {
       );
     }
 
+    // App en arrière-plan / onglet masqué : ne pas watch → autoDispose libère la caméra.
+    if (!_appVisible || !TickerMode.valuesOf(context).enabled) {
+      return const ColoredBox(color: Colors.black);
+    }
+
     const loading = ColoredBox(
       color: Colors.black,
       child: Center(child: CircularProgressIndicator(color: Colors.white)),
     );
 
-    return ref.watch(cameraStateProvider).when(
-          loading: () => loading,
-          error: (_, _) => _CameraMessage(
-            icon: PhosphorIconsRegular.videoCameraSlash,
-            message: l10n.errCamera,
-          ),
-          data: (controller) {
-            if (controller == null || !controller.value.isInitialized) {
-              return loading;
-            }
-            return ColoredBox(
-              color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  GestureDetector(
-                    onScaleStart: (_) => _baseScale = _currentScale,
-                    onScaleUpdate: (details) {
-                      _currentScale = (_baseScale * details.scale).clamp(1.0, 5.0);
-                      ref.read(cameraStateProvider.notifier).setZoomLevel(_currentScale);
-                    },
-                    child: _CoverPreview(controller: controller),
-                  ),
-                  if (!kIsWeb)
-                    Positioned(
-                      right: AppSpacing.m,
-                      bottom: AppSpacing.m,
-                      child: IconButton.filled(
-                        tooltip: l10n.translSwitchCamera,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size.square(48),
-                        ),
-                        onPressed: () =>
-                            ref.read(cameraStateProvider.notifier).switchCamera(),
-                        icon: const Icon(PhosphorIconsRegular.cameraRotate),
-                      ),
-                    ),
-                ],
+    final cameraAsync = ref.watch(cameraStateProvider);
+    if (!cameraAsync.isLoading &&
+        (cameraAsync.value == null ||
+            !(cameraAsync.value?.value.isInitialized ?? false))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_openIfNeeded());
+      });
+    }
+
+    return cameraAsync.when(
+      loading: () => loading,
+      error: (_, _) => _CameraMessage(
+        icon: PhosphorIconsRegular.videoCameraSlash,
+        message: l10n.errCamera,
+      ),
+      data: (controller) {
+        if (controller == null || !controller.value.isInitialized) {
+          return loading;
+        }
+        return ColoredBox(
+          color: Colors.black,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                onScaleStart: (_) => _baseScale = _currentScale,
+                onScaleUpdate: (details) {
+                  _currentScale = (_baseScale * details.scale).clamp(1.0, 5.0);
+                  ref.read(cameraStateProvider.notifier).setZoomLevel(_currentScale);
+                },
+                child: _CoverPreview(controller: controller),
               ),
-            );
-          },
+              if (!kIsWeb)
+                Positioned(
+                  right: AppSpacing.m,
+                  bottom: AppSpacing.m,
+                  child: IconButton.filled(
+                    tooltip: l10n.translSwitchCamera,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black54,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.square(48),
+                    ),
+                    onPressed: () =>
+                        ref.read(cameraStateProvider.notifier).switchCamera(),
+                    icon: const Icon(PhosphorIconsRegular.cameraRotate),
+                  ),
+                ),
+            ],
+          ),
         );
+      },
+    );
   }
 }
 
