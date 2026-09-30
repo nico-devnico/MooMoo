@@ -126,6 +126,7 @@ inferRouter.post('/compose-landmarks', async (req, res, next) => {
           clips,
           fps: req.body?.fps,
           gap_frames: req.body?.gap_frames,
+          blend_frames: req.body?.blend_frames ?? req.body?.gap_frames,
           max_frames_per_clip: req.body?.max_frames_per_clip,
           include_face: req.body?.include_face,
         }),

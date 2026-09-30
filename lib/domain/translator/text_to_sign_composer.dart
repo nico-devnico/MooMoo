@@ -142,8 +142,9 @@ class TextToSignComposer {
     final segments = <LandmarkSegment>[];
     final missing = <LandmarkMissing>[];
     const fps = 15.0;
-    const gap = 4;
+    const blend = 6;
 
+    LandmarkFrame? previousLast;
     for (var i = 0; i < resolved.length; i++) {
       final r = resolved[i];
       final lm = SignLandmarks.parse(r.sign.landmarkData);
@@ -155,6 +156,13 @@ class TextToSignComposer {
         ));
         continue;
       }
+      if (previousLast != null && lm.frames.isNotEmpty) {
+        for (var g = 1; g <= blend; g++) {
+          final t = g / (blend + 1);
+          final s = t * t * (3 - 2 * t);
+          frames.add(LandmarkFrame.lerp(previousLast, lm.frames.first, s));
+        }
+      }
       final start = frames.length;
       frames.addAll(lm.frames);
       segments.add(LandmarkSegment(
@@ -163,12 +171,7 @@ class TextToSignComposer {
         startFrame: start,
         frames: lm.frames.length,
       ));
-      if (i < resolved.length - 1 && lm.frames.isNotEmpty) {
-        final hold = lm.frames.last;
-        for (var g = 0; g < gap; g++) {
-          frames.add(hold);
-        }
-      }
+      previousLast = lm.frames.isNotEmpty ? lm.frames.last : previousLast;
     }
     if (frames.isEmpty) return null;
     return (

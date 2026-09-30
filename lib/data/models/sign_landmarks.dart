@@ -4,20 +4,63 @@ import 'dart:ui' show Offset, Rect;
 /// Number of points MediaPipe gives per body part.
 const int kPosePoints = 33;
 const int kHandPoints = 21;
+const int kFacePoints = 468;
 
-/// Last pose index drawn: face, arms and hips.
+/// Last pose index used for framing (hips): legs are often guessed off-screen.
 const int kUpperBodyLast = 24;
 
-/// One instant of a sign: body and hands, in normalised image coordinates
-/// (0..1, y pointing down). A missing part is null.
+/// One instant of a sign: body, hands and optional face mesh, in normalised
+/// image coordinates (0..1, y pointing down). A missing part is null.
 class LandmarkFrame {
-  const LandmarkFrame({this.pose, this.leftHand, this.rightHand});
+  const LandmarkFrame({this.pose, this.leftHand, this.rightHand, this.face});
 
   final List<Offset>? pose;
   final List<Offset>? leftHand;
   final List<Offset>? rightHand;
+  final List<Offset>? face;
 
-  bool get isEmpty => pose == null && leftHand == null && rightHand == null;
+  bool get isEmpty =>
+      pose == null && leftHand == null && rightHand == null && face == null;
+
+  /// Linear blend for soft transitions between consecutive signs / frames.
+  static LandmarkFrame lerp(LandmarkFrame a, LandmarkFrame b, double t) {
+    final s = t.clamp(0.0, 1.0);
+    return LandmarkFrame(
+      pose: _lerpPoints(a.pose, b.pose, s, kPosePoints),
+      leftHand: _lerpPoints(a.leftHand, b.leftHand, s, kHandPoints),
+      rightHand: _lerpPoints(a.rightHand, b.rightHand, s, kHandPoints),
+      face: _lerpPoints(a.face, b.face, s, kFacePoints),
+    );
+  }
+
+  static List<Offset>? _lerpPoints(
+    List<Offset>? a,
+    List<Offset>? b,
+    double t,
+    int expected,
+  ) {
+    if (a == null && b == null) return null;
+    if (a == null) return t < 0.5 ? null : b;
+    if (b == null) return t < 0.5 ? a : null;
+    final n = math.max(math.max(a.length, b.length), expected);
+    return [
+      for (var i = 0; i < n; i++)
+        _lerpPoint(
+          i < a.length ? a[i] : Offset.zero,
+          i < b.length ? b[i] : Offset.zero,
+          t,
+        ),
+    ];
+  }
+
+  static Offset _lerpPoint(Offset a, Offset b, double t) {
+    final aOk = a != Offset.zero;
+    final bOk = b != Offset.zero;
+    if (!aOk && !bOk) return Offset.zero;
+    if (!aOk) return t < 0.5 ? Offset.zero : b;
+    if (!bOk) return t < 0.5 ? a : Offset.zero;
+    return Offset.lerp(a, b, t)!;
+  }
 }
 
 /// Recorded landmarks of a sign: a single pose or a sequence extracted from a
@@ -48,9 +91,7 @@ class SignLandmarks {
         milliseconds: (frames.length / (fps <= 0 ? 15 : fps) * 1000).round(),
       );
 
-  /// Smallest box holding the hands and upper body over the whole sign, so
-  /// the viewer can zoom on the signer instead of drawing a tiny figure in a
-  /// corner. Legs are left out: MediaPipe guesses them even off-screen.
+  /// Smallest box holding the hands, face and upper body over the whole sign.
   Rect? get bounds {
     double? minX, minY, maxX, maxY;
     for (final frame in frames) {
@@ -61,6 +102,10 @@ class SignLandmarks {
             if (pose[i] != Offset.zero) pose[i],
         ...?frame.leftHand?.where((p) => p != Offset.zero),
         ...?frame.rightHand?.where((p) => p != Offset.zero),
+        // Subsample face contours for framing (every 8th point is enough).
+        if (frame.face != null)
+          for (var i = 0; i < frame.face!.length; i += 8)
+            if (frame.face![i] != Offset.zero) frame.face![i],
       ];
       for (final p in points) {
         minX = minX == null ? p.dx : math.min(minX, p.dx);
@@ -123,7 +168,12 @@ class SignLandmarks {
         scale,
         3,
       );
-      if (pose == null && left == null && right == null) {
+      final face = _points(
+        raw['face'] ?? raw['face_landmarks'] ?? raw['faceLandmarks'],
+        scale,
+        3,
+      );
+      if (pose == null && left == null && right == null && face == null) {
         final hand = _points(raw['hand'] ?? raw['hands'], scale, 3);
         return hand == null ? null : _split(hand);
       }
@@ -131,6 +181,7 @@ class SignLandmarks {
         pose: _visible(pose, kPosePoints),
         leftHand: _visible(left, kHandPoints),
         rightHand: _visible(right, kHandPoints),
+        face: _visible(face, kFacePoints),
       );
     }
     if (raw is! List || raw.isEmpty) return null;
@@ -140,7 +191,9 @@ class SignLandmarks {
       final values = [for (final v in raw) (v as num).toDouble()];
       const poseSize = kPosePoints * 4;
       const handSize = kHandPoints * 3;
-      if (values.length >= poseSize + 2 * handSize) {
+      const faceSize = kFacePoints * 3;
+      final bodyHands = poseSize + 2 * handSize;
+      if (values.length >= bodyHands) {
         return LandmarkFrame(
           pose: _visible(_chunk(values, 0, kPosePoints, 4, scale), kPosePoints),
           leftHand: _visible(_chunk(values, poseSize, kHandPoints, 3, scale), kHandPoints),
@@ -148,6 +201,9 @@ class SignLandmarks {
             _chunk(values, poseSize + handSize, kHandPoints, 3, scale),
             kHandPoints,
           ),
+          face: values.length >= bodyHands + faceSize
+              ? _visible(_chunk(values, bodyHands, kFacePoints, 3, scale), kFacePoints)
+              : null,
         );
       }
       if (values.length >= 2 * handSize) {

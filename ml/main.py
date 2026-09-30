@@ -225,9 +225,10 @@ async def compose_landmarks(payload: dict = Body(...)):
         result = _compose(
             payload,
             fps=float(payload.get("fps") or 15),
-            gap_frames=int(payload.get("gap_frames") or 4),
+            gap_frames=int(payload["gap_frames"]) if payload.get("gap_frames") is not None else None,
+            blend_frames=int(payload["blend_frames"]) if payload.get("blend_frames") is not None else None,
             max_frames_per_clip=int(payload.get("max_frames_per_clip") or 160),
-            include_face=bool(payload.get("include_face") or False),
+            include_face=bool(payload["include_face"]) if "include_face" in payload else True,
         )
     except ValueError as exc:
         return _unavailable("invalid_request", str(exc), 422)

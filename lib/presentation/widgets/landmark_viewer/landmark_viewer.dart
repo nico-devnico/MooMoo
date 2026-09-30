@@ -101,8 +101,14 @@ class _LandmarkViewerState extends State<LandmarkViewer>
 
   LandmarkFrame _frameAt(double t) {
     final frames = widget.landmarks.frames;
-    final i = (t * frames.length).floor().clamp(0, frames.length - 1);
-    return frames[i];
+    if (frames.length == 1) return frames.first;
+    // Interpolate between adjacent frames so playback stays fluid.
+    final pos = t * (frames.length - 1);
+    final i = pos.floor().clamp(0, frames.length - 1);
+    final j = i + 1 < frames.length ? i + 1 : i;
+    final frac = pos - i;
+    if (frac < 0.001 || i == j) return frames[i];
+    return LandmarkFrame.lerp(frames[i], frames[j], frac);
   }
 
   @override
@@ -145,8 +151,14 @@ class _LandmarkViewerState extends State<LandmarkViewer>
     }
 
     final bodyColor = isDark
-        ? Colors.white.withValues(alpha: 0.55)
-        : AppColors.primaryDeep.withValues(alpha: 0.45);
+        ? const Color(0xFFE8EAED)
+        : const Color(0xFF202124);
+    final faceColor = isDark
+        ? const Color(0xFF9AA0A6)
+        : const Color(0xFF5F6368);
+    // MediaPipe-style hand colours: cyan / magenta on dark, blue / orange on light.
+    final leftHand = isDark ? const Color(0xFFFFAB40) : AppColors.warning;
+    final rightHand = isDark ? const Color(0xFF40C4FF) : AppColors.primary;
 
     return Semantics(
       image: true,
@@ -163,8 +175,9 @@ class _LandmarkViewerState extends State<LandmarkViewer>
                   frame: _frameAt(_controller.value),
                   bounds: _bounds,
                   bodyColor: bodyColor,
-                  leftHandColor: AppColors.warning,
-                  rightHandColor: isDark ? AppColors.secondary : AppColors.primary,
+                  faceColor: faceColor,
+                  leftHandColor: leftHand,
+                  rightHandColor: rightHand,
                 ),
               ),
             ),

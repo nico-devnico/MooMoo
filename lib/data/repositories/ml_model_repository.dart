@@ -253,7 +253,8 @@ class MlModelRepositoryImpl implements MlModelRepository {
         body: {
           'clips': [for (final c in clips) c.toJson()],
           'fps': 15,
-          'gap_frames': 4,
+          'blend_frames': 6,
+          'include_face': true,
         },
       );
       return LandmarkComposeResult.fromJson(res);
