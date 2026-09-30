@@ -1,7 +1,8 @@
-"""Détection de main + normalisation luminosité (alignée sur le dataset ASL).
+"""Prétraitement main pour l'épellation ASL.
 
-Le preview caméra de l'app n'est jamais modifié : seul le tenseur envoyé
-au modèle est recadré / recalibré.
+Le modèle a ~99,9 % sur des crops type dataset (main cadrée, fond simple).
+Les frames caméra pleine résolution doivent être ramenées à ce format :
+détection main centrée, crop carré serré, luminosité douce.
 """
 
 from __future__ import annotations
@@ -10,22 +11,20 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# Moyenne mesurée sur un échantillon du jeu d'entraînement (≈130 / 255).
 TARGET_MEAN = 130.0
-
-# Au-delà : on considère une frame caméra (pas un crop alphabet déjà cadrée).
-CLOSEUP_MAX_SIDE = 400
+BRIGHTNESS_TOLERANCE = 35.0
+# Vrais crops dataset (~200px) ; au-delà on traite comme frame caméra.
+CLOSEUP_MAX_SIDE = 220
 
 
 @dataclass(frozen=True)
 class HandCrop:
     rgb: np.ndarray  # uint8 H×W×3
     detected: bool
-    bbox: tuple[int, int, int, int] | None  # x, y, w, h
+    bbox: tuple[int, int, int, int] | None
 
 
 def decode_rgb(data: bytes) -> np.ndarray:
-    """JPEG/PNG → RGB uint8."""
     import cv2
 
     arr = np.frombuffer(data, dtype=np.uint8)
@@ -41,18 +40,34 @@ def _skin_mask(bgr: np.ndarray) -> np.ndarray:
     ycrcb = cv2.cvtColor(bgr, cv2.COLOR_BGR2YCrCb)
     mask_y = cv2.inRange(ycrcb, (0, 133, 77), (255, 173, 127))
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    mask_h = cv2.inRange(hsv, (0, 30, 40), (25, 255, 255)) | cv2.inRange(
-        hsv, (160, 30, 40), (180, 255, 255)
+    mask_h = cv2.inRange(hsv, (0, 25, 50), (30, 255, 255)) | cv2.inRange(
+        hsv, (155, 25, 50), (180, 255, 255)
     )
     mask = cv2.bitwise_or(mask_y, mask_h)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
     return mask
 
 
+def _score_contour(contour, frame_h: int, frame_w: int) -> float:
+    """Préfère une grosse tache peau proche du centre (main), pas le visage en haut."""
+    import cv2
+
+    area = float(cv2.contourArea(contour))
+    if area <= 0:
+        return -1.0
+    x, y, bw, bh = cv2.boundingRect(contour)
+    cx = x + bw / 2.0
+    cy = y + bh / 2.0
+    dx = abs(cx - frame_w / 2.0) / max(frame_w / 2.0, 1.0)
+    dy = abs(cy - frame_h * 0.55) / max(frame_h / 2.0, 1.0)
+    center_penalty = dx * dx + dy * dy
+    top_penalty = 0.35 if cy < frame_h * 0.28 else 0.0
+    return area * (1.0 - 0.55 * center_penalty) - top_penalty * area
+
+
 def detect_hand_bbox(rgb: np.ndarray) -> tuple[int, int, int, int] | None:
-    """Retourne (x, y, w, h) de la plus grande région peau, ou None."""
     import cv2
 
     if rgb.ndim != 3 or rgb.shape[2] != 3:
@@ -63,12 +78,14 @@ def detect_hand_bbox(rgb: np.ndarray) -> tuple[int, int, int, int] | None:
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         return None
-    best = max(contours, key=cv2.contourArea)
+    best = max(contours, key=lambda c: _score_contour(c, h, w))
+    if _score_contour(best, h, w) <= 0:
+        return None
     area = float(cv2.contourArea(best))
-    if area < (h * w) * 0.008:
+    if area < (h * w) * 0.006:
         return None
     x, y, bw, bh = cv2.boundingRect(best)
-    pad = int(0.18 * max(bw, bh))
+    pad = int(0.22 * max(bw, bh))
     x0 = max(0, x - pad)
     y0 = max(0, y - pad)
     x1 = min(w, x + bw + pad)
@@ -88,51 +105,96 @@ def _square_crop(rgb: np.ndarray, bbox: tuple[int, int, int, int]) -> np.ndarray
     return rgb[y0 : y0 + side, x0 : x0 + side]
 
 
-def _center_square(rgb: np.ndarray) -> np.ndarray:
+def _center_square(rgb: np.ndarray, fraction: float = 1.0) -> np.ndarray:
     h, w = rgb.shape[:2]
-    side = min(h, w)
+    side = int(min(h, w) * max(0.35, min(fraction, 1.0)))
     x0 = (w - side) // 2
     y0 = (h - side) // 2
     return rgb[y0 : y0 + side, x0 : x0 + side]
 
 
 def match_training_brightness(rgb: np.ndarray, target_mean: float = TARGET_MEAN) -> np.ndarray:
-    """Recale la luminosité moyenne vers celle des images d'entraînement.
-
-    Opération invisible pour l'utilisateur (preview inchangé).
-    """
+    """Correction douce — une retouche trop forte biaise vers N/M/P/Z."""
     arr = rgb.astype(np.float32)
     mean = float(arr.mean())
     if mean < 1e-3:
         return rgb
-    # Décalage + échelle douce : gère scènes très sombres sans saturer.
+    if abs(mean - target_mean) <= BRIGHTNESS_TOLERANCE:
+        return rgb
     delta = target_mean - mean
-    scale = 1.0 + 0.35 * (delta / max(target_mean, 1.0))
-    scale = float(np.clip(scale, 0.65, 1.75))
-    out = arr * scale + delta * 0.55
-    # Seconde passe légère pour coller la moyenne cible.
-    m2 = float(out.mean())
-    if m2 > 1e-3:
-        out *= target_mean / m2
+    scale = float(np.clip(1.0 + 0.12 * (delta / max(target_mean, 1.0)), 0.88, 1.22))
+    out = arr * scale + delta * 0.15
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
 def prepare_hand_image(data: bytes) -> HandCrop:
-    """Décode, détecte la main si besoin, crop carré, normalise la luminosité."""
+    """Produit un crop proche du format d'entraînement."""
     rgb = decode_rgb(data)
     h, w = rgb.shape[:2]
-    # Images déjà type dataset (petite, quasi carrée) : pas de re-crop agressif.
+
     if max(h, w) <= CLOSEUP_MAX_SIDE:
         crop = _center_square(rgb) if h != w else rgb
-        return HandCrop(
-            rgb=match_training_brightness(crop),
-            detected=True,
-            bbox=None,
-        )
+        return HandCrop(rgb=match_training_brightness(crop), detected=True, bbox=None)
 
+    center = _center_square(rgb, fraction=0.72)
     bbox = detect_hand_bbox(rgb)
-    if bbox is None:
-        crop = _center_square(rgb)
-        return HandCrop(rgb=match_training_brightness(crop), detected=False, bbox=None)
-    crop = _square_crop(rgb, bbox)
-    return HandCrop(rgb=match_training_brightness(crop), detected=True, bbox=bbox)
+    if bbox is not None:
+        hand = _square_crop(rgb, bbox)
+        if hand.shape[0] < 48 or hand.shape[1] < 48:
+            hand = center
+            detected = False
+            bbox = None
+        else:
+            detected = True
+    else:
+        hand = center
+        detected = False
+
+    return HandCrop(rgb=match_training_brightness(hand), detected=detected, bbox=bbox)
+
+
+def candidate_crops(data: bytes) -> list[HandCrop]:
+    """Plusieurs candidats pour choisir la prédiction la plus fiable.
+
+    Évite le biais N/M/P/Z quand un seul crop peau est mauvais.
+    """
+    rgb = decode_rgb(data)
+    h, w = rgb.shape[:2]
+    out: list[HandCrop] = []
+
+    if max(h, w) <= CLOSEUP_MAX_SIDE:
+        crop = _center_square(rgb) if h != w else rgb
+        out.append(HandCrop(rgb=match_training_brightness(crop), detected=True, bbox=None))
+        out.append(HandCrop(rgb=crop, detected=True, bbox=None))
+        return out
+
+    primary = prepare_hand_image(data)
+    out.append(primary)
+
+    for frac in (0.55, 0.70, 0.85):
+        center = _center_square(rgb, fraction=frac)
+        # Détection peau aussi sur le centre (main souvent au milieu).
+        bbox = detect_hand_bbox(center)
+        if bbox is not None:
+            hand = _square_crop(center, bbox)
+            if hand.shape[0] >= 40:
+                out.append(
+                    HandCrop(
+                        rgb=match_training_brightness(hand),
+                        detected=True,
+                        bbox=bbox,
+                    )
+                )
+        out.append(HandCrop(rgb=center, detected=False, bbox=None))
+        out.append(HandCrop(rgb=match_training_brightness(center), detected=False, bbox=None))
+
+    # Déduplique par taille (évite N passes inutiles).
+    seen: set[tuple[int, int]] = set()
+    unique: list[HandCrop] = []
+    for crop in out:
+        key = (crop.rgb.shape[0], crop.rgb.shape[1])
+        if key in seen and not crop.detected:
+            continue
+        seen.add(key)
+        unique.append(crop)
+    return unique[:6]

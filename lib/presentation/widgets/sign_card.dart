@@ -7,8 +7,11 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/layout/responsive.dart';
 import '../../core/theme/app_icons.dart';
 import '../../data/models/sign.dart';
+import '../../data/services/media_url.dart';
 import '../../l10n/app_localizations.dart';
+import 'animated_network_image.dart';
 import 'app_card.dart';
+import 'sign_media.dart';
 
 enum SignCardVariant { grid, list }
 
@@ -149,29 +152,33 @@ class SignCard extends StatelessWidget {
     return ExcludeSemantics(
       child: Builder(
         builder: (context) {
-          final url = sign.thumbnailUrl ??
-              (sign.videoUrl != null &&
-                      (sign.videoUrl!.toLowerCase().contains('.gif') ||
-                          sign.videoUrl!.toLowerCase().contains('.webp'))
+          final raw = sign.thumbnailUrl ??
+              (sign.videoUrl != null && SignMedia.isAnimatedImage(sign.videoUrl!)
                   ? sign.videoUrl
                   : null);
-          if (url != null) {
-            final animated = url.toLowerCase().contains('.gif') ||
-                url.toLowerCase().contains('.webp');
-            return CachedNetworkImage(
-              imageUrl: url,
+          if (raw == null) return _buildPlaceholder(context);
+          final url = resolveSignMediaUrl(raw);
+          if (url.isEmpty) return _buildPlaceholder(context);
+          final animated = SignMedia.isAnimatedImage(url) || SignMedia.isAnimatedImage(raw);
+          if (animated) {
+            return AnimatedNetworkImage(
+              url: url,
               fit: BoxFit.cover,
               width: double.infinity,
-              // Ne pas redimensionner les GIFs : sinon ils restent figés.
-              memCacheWidth: animated ? null : 480,
-              fadeInDuration:
-                  animated ? Duration.zero : const Duration(milliseconds: 200),
-              placeholder: (context, url) =>
-                  Container(color: AppColors.neutral(context)),
-              errorWidget: (context, url, error) => _buildPlaceholder(context),
+              placeholder: (_) => Container(color: AppColors.neutral(context)),
+              errorBuilder: (_, _, _) => _buildPlaceholder(context),
             );
           }
-          return _buildPlaceholder(context);
+          return CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            memCacheWidth: 480,
+            fadeInDuration: const Duration(milliseconds: 200),
+            placeholder: (context, url) =>
+                Container(color: AppColors.neutral(context)),
+            errorWidget: (context, url, error) => _buildPlaceholder(context),
+          );
         },
       ),
     );

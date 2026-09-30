@@ -149,8 +149,54 @@ class FingerspellPredictor:
         }
 
     def predict_bytes(self, data: bytes, top_k: int = 3) -> dict:
-        image, hand_detected = self.preprocess_bytes(data)
-        return self.predict(image, top_k=top_k, hand_detected=hand_detected)
+        """Évalue plusieurs crops et garde la prédiction la plus fiable.
+
+        Évite le biais caméra (N/M/P/Z) dû à un mauvais recadrage peau.
+        """
+        from .preprocess import candidate_crops
+
+        # Lettres souvent prédites par erreur sur fond / mauvais crop.
+        ambiguous = {"n", "m", "p", "z", "nothing"}
+
+        best: dict | None = None
+        best_score = -1.0
+        for crop in candidate_crops(data):
+            image = self._resize_to_model(crop.rgb)
+            result = self.predict(image, top_k=top_k, hand_detected=True)
+            result["hand_detected"] = crop.detected
+            conf = float(result["confidence"])
+            top = result.get("top") or []
+            second = float(top[1]["confidence"]) if len(top) > 1 else 0.0
+            margin = conf - second
+            score = conf * (0.50 + 0.50 * max(margin, 0.0))
+            if crop.detected:
+                score += 0.04
+            label = str(result["label"]).lower()
+            if label == "nothing":
+                score *= 0.45
+            # Pénalise les lettres ambiguës sauf marge nette (évite N/M/P/Z par défaut).
+            if label in ambiguous and margin < 0.18:
+                score *= 0.72
+            if score > best_score:
+                best_score = score
+                best = result
+
+        assert best is not None
+        # Seuil de confiance : sous 0.42 on préfère « nothing » (pas une fausse lettre).
+        if float(best["confidence"]) < 0.42 and str(best["label"]).lower() not in (
+            "nothing",
+            "del",
+            "space",
+        ):
+            nothing = next((l for l in self.labels if l.lower() == "nothing"), None)
+            if nothing is not None:
+                best = {
+                    **best,
+                    "label": nothing,
+                    "confidence": float(best["confidence"]),
+                    "accepted_low_conf": True,
+                }
+        return best
 
     def warmup(self) -> float:
         """Prédit une image noire pour charger les kernels TF (évite le timeout du 1er appel)."""

@@ -2307,6 +2307,40 @@ class AppLocalizationsEn extends AppLocalizations {
       'No training curve available for this version.';
 
   @override
+  String get mlFingerspellTrainTitle => 'Training';
+
+  @override
+  String get mlFingerspellTrainSubtitle =>
+      'Rerun CNN-BiLSTM training on ml/dataset, publish a new version and activate it. Holdout accuracy (~99%) measures dataset crops, not full-frame camera input.';
+
+  @override
+  String get mlFingerspellTrainStart => 'Rerun training';
+
+  @override
+  String get mlFingerspellTrainRunning => 'Training in progress…';
+
+  @override
+  String get mlFingerspellTrainIdle => 'No training running';
+
+  @override
+  String mlFingerspellTrainSucceeded(String id) {
+    return 'Training finished — version $id published';
+  }
+
+  @override
+  String get mlFingerspellTrainFailed => 'Training failed';
+
+  @override
+  String get mlFingerspellTrainRefresh => 'Refresh status';
+
+  @override
+  String get mlFingerspellTrainLog => 'Log';
+
+  @override
+  String get mlFingerspellAccuracyNote =>
+      'Note: holdout accuracy is measured on already-cropped images (like the dataset). On camera, hand cropping matters as much as the model.';
+
+  @override
   String get mlNo => 'No';
 
   @override

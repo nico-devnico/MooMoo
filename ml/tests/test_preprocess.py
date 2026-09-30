@@ -17,7 +17,12 @@ from moomoo_ml.fingerspell.preprocess import (
 def test_brightness_matches_training_mean():
     dark = np.full((64, 64, 3), 40, dtype=np.uint8)
     out = match_training_brightness(dark)
-    assert abs(float(out.mean()) - TARGET_MEAN) < 12
+    assert abs(float(out.mean()) - TARGET_MEAN) < 20
+
+    near = np.full((64, 64, 3), 125, dtype=np.uint8)
+    kept = match_training_brightness(near)
+    # Déjà proche de la cible : pas de retouche agressive.
+    assert abs(float(kept.mean()) - 125) < 3
 
 
 def test_prepare_holdout_keeps_letter_a():

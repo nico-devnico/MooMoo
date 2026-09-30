@@ -9,6 +9,7 @@ import { inferRouter } from './routes/infer.js';
 import { fingerspellRouter } from './routes/fingerspell.js';
 import { healthRouter } from './routes/health.js';
 import { dictionaryRouter } from './routes/dictionary.js';
+import { mediaRouter } from './routes/media.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { maintenanceGuard } from './lib/settings.js';
 import { errorHandler, genericMessage } from './lib/errors.js';
@@ -27,6 +28,8 @@ app.use('/api/auth/signup', optionalAuth, maintenanceGuard);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/dictionary', requireAuth, maintenanceGuard, dictionaryRouter);
+// Proxy GIF/images publiques (CORS + cache) — pas d'auth pour l'affichage dico.
+app.use('/api/media', optionalAuth, maintenanceGuard, mediaRouter);
 app.use('/api/models', optionalAuth, maintenanceGuard, modelsRouter);
 app.use('/api/infer', optionalAuth, maintenanceGuard, inferRouter);
 app.use('/api/fingerspell', requireAuth, maintenanceGuard, fingerspellRouter);

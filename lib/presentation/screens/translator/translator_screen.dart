@@ -20,6 +20,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/sign.dart';
 import '../../../data/models/sign_landmarks.dart';
 import '../../../data/repositories/session_repository.dart';
+import '../../../data/services/api_client.dart';
+import '../../../data/services/spell_frame_prep.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/camera_provider.dart';
 import '../../../domain/providers/character_provider.dart';
@@ -33,7 +35,6 @@ import '../../../domain/providers/three_d_settings_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
 import '../../../domain/translator/spelling_buffer.dart';
-import '../../../data/services/api_client.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
@@ -216,11 +217,17 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     final isImage = _isImage ||
         (filename != null &&
             RegExp(r'\.(jpe?g|png|webp|bmp)$', caseSensitive: false).hasMatch(filename));
+    // Recadrage centre pour imports plein cadre — le preview UI reste intact.
+    final spellBytes = isImage
+        ? prepareSpellFrameBytes(bytes, filename: filename ?? 'frame.jpg')
+        : bytes;
     final result = isImage
         ? await ref.read(mlModelRepositoryProvider).inferSpell(
-              fileBytes: bytes,
+              fileBytes: spellBytes,
               filename: filename ?? 'frame.jpg',
               reset: true,
+              threshold: 0.35,
+              singleShot: true,
             )
         : await ref.read(mlModelRepositoryProvider).infer(
               fileBytes: bytes,
@@ -228,7 +235,17 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
             );
     if (!mounted || run != _inferenceRun) return;
 
-    final phrase = (result.text ?? result.label)?.trim();
+    // text peut être "" (buffer vide) alors que label est correct — ne pas
+    // traiter "" comme absence de résultat (?? ne bascule pas sur label).
+    final text = result.text?.trim();
+    final label = result.label?.trim();
+    final phrase = (text != null && text.isNotEmpty)
+        ? text
+        : (label != null &&
+                label.isNotEmpty &&
+                label.toLowerCase() != 'nothing')
+            ? label
+            : null;
     final ok = result.ok && phrase != null && phrase.isNotEmpty;
     setState(() {
       if (ok) {
@@ -302,8 +319,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         continue;
       }
 
+      final spellBytes = prepareSpellFrameBytes(bytes, filename: filename);
       final result = await ref.read(mlModelRepositoryProvider).inferSpell(
-            fileBytes: bytes,
+            fileBytes: spellBytes,
             filename: filename,
             sessionId: _spellSessionId,
             reset: resetSession,
@@ -331,8 +349,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       consecutiveFailures = 0;
       _spellSessionId = result.sessionId ?? _spellSessionId;
       // Texte serveur prioritaire ; sinon assemblage local.
-      String phrase = result.text ?? '';
-      if (phrase.isEmpty && result.label != null && result.confidence != null) {
+      String phrase = result.text?.trim() ?? '';
+      if (phrase.isEmpty &&
+          result.label != null &&
+          result.confidence != null &&
+          result.label!.toLowerCase() != 'nothing') {
         _spellBuffer.update(result.label, result.confidence!);
         phrase = _spellBuffer.text;
       }

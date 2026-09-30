@@ -112,3 +112,38 @@ def test_unavailable_without_model(tmp_path):
 
     with pytest.raises(FingerspellUnavailable):
         FingerspellPredictor(tmp_path)
+
+
+def test_candidate_crops_closeup_returns_variants():
+    import numpy as np
+    from moomoo_ml.fingerspell.preprocess import candidate_crops
+    import cv2
+
+    # Petit crop type dataset.
+    rgb = np.full((180, 180, 3), 140, dtype=np.uint8)
+    ok, buf = cv2.imencode(".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+    assert ok
+    crops = candidate_crops(buf.tobytes())
+    assert len(crops) >= 1
+    assert all(c.rgb.ndim == 3 for c in crops)
+
+
+def test_candidate_crops_fullframe_produces_several():
+    import numpy as np
+    from moomoo_ml.fingerspell.preprocess import candidate_crops
+    import cv2
+
+    rgb = np.full((720, 1280, 3), 80, dtype=np.uint8)
+    # Tache peau au centre.
+    rgb[280:480, 540:740] = (200, 160, 130)
+    ok, buf = cv2.imencode(".jpg", cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+    assert ok
+    crops = candidate_crops(buf.tobytes())
+    assert len(crops) >= 2
+
+
+def test_train_job_status_idle():
+    from moomoo_ml.fingerspell import train_job
+
+    st = train_job.status()
+    assert st["status"] in ("idle", "running", "succeeded", "failed")

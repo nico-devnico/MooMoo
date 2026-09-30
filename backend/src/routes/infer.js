@@ -66,6 +66,7 @@ inferRouter.post('/spell', upload.single('file'), async (req, res, next) => {
     if (req.body?.session_id) form.append('session_id', String(req.body.session_id));
     if (req.body?.threshold) form.append('threshold', String(req.body.threshold));
     if (req.body?.reset) form.append('reset', String(req.body.reset));
+    if (req.body?.single_shot) form.append('single_shot', String(req.body.single_shot));
 
     const result = await forwardToMl('/infer/spell', form);
     if (result.errorStatus) {

@@ -4172,6 +4172,66 @@ abstract class AppLocalizations {
   /// **'Aucune courbe d\'entraînement disponible pour cette version.'**
   String get mlFingerspellNoHistory;
 
+  /// No description provided for @mlFingerspellTrainTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement'**
+  String get mlFingerspellTrainTitle;
+
+  /// No description provided for @mlFingerspellTrainSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relance l\'entraînement CNN-BiLSTM sur ml/dataset, publie une nouvelle version et l\'active. La précision holdout (~99 %) mesure les crops dataset, pas la caméra pleine frame.'**
+  String get mlFingerspellTrainSubtitle;
+
+  /// No description provided for @mlFingerspellTrainStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer l\'entraînement'**
+  String get mlFingerspellTrainStart;
+
+  /// No description provided for @mlFingerspellTrainRunning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement en cours…'**
+  String get mlFingerspellTrainRunning;
+
+  /// No description provided for @mlFingerspellTrainIdle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun entraînement en cours'**
+  String get mlFingerspellTrainIdle;
+
+  /// No description provided for @mlFingerspellTrainSucceeded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement terminé — version {id} publiée'**
+  String mlFingerspellTrainSucceeded(String id);
+
+  /// No description provided for @mlFingerspellTrainFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de l\'entraînement'**
+  String get mlFingerspellTrainFailed;
+
+  /// No description provided for @mlFingerspellTrainRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser le statut'**
+  String get mlFingerspellTrainRefresh;
+
+  /// No description provided for @mlFingerspellTrainLog.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journal'**
+  String get mlFingerspellTrainLog;
+
+  /// No description provided for @mlFingerspellAccuracyNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note : la précision holdout est mesurée sur des images déjà cadrées (comme le dataset). Sur caméra, le prétraitement (crop main) compte autant que le modèle.'**
+  String get mlFingerspellAccuracyNote;
+
   /// No description provided for @mlNo.
   ///
   /// In fr, this message translates to:

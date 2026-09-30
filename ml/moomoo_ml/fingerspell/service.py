@@ -57,6 +57,7 @@ def classify_frame(
     session_id: str | None = None,
     threshold: float = 0.55,
     reset: bool = False,
+    single_shot: bool = False,
 ) -> dict:
     """Classifie une image et met à jour le tampon d'épellation de la session."""
     try:
@@ -68,8 +69,24 @@ def classify_frame(
         _store.reset(session_id)
 
     sid, buf = _store.get(session_id)
+    # Import d'une seule image : commit immédiat (pas de hold multi-frames).
+    if single_shot:
+        buf.gate.min_hold = 1
+        buf.gate.cooldown_s = 0.0
+
     pred = predictor.predict_bytes(image_bytes)
     update = buf.update(pred["label"], confidence=pred["confidence"], threshold=threshold)
+
+    display_text = update["text"]
+    if (
+        not display_text
+        and single_shot
+        and update.get("accepted")
+        and pred["label"]
+        and pred["label"].lower() not in ("nothing", "del", "space")
+    ):
+        display_text = pred["label"].strip().upper()[:1]
+
     return {
         "ok": True,
         "mode": "fingerspell",
@@ -80,7 +97,7 @@ def classify_frame(
         "latency_ms": pred["latency_ms"],
         "runtime": pred["runtime"],
         "hand_detected": pred.get("hand_detected", True),
-        "text": update["text"],
+        "text": display_text or update["text"],
         "committed": update["committed"],
         "accepted": update["accepted"],
         "model": {

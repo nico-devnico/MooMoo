@@ -23,6 +23,7 @@ abstract class MlModelRepository {
     String? sessionId,
     bool reset = false,
     double threshold = 0.55,
+    bool singleShot = false,
   });
 }
 
@@ -201,8 +202,10 @@ class MlModelRepositoryImpl implements MlModelRepository {
     String? sessionId,
     bool reset = false,
     double threshold = 0.55,
+    bool singleShot = false,
   }) async {
     try {
+      ApiClient.resetAvailability();
       final res = await _api.postMultipart(
         '/api/infer/spell',
         fileBytes: fileBytes,
@@ -211,9 +214,10 @@ class MlModelRepositoryImpl implements MlModelRepository {
           if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
           'threshold': threshold.toString(),
           if (reset) 'reset': 'true',
+          if (singleShot) 'single_shot': 'true',
         },
         accessToken: _token,
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 90),
         markUnreachableOnFailure: false,
       );
       return InferenceResult.fromJson(res);

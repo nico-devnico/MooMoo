@@ -2322,6 +2322,40 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune courbe d\'entraînement disponible pour cette version.';
 
   @override
+  String get mlFingerspellTrainTitle => 'Entraînement';
+
+  @override
+  String get mlFingerspellTrainSubtitle =>
+      'Relance l\'entraînement CNN-BiLSTM sur ml/dataset, publie une nouvelle version et l\'active. La précision holdout (~99 %) mesure les crops dataset, pas la caméra pleine frame.';
+
+  @override
+  String get mlFingerspellTrainStart => 'Relancer l\'entraînement';
+
+  @override
+  String get mlFingerspellTrainRunning => 'Entraînement en cours…';
+
+  @override
+  String get mlFingerspellTrainIdle => 'Aucun entraînement en cours';
+
+  @override
+  String mlFingerspellTrainSucceeded(String id) {
+    return 'Entraînement terminé — version $id publiée';
+  }
+
+  @override
+  String get mlFingerspellTrainFailed => 'Échec de l\'entraînement';
+
+  @override
+  String get mlFingerspellTrainRefresh => 'Actualiser le statut';
+
+  @override
+  String get mlFingerspellTrainLog => 'Journal';
+
+  @override
+  String get mlFingerspellAccuracyNote =>
+      'Note : la précision holdout est mesurée sur des images déjà cadrées (comme le dataset). Sur caméra, le prétraitement (crop main) compte autant que le modèle.';
+
+  @override
   String get mlNo => 'Non';
 
   @override

@@ -1,6 +1,7 @@
 """Configuration centrale du projet ASL LSTM."""
 
 from pathlib import Path
+import os
 
 # Chemins
 ROOT_DIR = Path(__file__).resolve().parent
@@ -27,14 +28,15 @@ CHANNELS = 3
 INPUT_SHAPE = (IMG_SIZE, IMG_SIZE, CHANNELS)
 
 # Données (sous-échantillon stratifié : équilibre précision / temps CPU)
-MAX_PER_CLASS = 1000  # 1000 × 29 = 29 000 images
+# Surcharge possible via env (relance admin).
+MAX_PER_CLASS = int(os.environ.get("MOOMOO_FS_MAX_PER_CLASS", "1000"))  # 1000 × 29
 VAL_SPLIT = 0.15
 TEST_SPLIT = 0.10
 RANDOM_SEED = 42
 
 # Entraînement
 BATCH_SIZE = 64
-EPOCHS = 40
+EPOCHS = int(os.environ.get("MOOMOO_FS_EPOCHS", "40"))
 LEARNING_RATE = 1e-3
 MIN_LEARNING_RATE = 1e-6
 L2_REG = 1e-4

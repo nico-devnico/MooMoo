@@ -106,11 +106,13 @@ async def infer_spell(
     session_id: Optional[str] = Form(None),
     threshold: Optional[float] = Form(0.55),
     reset: Optional[str] = Form(None),
+    single_shot: Optional[str] = Form(None),
 ):
     """Épellation temps réel : une image → lettre + phrase assemblée.
 
     Labels spéciaux : `space` (espace), `del` (effacer), `nothing` (ignorer).
     Passez le même `session_id` entre les frames pour garder le tampon.
+    `single_shot=true` : commit immédiat (import d'une seule image).
     """
     from moomoo_ml.fingerspell.predictor import FingerspellUnavailable
     from moomoo_ml.fingerspell.service import classify_frame
@@ -124,6 +126,7 @@ async def infer_spell(
             session_id=session_id or None,
             threshold=float(threshold or 0.55),
             reset=str(reset or "").lower() in ("1", "true", "yes"),
+            single_shot=str(single_shot or "").lower() in ("1", "true", "yes"),
         )
     except FingerspellUnavailable as exc:
         return _unavailable("fingerspell_unavailable", str(exc))
@@ -171,6 +174,28 @@ def fingerspell_activate(model_id: str):
         return _unavailable("not_found", str(exc), 404)
     except Exception as exc:
         return _unavailable("activate_failed", str(exc), 500)
+
+
+@app.get("/fingerspell/train/status")
+def fingerspell_train_status():
+    """État du dernier / de l'entraînement fingerspell en cours."""
+    from moomoo_ml.fingerspell import train_job
+
+    return {"ok": True, **train_job.status()}
+
+
+@app.post("/fingerspell/train")
+def fingerspell_train(
+    max_per_class: Optional[int] = Form(None),
+    epochs: Optional[int] = Form(None),
+):
+    """Relance l'entraînement ASL (dataset/) en arrière-plan puis publie une version."""
+    from moomoo_ml.fingerspell import train_job
+
+    result = train_job.start(max_per_class=max_per_class, epochs=epochs)
+    if not result.get("ok"):
+        return JSONResponse(result, status_code=409)
+    return result
 
 
 @app.post("/infer")

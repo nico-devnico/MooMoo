@@ -9,7 +9,9 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/sign.dart';
 import '../../data/models/sign_landmarks.dart';
+import '../../data/services/media_url.dart';
 import '../../l10n/app_localizations.dart';
+import 'animated_network_image.dart';
 import 'landmark_viewer/landmark_viewer.dart';
 
 /// Shows how a sign is performed, with the richest medium available: a muted
@@ -46,7 +48,13 @@ class SignMedia extends StatefulWidget {
   /// them.
   static bool isAnimatedImage(String url) {
     final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
-    return path.endsWith('.gif') || path.endsWith('.webp') || path.endsWith('.apng');
+    final q = Uri.tryParse(url)?.queryParameters['url']?.toLowerCase() ?? '';
+    return path.endsWith('.gif') ||
+        path.endsWith('.webp') ||
+        path.endsWith('.apng') ||
+        q.endsWith('.gif') ||
+        q.endsWith('.webp') ||
+        q.contains('.gif');
   }
 
   @override
@@ -62,9 +70,16 @@ class _SignMediaState extends State<SignMedia> {
   SignLandmarks get _parsedLandmarks =>
       _landmarks ??= SignLandmarks.parse(widget.sign.landmarkData);
 
-  String? get _gifUrl {
+  String? get _rawGifUrl {
     final url = widget.sign.videoUrl;
     return url != null && SignMedia.isAnimatedImage(url) ? url : null;
+  }
+
+  String? get _gifUrl {
+    final raw = _rawGifUrl;
+    if (raw == null) return null;
+    final resolved = resolveSignMediaUrl(raw);
+    return resolved.isEmpty ? null : resolved;
   }
 
   @override
@@ -73,8 +88,6 @@ class _SignMediaState extends State<SignMedia> {
     _initVideo();
   }
 
-  /// The navigation shell keeps hidden tabs mounted: a looping video there
-  /// would keep decoding frames for nobody.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -104,9 +117,10 @@ class _SignMediaState extends State<SignMedia> {
 
   void _initVideo() {
     final url = widget.sign.videoUrl;
-    if (url == null || _gifUrl != null) return;
+    if (url == null || _rawGifUrl != null) return;
     if (widget.preferStill && widget.sign.thumbnailUrl != null) return;
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    final resolved = resolveSignMediaUrl(url);
+    final controller = VideoPlayerController.networkUrl(Uri.parse(resolved));
     _controller = controller;
     controller.initialize().then((_) async {
       if (!mounted || _controller != controller) return;
@@ -154,8 +168,6 @@ class _SignMediaState extends State<SignMedia> {
 
     if (!widget.showReplay || _controller == null) return media;
 
-    // Sous la vidéo, jamais par-dessus : le contrôle reste lisible quelle que
-    // soit l'image, et ne masque pas les mains.
     return Column(
       children: [
         Expanded(child: media),
@@ -172,6 +184,12 @@ class _SignMediaState extends State<SignMedia> {
   Widget _buildContent(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final controller = _controller;
+
+    // GIF prioritaire : ne jamais passer par le lecteur vidéo.
+    final gif = _gifUrl;
+    if (gif != null) {
+      return _GifPane(url: gif, fallback: _placeholder(l10n));
+    }
 
     if (controller != null && !_videoFailed) {
       if (!controller.value.isInitialized) {
@@ -193,11 +211,6 @@ class _SignMediaState extends State<SignMedia> {
         : LandmarkViewer(landmarks: landmarks, showControls: widget.showReplay);
     final fallback = landmarkView ?? _placeholder(l10n);
 
-    final gif = _gifUrl;
-    if (gif != null && !(widget.preferStill && widget.sign.thumbnailUrl != null)) {
-      return _image(gif, _thumbnailOr(fallback));
-    }
-    // A moving figure teaches more than a still picture.
     if (landmarks.isAnimated && !widget.preferStill) return landmarkView!;
     if (widget.sign.thumbnailUrl != null) return _thumbnailOr(fallback);
     return fallback;
@@ -206,20 +219,9 @@ class _SignMediaState extends State<SignMedia> {
   Widget _thumbnailOr(Widget fallback) {
     final url = widget.sign.thumbnailUrl;
     if (url == null) return fallback;
-    return _image(url, fallback);
-  }
-
-  Widget _image(String url, Widget fallback) {
-    final animated = SignMedia.isAnimatedImage(url);
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.contain,
-      // memCacheWidth casse l'animation des GIFs (décodage bitmap figé).
-      memCacheWidth: animated ? null : 720,
-      fadeInDuration: animated ? Duration.zero : const Duration(milliseconds: 200),
-      placeholder: (_, _) => const Center(child: CircularProgressIndicator()),
-      errorWidget: (_, _, _) => fallback,
-    );
+    final resolved = resolveSignMediaUrl(url);
+    if (resolved.isEmpty) return fallback;
+    return _GifPane(url: resolved, fallback: fallback);
   }
 
   Widget _placeholder(AppLocalizations l10n) {
@@ -239,6 +241,33 @@ class _SignMediaState extends State<SignMedia> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Affiche un GIF/image réseau en préservant l'animation (pas CachedNetworkImage).
+class _GifPane extends StatelessWidget {
+  const _GifPane({required this.url, required this.fallback});
+
+  final String url;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    if (SignMedia.isAnimatedImage(url)) {
+      return AnimatedNetworkImage(
+        url: url,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => fallback,
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.contain,
+      memCacheWidth: 720,
+      fadeInDuration: const Duration(milliseconds: 180),
+      placeholder: (_, _) => const Center(child: CircularProgressIndicator()),
+      errorWidget: (_, url, error) => fallback,
     );
   }
 }

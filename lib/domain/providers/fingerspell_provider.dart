@@ -96,6 +96,44 @@ class FingerspellModel {
   }
 }
 
+class FingerspellTrainStatus {
+  const FingerspellTrainStatus({
+    required this.status,
+    this.startedAt,
+    this.finishedAt,
+    this.message,
+    this.versionId,
+    this.error,
+    this.logTail = const [],
+  });
+
+  final String status; // idle | running | succeeded | failed
+  final String? startedAt;
+  final String? finishedAt;
+  final String? message;
+  final String? versionId;
+  final String? error;
+  final List<String> logTail;
+
+  bool get isRunning => status == 'running';
+
+  factory FingerspellTrainStatus.fromJson(Map<String, dynamic> json) {
+    final tail = json['log_tail'];
+    return FingerspellTrainStatus(
+      status: json['status'] as String? ?? 'idle',
+      startedAt: json['started_at'] as String?,
+      finishedAt: json['finished_at'] as String?,
+      message: json['message'] as String?,
+      versionId: json['version_id'] as String?,
+      error: json['error'] as String?,
+      logTail: [
+        for (final line in (tail is List ? tail : const []))
+          if (line != null) line.toString(),
+      ],
+    );
+  }
+}
+
 final fingerspellModelsProvider =
     FutureProvider.autoDispose<List<FingerspellModel>>((ref) async {
   final token = Supabase.instance.client.auth.currentSession?.accessToken;
@@ -112,6 +150,17 @@ final fingerspellModelsProvider =
   ];
 });
 
+final fingerspellTrainStatusProvider =
+    FutureProvider.autoDispose<FingerspellTrainStatus>((ref) async {
+  final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  final res = await ApiClient().get(
+    '/api/fingerspell/train/status',
+    accessToken: token,
+    timeout: const Duration(seconds: 15),
+  );
+  return FingerspellTrainStatus.fromJson(Map<String, dynamic>.from(res));
+});
+
 Future<void> activateFingerspellModel(WidgetRef ref, String id) async {
   final token = Supabase.instance.client.auth.currentSession?.accessToken;
   await ApiClient().postJson(
@@ -120,4 +169,24 @@ Future<void> activateFingerspellModel(WidgetRef ref, String id) async {
     timeout: const Duration(seconds: 60),
   );
   ref.invalidate(fingerspellModelsProvider);
+}
+
+Future<FingerspellTrainStatus> startFingerspellTraining(
+  WidgetRef ref, {
+  int? maxPerClass,
+  int? epochs,
+}) async {
+  final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  final body = <String, dynamic>{
+    if (maxPerClass != null) 'max_per_class': maxPerClass,
+    if (epochs != null) 'epochs': epochs,
+  };
+  final res = await ApiClient().postJson(
+    '/api/fingerspell/train',
+    body: body,
+    accessToken: token,
+    timeout: const Duration(seconds: 30),
+  );
+  ref.invalidate(fingerspellTrainStatusProvider);
+  return FingerspellTrainStatus.fromJson(Map<String, dynamic>.from(res));
 }

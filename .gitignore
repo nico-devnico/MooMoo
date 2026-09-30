@@ -7,6 +7,7 @@ ml/data/
 ml/cache/
 ml/artifacts/
 ml/.pytest_cache/
+backend/cache/
 **/__pycache__/
 *.pyc
 

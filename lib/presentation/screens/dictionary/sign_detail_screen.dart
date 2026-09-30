@@ -221,7 +221,6 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
         .where((t) => t.startsWith('source:'))
         .map((t) => t.substring('source:'.length))
         .firstOrNull;
-    final isLocal = sign.id.startsWith('lsfb:');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,14 +293,13 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
               fullWidth: false,
               onPressed: () => context.goNamed(AppRoutes.learningName),
             ),
-            if (!isLocal)
-              AppButton(
-                label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
-                icon: isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
-                variant: AppButtonVariant.outline,
-                fullWidth: false,
-                onPressed: _togglingFavorite ? null : () => _toggleFavorite(isFavorite),
-              ),
+            AppButton(
+              label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,
+              icon: isFavorite ? AppIcons.favoriteActive : AppIcons.favorite,
+              variant: AppButtonVariant.outline,
+              fullWidth: false,
+              onPressed: _togglingFavorite ? null : () => _toggleFavorite(isFavorite),
+            ),
             KeyedSubtree(
               key: _shareKey,
               child: AppButton(

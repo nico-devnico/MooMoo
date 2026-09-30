@@ -65,7 +65,9 @@ class ApiClient {
     Duration? requestTimeout,
     bool markUnreachableOnFailure = true,
   }) async {
-    if (isProbablyUnreachable) {
+    // L'inférence ML doit toujours tenter l'appel : un cooldown déclenché
+    // par une autre route (auth, models…) ne doit pas bloquer la traduction.
+    if (markUnreachableOnFailure && isProbablyUnreachable) {
       throw ApiUnreachableException('API $baseUrl marquée injoignable');
     }
     try {
@@ -75,15 +77,12 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } on TimeoutException catch (e) {
-      // Un timeout ML (1er chargement TF) n'est pas une API down.
       if (markUnreachableOnFailure) {
         _unreachableUntil = DateTime.now().add(_unreachableCooldown);
       }
       throw ApiUnreachableException('API $baseUrl délai dépassé : $e');
     } catch (e) {
-      final soft = !markUnreachableOnFailure ||
-          e.toString().contains('TimeoutException');
-      if (!soft) {
+      if (markUnreachableOnFailure) {
         _unreachableUntil = DateTime.now().add(_unreachableCooldown);
       }
       throw ApiUnreachableException('API $baseUrl injoignable : $e');

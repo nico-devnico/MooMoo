@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,13 +19,62 @@ import 'ml_charts.dart';
 import 'ml_common.dart';
 
 /// Onglet admin : modèles d'épellation ASL, activation, dataset et perfs.
-class MlFingerspellTab extends ConsumerWidget {
+class MlFingerspellTab extends ConsumerStatefulWidget {
   const MlFingerspellTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MlFingerspellTab> createState() => _MlFingerspellTabState();
+}
+
+class _MlFingerspellTabState extends ConsumerState<MlFingerspellTab> {
+  Timer? _poll;
+  bool _starting = false;
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  void _ensurePolling(bool running) {
+    if (running && _poll == null) {
+      _poll = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        ref.invalidate(fingerspellTrainStatusProvider);
+      });
+    } else if (!running && _poll != null) {
+      _poll?.cancel();
+      _poll = null;
+      ref.invalidate(fingerspellModelsProvider);
+    }
+  }
+
+  Future<void> _startTrain() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _starting = true);
+    try {
+      await startFingerspellTraining(ref);
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        message: l10n.mlFingerspellTrainRunning,
+        type: AppSnackbarType.success,
+      );
+      ref.invalidate(fingerspellTrainStatusProvider);
+    } catch (e) {
+      if (mounted) AppSnackbar.showError(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(fingerspellModelsProvider);
+    final trainAsync = ref.watch(fingerspellTrainStatusProvider);
+
+    trainAsync.whenData((s) => _ensurePolling(s.isRunning));
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -43,6 +94,7 @@ class MlFingerspellTab extends ConsumerWidget {
           );
         }
         final active = models.where((m) => m.active).firstOrNull ?? models.first;
+        final train = trainAsync.value;
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.l),
           children: [
@@ -59,6 +111,16 @@ class MlFingerspellTab extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.l),
+                  _TrainPanel(
+                    status: train,
+                    starting: _starting,
+                    onStart: (train?.isRunning ?? false) || _starting ? null : _startTrain,
+                    onRefresh: () {
+                      ref.invalidate(fingerspellTrainStatusProvider);
+                      ref.invalidate(fingerspellModelsProvider);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
                   for (final model in models) ...[
                     _ModelCard(
                       model: model,
@@ -89,6 +151,13 @@ class MlFingerspellTab extends ConsumerWidget {
                   Text(l10n.mlFingerspellDetailsTitle, style: AppTextStyles.h3),
                   const SizedBox(height: AppSpacing.m),
                   _ModelDetails(model: active),
+                  const SizedBox(height: AppSpacing.m),
+                  Text(
+                    l10n.mlFingerspellAccuracyNote,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xl),
                   Text(l10n.mlFingerspellPerfTitle, style: AppTextStyles.h3),
                   const SizedBox(height: AppSpacing.m),
@@ -99,6 +168,120 @@ class MlFingerspellTab extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _TrainPanel extends StatelessWidget {
+  const _TrainPanel({
+    required this.status,
+    required this.starting,
+    required this.onStart,
+    required this.onRefresh,
+  });
+
+  final FingerspellTrainStatus? status;
+  final bool starting;
+  final VoidCallback? onStart;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final s = status;
+    final running = s?.isRunning == true || starting;
+    final label = switch (s?.status) {
+      'running' => l10n.mlFingerspellTrainRunning,
+      'succeeded' => l10n.mlFingerspellTrainSucceeded(s?.versionId ?? '—'),
+      'failed' => l10n.mlFingerspellTrainFailed,
+      _ => l10n.mlFingerspellTrainIdle,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.l),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: AppRadius.radiusL,
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.mlFingerspellTrainTitle, style: AppTextStyles.h3),
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            l10n.mlFingerspellTrainSubtitle,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.m),
+          if (running) ...[
+            const LinearProgressIndicator(),
+            const SizedBox(height: AppSpacing.m),
+          ],
+          Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          if (s?.message != null && s!.message!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              s.message!,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary(context),
+              ),
+            ),
+          ],
+          if (s?.error != null) ...[
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              s!.error!,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.m),
+          Wrap(
+            spacing: AppSpacing.m,
+            runSpacing: AppSpacing.m,
+            children: [
+              AppButton(
+                label: l10n.mlFingerspellTrainStart,
+                icon: AppIcons.refresh,
+                fullWidth: false,
+                onPressed: onStart,
+              ),
+              AppButton(
+                label: l10n.mlFingerspellTrainRefresh,
+                icon: AppIcons.refresh,
+                variant: AppButtonVariant.outline,
+                fullWidth: false,
+                onPressed: onRefresh,
+              ),
+            ],
+          ),
+          if (s != null && s.logTail.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.l),
+            Text(l10n.mlFingerspellTrainLog, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: AppSpacing.s),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 180),
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                color: AppColors.neutral(context),
+                borderRadius: AppRadius.radiusM,
+              ),
+              child: SingleChildScrollView(
+                reverse: true,
+                child: SelectableText(
+                  s.logTail.join('\n'),
+                  style: AppTextStyles.bodySmall.copyWith(fontFamily: 'monospace'),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

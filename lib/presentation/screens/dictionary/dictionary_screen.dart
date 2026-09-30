@@ -14,6 +14,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/sign.dart';
 import '../../../data/models/sign_category.dart';
 import '../../../data/models/sign_language.dart';
+import '../../../data/local/local_favorites_store.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/favorite_provider.dart';
 import '../../../domain/providers/learning_provider.dart';
@@ -45,6 +46,22 @@ Future<void> toggleSignFavorite(
   required bool isFavorite,
 }) async {
   final l10n = AppLocalizations.of(context)!;
+  final isLocal = sign.id.startsWith('lsfb:');
+
+  // Signes LSFB locaux : favoris hors Supabase (SharedPreferences).
+  if (isLocal) {
+    await LocalFavoritesStore.toggle(sign.id, currentlyFavorite: isFavorite);
+    if (!context.mounted) return;
+    ref
+      ..invalidate(userFavoritesProvider)
+      ..invalidate(isSignFavoriteProvider(sign.id));
+    AppSnackbar.showSuccess(
+      context,
+      isFavorite ? l10n.dictFavoriteRemoved : l10n.dictFavoriteAdded,
+    );
+    return;
+  }
+
   final user = ref.read(currentUserProvider);
   if (user == null) {
     AppSnackbar.showWarning(context, l10n.loginToSave);
@@ -704,14 +721,12 @@ class SignResultsSliver extends ConsumerWidget {
                       AppRoutes.signDetailName,
                       pathParameters: {'id': sign.id},
                     ),
-                    onFavoriteTap: sign.id.startsWith('lsfb:')
-                        ? null
-                        : () => toggleSignFavorite(
-                              context,
-                              ref,
-                              sign,
-                              isFavorite: isFavorite,
-                            ),
+                    onFavoriteTap: () => toggleSignFavorite(
+                      context,
+                      ref,
+                      sign,
+                      isFavorite: isFavorite,
+                    ),
                   );
                 },
                 childCount: items.length,
