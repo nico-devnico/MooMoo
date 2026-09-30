@@ -1940,6 +1940,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translResultPlaceholder => 'Le texte traduit s\'affichera ici.';
 
   @override
+  String get translSpellingHint =>
+      'Épelez lettre par lettre. « space » ajoute un espace, « del » efface.';
+
+  @override
+  String translLastLetter(String letter) {
+    return 'Lettre : $letter';
+  }
+
+  @override
   String translConfidence(int percent) {
     return 'Confiance : $percent %';
   }

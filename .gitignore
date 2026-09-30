@@ -10,6 +10,13 @@ ml/.pytest_cache/
 **/__pycache__/
 *.pyc
 
+# ASL alphabet dataset images (≈1 Go) — le modèle TFLite est dans ml/models/
+dataset/asl_alphabet_train/
+dataset/asl_alphabet_test/
+dataset/outputs/models/*.keras
+dataset/outputs/plots/
+dataset/__pycache__/
+
 # Tooling output
 *.log
 .shots/

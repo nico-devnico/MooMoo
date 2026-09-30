@@ -72,6 +72,23 @@ staging, and the previous production model of the same language is archived.
 `/infer` answers 503 `no_production_model` until a model of that language is
 promoted to production.
 
+### Fingerspelling (ASL alphabet → phrase)
+
+Still images are classified by the bundled CNN-BiLSTM in
+`ml/models/fingerspell/` (trained from `dataset/`). Use:
+
+```bash
+# One frame + session buffer (space / del / letters)
+curl -F file=@frame.jpg -F session_id=demo http://127.0.0.1:8000/infer/spell
+```
+
+Or `POST /api/infer/spell` via the Node backend. The Flutter translator captures
+frames in a loop while translation is on and assembles the phrase live.
+
+Training images stay under `dataset/asl_alphabet_train/` (gitignored). Retrain
+with `cd dataset && python train.py` then copy `asl_lstm_mobile.tflite` and
+`labels.json` into `ml/models/fingerspell/`.
+
 ## Tests
 
 ```bash

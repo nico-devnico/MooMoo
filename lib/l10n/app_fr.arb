@@ -657,6 +657,13 @@
   "@translFileSelected": { "placeholders": { "name": { "type": "String" } } },
   "translResultLabel": "Texte traduit",
   "translResultPlaceholder": "Le texte traduit s'affichera ici.",
+  "translSpellingHint": "Épelez lettre par lettre. « space » ajoute un espace, « del » efface.",
+  "translLastLetter": "Lettre : {letter}",
+  "@translLastLetter": {
+    "placeholders": {
+      "letter": { "type": "String" }
+    }
+  },
   "translConfidence": "Confiance : {percent} %",
   "@translConfidence": { "placeholders": { "percent": { "type": "int" } } },
   "translModelUsed": "Modèle : {model}",

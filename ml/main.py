@@ -52,6 +52,19 @@ def health():
         "runtimes": {name: importlib.util.find_spec(name) is not None
                      for name in ("tensorflow", "mediapipe", "cv2")},
     }
+    # Modèle d'épellation ASL (lettres → phrases), hors registre production.
+    try:
+        from moomoo_ml.fingerspell.predictor import default_model_dir, get_predictor
+
+        pred = get_predictor()
+        status["fingerspell"] = {
+            "available": True,
+            "runtime": pred.runtime,
+            "classes": len(pred.labels),
+            "model_dir": str(default_model_dir()),
+        }
+    except Exception as exc:
+        status["fingerspell"] = {"available": False, "detail": str(exc)}
     try:
         row = db.one(
             """SELECT
@@ -65,6 +78,38 @@ def health():
     except Exception as exc:
         status["database"] = f"indisponible : {exc}"
     return status
+
+
+@app.post("/infer/spell")
+async def infer_spell(
+    file: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
+    threshold: Optional[float] = Form(0.55),
+    reset: Optional[str] = Form(None),
+):
+    """Épellation temps réel : une image → lettre + phrase assemblée.
+
+    Labels spéciaux : `space` (espace), `del` (effacer), `nothing` (ignorer).
+    Passez le même `session_id` entre les frames pour garder le tampon.
+    """
+    from moomoo_ml.fingerspell.predictor import FingerspellUnavailable
+    from moomoo_ml.fingerspell.service import classify_frame
+
+    data = await file.read()
+    if not data:
+        return _unavailable("no_input", "Image vide.", 422)
+    try:
+        result = classify_frame(
+            data,
+            session_id=session_id or None,
+            threshold=float(threshold or 0.55),
+            reset=str(reset or "").lower() in ("1", "true", "yes"),
+        )
+    except FingerspellUnavailable as exc:
+        return _unavailable("fingerspell_unavailable", str(exc))
+    except Exception as exc:
+        return _unavailable("spell_failed", str(exc), 500)
+    return result
 
 
 @app.post("/infer")
@@ -84,6 +129,34 @@ async def infer(
     import numpy as np
 
     from moomoo_ml.inference import NoProductionModel, landmarks_from_media
+
+    # Image fixe → épellation ASL (lettres), pas le modèle de signes en mouvement.
+    if file is not None:
+        suffix = Path(file.filename or "clip.mp4").suffix.lower() or ".mp4"
+        kind = media_kind(Path("x" + suffix))
+        if kind == "image":
+            from moomoo_ml.fingerspell.predictor import FingerspellUnavailable
+            from moomoo_ml.fingerspell.service import classify_frame
+
+            data = await file.read()
+            try:
+                spelled = classify_frame(data, session_id=None, threshold=0.55)
+            except FingerspellUnavailable as exc:
+                return _unavailable("fingerspell_unavailable", str(exc))
+            return {
+                "ok": True,
+                "label": spelled["label"],
+                "confidence": spelled["confidence"],
+                "top": spelled["top"],
+                "latency_ms": spelled["latency_ms"],
+                "runtime": spelled["runtime"],
+                "text": spelled["text"],
+                "committed": spelled["committed"],
+                "mode": "fingerspell",
+                "dataset": "asl_alphabet",
+                "model": spelled["model"],
+                "language": language,
+            }
 
     try:
         model = _models().get(language)

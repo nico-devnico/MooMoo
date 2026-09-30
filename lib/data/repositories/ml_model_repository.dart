@@ -15,6 +15,15 @@ abstract class MlModelRepository {
   });
   Future<List<TrainingJob>> listTrainingJobs({int limit = 30});
   Future<InferenceResult> infer({String? hint, List<int>? fileBytes, String? filename});
+
+  /// Épellation ASL temps réel : une image → lettre + phrase (session).
+  Future<InferenceResult> inferSpell({
+    required List<int> fileBytes,
+    String filename = 'frame.jpg',
+    String? sessionId,
+    bool reset = false,
+    double threshold = 0.55,
+  });
 }
 
 class MlModelRepositoryImpl implements MlModelRepository {
@@ -175,6 +184,34 @@ class MlModelRepositoryImpl implements MlModelRepository {
           },
         );
       }
+      return InferenceResult.fromJson(res);
+    } on ApiException catch (e) {
+      return InferenceResult.unavailable(e.message);
+    } catch (e) {
+      return InferenceResult.unavailable(e.toString());
+    }
+  }
+
+  @override
+  Future<InferenceResult> inferSpell({
+    required List<int> fileBytes,
+    String filename = 'frame.jpg',
+    String? sessionId,
+    bool reset = false,
+    double threshold = 0.55,
+  }) async {
+    try {
+      final res = await _api.postMultipart(
+        '/api/infer/spell',
+        fileBytes: fileBytes,
+        filename: filename,
+        fields: {
+          if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
+          'threshold': threshold.toString(),
+          if (reset) 'reset': 'true',
+        },
+        accessToken: _token,
+      );
       return InferenceResult.fromJson(res);
     } on ApiException catch (e) {
       return InferenceResult.unavailable(e.message);

@@ -1,0 +1,211 @@
+{
+  "internal_test": {
+    "accuracy": 0.9993103448275862,
+    "top3_accuracy": 1.0,
+    "failure_rate": 0.0006896551724138167,
+    "n": 2900
+  },
+  "holdout_test": {
+    "accuracy": 1.0,
+    "correct": 28,
+    "n": 28,
+    "details": [
+      {
+        "file": "A_test.jpg",
+        "expected": "A",
+        "predicted": "A",
+        "confidence": 0.9999,
+        "correct": true
+      },
+      {
+        "file": "B_test.jpg",
+        "expected": "B",
+        "predicted": "B",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "C_test.jpg",
+        "expected": "C",
+        "predicted": "C",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "D_test.jpg",
+        "expected": "D",
+        "predicted": "D",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "E_test.jpg",
+        "expected": "E",
+        "predicted": "E",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "F_test.jpg",
+        "expected": "F",
+        "predicted": "F",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "G_test.jpg",
+        "expected": "G",
+        "predicted": "G",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "H_test.jpg",
+        "expected": "H",
+        "predicted": "H",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "I_test.jpg",
+        "expected": "I",
+        "predicted": "I",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "J_test.jpg",
+        "expected": "J",
+        "predicted": "J",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "K_test.jpg",
+        "expected": "K",
+        "predicted": "K",
+        "confidence": 0.9999,
+        "correct": true
+      },
+      {
+        "file": "L_test.jpg",
+        "expected": "L",
+        "predicted": "L",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "M_test.jpg",
+        "expected": "M",
+        "predicted": "M",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "N_test.jpg",
+        "expected": "N",
+        "predicted": "N",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "nothing_test.jpg",
+        "expected": "nothing",
+        "predicted": "nothing",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "O_test.jpg",
+        "expected": "O",
+        "predicted": "O",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "P_test.jpg",
+        "expected": "P",
+        "predicted": "P",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "Q_test.jpg",
+        "expected": "Q",
+        "predicted": "Q",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "R_test.jpg",
+        "expected": "R",
+        "predicted": "R",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "S_test.jpg",
+        "expected": "S",
+        "predicted": "S",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "space_test.jpg",
+        "expected": "space",
+        "predicted": "space",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "T_test.jpg",
+        "expected": "T",
+        "predicted": "T",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "U_test.jpg",
+        "expected": "U",
+        "predicted": "U",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "V_test.jpg",
+        "expected": "V",
+        "predicted": "V",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "W_test.jpg",
+        "expected": "W",
+        "predicted": "W",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "X_test.jpg",
+        "expected": "X",
+        "predicted": "X",
+        "confidence": 1.0,
+        "correct": true
+      },
+      {
+        "file": "Y_test.jpg",
+        "expected": "Y",
+        "predicted": "Y",
+        "confidence": 0.9994,
+        "correct": true
+      },
+      {
+        "file": "Z_test.jpg",
+        "expected": "Z",
+        "predicted": "Z",
+        "confidence": 1.0,
+        "correct": true
+      }
+    ]
+  }
+}

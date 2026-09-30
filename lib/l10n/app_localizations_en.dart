@@ -1926,6 +1926,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get translResultPlaceholder => 'The translated text will appear here.';
 
   @override
+  String get translSpellingHint =>
+      'Fingerspell letter by letter. “space” adds a space, “del” deletes.';
+
+  @override
+  String translLastLetter(String letter) {
+    return 'Letter: $letter';
+  }
+
+  @override
   String translConfidence(int percent) {
     return 'Confidence: $percent%';
   }

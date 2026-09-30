@@ -3512,6 +3512,18 @@ abstract class AppLocalizations {
   /// **'Le texte traduit s\'affichera ici.'**
   String get translResultPlaceholder;
 
+  /// No description provided for @translSpellingHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épelez lettre par lettre. « space » ajoute un espace, « del » efface.'**
+  String get translSpellingHint;
+
+  /// No description provided for @translLastLetter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lettre : {letter}'**
+  String translLastLetter(String letter);
+
   /// No description provided for @translConfidence.
   ///
   /// In fr, this message translates to:

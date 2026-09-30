@@ -32,6 +32,7 @@ import '../../../domain/providers/stt_provider.dart';
 import '../../../domain/providers/three_d_settings_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
+import '../../../domain/translator/spelling_buffer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
@@ -76,6 +77,18 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   /// Bumped on every start or stop: a late answer must not overwrite the
   /// current state.
   int _inferenceRun = 0;
+
+  /// Session d'épellation côté ML (conserve la phrase entre les frames).
+  String? _spellSessionId;
+
+  /// Tampon local de secours si le serveur ne renvoie pas encore de texte.
+  final SpellingBuffer _spellBuffer = SpellingBuffer();
+
+  /// Dernière lettre détectée (affichage live).
+  String? _lastLetter;
+
+  /// Intervalle entre deux captures pendant la traduction temps réel.
+  static const _spellInterval = Duration(milliseconds: 320);
 
   /// One history session per direction for the time the screen is open.
   final Map<String, String> _sessions = {};
@@ -146,6 +159,16 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   }
 
   Future<void> _runInference() async {
+    // Fichier importé (image/vidéo) : une seule passe.
+    if (_selectedFile != null) {
+      await _runOnceFromFile();
+      return;
+    }
+    // Caméra : boucle d'épellation temps réel (lettres → phrase).
+    await _runSpellLoop();
+  }
+
+  Future<void> _runOnceFromFile() async {
     final l10n = AppLocalizations.of(context)!;
     final run = ++_inferenceRun;
     setState(() {
@@ -156,7 +179,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     List<int>? bytes;
     String? filename;
     try {
-      final file = _selectedFile ?? await _captureFrame();
+      final file = _selectedFile;
       if (file != null) {
         bytes = await file.readAsBytes();
         filename = file.name;
@@ -176,18 +199,30 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       return;
     }
 
-    final result = await ref
-        .read(mlModelRepositoryProvider)
-        .infer(fileBytes: bytes, filename: filename);
+    final isImage = _isImage ||
+        (filename != null &&
+            RegExp(r'\.(jpe?g|png|webp|bmp)$', caseSensitive: false).hasMatch(filename));
+    final result = isImage
+        ? await ref.read(mlModelRepositoryProvider).inferSpell(
+              fileBytes: bytes,
+              filename: filename ?? 'frame.jpg',
+              reset: true,
+            )
+        : await ref.read(mlModelRepositoryProvider).infer(
+              fileBytes: bytes,
+              filename: filename,
+            );
     if (!mounted || run != _inferenceRun) return;
 
-    final label = result.label?.trim();
-    final ok = result.ok && label != null && label.isNotEmpty;
+    final phrase = (result.text ?? result.label)?.trim();
+    final ok = result.ok && phrase != null && phrase.isNotEmpty;
     setState(() {
       if (ok) {
         _signStatus = _SignStatus.done;
-        _translationResult = label;
+        _translationResult = phrase;
         _confidence = result.confidence;
+        _lastLetter = result.committed ?? result.label;
+        _spellSessionId = result.sessionId;
       } else {
         _signStatus = _SignStatus.unavailable;
         _translationResult = null;
@@ -198,10 +233,101 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     if (ok) {
       _record(
         direction: 'sign_to_text',
-        translatedText: label,
+        translatedText: phrase,
         confidence: result.confidence,
         inferenceTimeMs: result.latencyMs?.round(),
         modelVersion: result.model?.version,
+      );
+    }
+  }
+
+  /// Capture des frames en continu et assemble la phrase par épellation.
+  Future<void> _runSpellLoop() async {
+    final l10n = AppLocalizations.of(context)!;
+    final run = ++_inferenceRun;
+    _spellBuffer.reset();
+    _spellSessionId = null;
+
+    setState(() {
+      _signStatus = _SignStatus.translating;
+      _errorMessage = null;
+      _translationResult = '';
+      _confidence = null;
+      _lastLetter = null;
+    });
+
+    var resetSession = true;
+    while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
+      List<int>? bytes;
+      String filename = 'frame.jpg';
+      try {
+        final file = await _captureFrame();
+        if (file != null) {
+          bytes = await file.readAsBytes();
+          filename = file.name.isNotEmpty ? file.name : 'frame.jpg';
+        }
+      } catch (_) {
+        bytes = null;
+      }
+      if (!mounted || run != _inferenceRun) return;
+
+      if (bytes == null || bytes.isEmpty) {
+        setState(() {
+          _signStatus = _SignStatus.unavailable;
+          _errorMessage = l10n.translCameraUnavailable;
+        });
+        return;
+      }
+
+      final result = await ref.read(mlModelRepositoryProvider).inferSpell(
+            fileBytes: bytes,
+            filename: filename,
+            sessionId: _spellSessionId,
+            reset: resetSession,
+          );
+      resetSession = false;
+      if (!mounted || run != _inferenceRun) return;
+
+      if (!result.ok) {
+        // Une frame ratée n'arrête pas la boucle : on signale et on continue.
+        setState(() {
+          _errorMessage = result.errorMessage ?? l10n.inferenceUnavailableMessage;
+        });
+        await Future<void>.delayed(_spellInterval);
+        continue;
+      }
+
+      _spellSessionId = result.sessionId ?? _spellSessionId;
+      // Texte serveur prioritaire ; sinon assemblage local.
+      String phrase = result.text ?? '';
+      if (phrase.isEmpty && result.label != null && result.confidence != null) {
+        _spellBuffer.update(result.label, result.confidence!);
+        phrase = _spellBuffer.text;
+      }
+
+      setState(() {
+        _signStatus = _SignStatus.translating;
+        _translationResult = phrase;
+        _confidence = result.confidence;
+        _lastLetter = result.committed ?? result.label;
+        _errorMessage = null;
+      });
+
+      await Future<void>.delayed(_spellInterval);
+    }
+
+    if (!mounted || run != _inferenceRun) return;
+    final finalText = (_translationResult ?? '').trim();
+    setState(() {
+      _signStatus = finalText.isEmpty ? _SignStatus.idle : _SignStatus.done;
+      _translationResult = finalText.isEmpty ? null : finalText;
+    });
+    if (finalText.isNotEmpty) {
+      _record(
+        direction: 'sign_to_text',
+        translatedText: finalText,
+        confidence: _confidence,
+        modelVersion: 'fingerspell-1.0.0',
       );
     }
   }
@@ -312,6 +438,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                         status: _signStatus,
                         result: _translationResult,
                         confidence: _confidence,
+                        lastLetter: _lastLetter,
                         errorMessage: _errorMessage,
                         selectedFile: _selectedFile,
                         isImage: _isImage,
@@ -474,6 +601,7 @@ class _SignToTextView extends StatelessWidget {
     required this.status,
     required this.result,
     required this.confidence,
+    required this.lastLetter,
     required this.errorMessage,
     required this.selectedFile,
     required this.isImage,
@@ -489,6 +617,7 @@ class _SignToTextView extends StatelessWidget {
   final _SignStatus status;
   final String? result;
   final double? confidence;
+  final String? lastLetter;
   final String? errorMessage;
   final XFile? selectedFile;
   final bool isImage;
@@ -512,6 +641,8 @@ class _SignToTextView extends StatelessWidget {
     final resultCard = _ResultCard(
       result: result,
       confidence: confidence,
+      lastLetter: lastLetter,
+      spelling: status == _SignStatus.translating && selectedFile == null,
       unavailable: status == _SignStatus.unavailable,
       errorMessage: errorMessage,
     );
@@ -867,12 +998,16 @@ class _ResultCard extends ConsumerWidget {
   const _ResultCard({
     required this.result,
     required this.confidence,
+    required this.lastLetter,
+    required this.spelling,
     required this.unavailable,
     required this.errorMessage,
   });
 
   final String? result;
   final double? confidence;
+  final String? lastLetter;
+  final bool spelling;
   final bool unavailable;
   final String? errorMessage;
 
@@ -880,7 +1015,7 @@ class _ResultCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final secondary = AppColors.textSecondary(context);
-    final text = result;
+    final text = (result == null || result!.isEmpty) ? null : result;
 
     return AppPanel(
       child: Column(
@@ -924,22 +1059,41 @@ class _ResultCard extends ConsumerWidget {
               ),
             ],
           ),
+          if (spelling) ...[
+            Text(
+              l10n.translSpellingHint,
+              style: AppTextStyles.bodySmall.copyWith(color: secondary),
+            ),
+            const SizedBox(height: AppSpacing.s),
+          ],
           AnimatedSwitcher(
             duration: _motion(context),
             child: Semantics(
-              key: ValueKey(text),
+              key: ValueKey('${text}_$lastLetter'),
               liveRegion: true,
               child: SizedBox(
                 width: double.infinity,
                 child: text == null
                     ? Text(
-                        l10n.translResultPlaceholder,
+                        spelling ? l10n.translatingInProgress : l10n.translResultPlaceholder,
                         style: AppTextStyles.bodyLarge.copyWith(color: secondary),
                       )
                     : SelectableText(text, style: AppTextStyles.h1),
               ),
             ),
           ),
+          if (lastLetter != null &&
+              lastLetter!.isNotEmpty &&
+              lastLetter!.toLowerCase() != 'nothing') ...[
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              l10n.translLastLetter(lastLetter!),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
           if (text != null && confidence != null) ...[
             const SizedBox(height: AppSpacing.m),
             _ConfidenceBar(value: confidence!),

@@ -144,6 +144,18 @@ class InferenceResult {
   /// Best candidates, most likely first (the label is the first one).
   final List<String> topLabels;
 
+  /// Phrase assemblée par épellation (lettres + espaces), si fournie.
+  final String? text;
+
+  /// Lettre / commande réellement ajoutée à la phrase (après stabilité).
+  final String? committed;
+
+  /// Mode d'inférence : `fingerspell` ou null (signe en mouvement).
+  final String? mode;
+
+  /// Identifiant de session d'épellation à renvoyer aux frames suivantes.
+  final String? sessionId;
+
   const InferenceResult({
     required this.ok,
     this.label,
@@ -153,6 +165,10 @@ class InferenceResult {
     this.errorCode,
     this.errorMessage,
     this.topLabels = const [],
+    this.text,
+    this.committed,
+    this.mode,
+    this.sessionId,
   });
 
   factory InferenceResult.fromJson(Map<String, dynamic> json) {
@@ -178,6 +194,10 @@ class InferenceResult {
         for (final item in (prediction?['top'] as List? ?? const []))
           if (item is Map && item['label'] is String) item['label'] as String,
       ],
+      text: prediction?['text'] as String? ?? json['text'] as String?,
+      committed: prediction?['committed'] as String?,
+      mode: prediction?['mode'] as String? ?? json['mode'] as String?,
+      sessionId: json['session_id'] as String?,
     );
   }
 

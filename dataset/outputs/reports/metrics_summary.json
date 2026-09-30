@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-30T02:37:19",
+  "architecture": "CNN-BiLSTM",
+  "input_shape": [
+    64,
+    64,
+    3
+  ],
+  "num_classes": 29,
+  "max_per_class": 1000,
+  "epochs_ran": 40,
+  "best_val_accuracy": 0.9993103742599487,
+  "val": {
+    "split": "val",
+    "accuracy": 0.9993103448275862,
+    "top3_accuracy": 1.0,
+    "failure_rate": 0.0006896551724138167,
+    "n_samples": 4350
+  },
+  "test": {
+    "split": "test",
+    "accuracy": 0.9993103448275862,
+    "top3_accuracy": 1.0,
+    "failure_rate": 0.0006896551724138167,
+    "n_samples": 2900
+  },
+  "model_keras": "D:\\Dataset\\dataset\\outputs\\models\\asl_lstm_final.keras",
+  "model_tflite": "D:\\Dataset\\dataset\\outputs\\models\\asl_lstm_mobile.tflite",
+  "tflite_size_kb": 1243.6,
+  "target_accuracy_met": true
+}
