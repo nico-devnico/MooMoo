@@ -94,6 +94,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/google_logo.png
     - assets/models/
+    - assets/js/moomoo_sign_rig.js
     - assets/images/onboarding/
     - assets/images/empty_state/
     - assets/dictionnaire/

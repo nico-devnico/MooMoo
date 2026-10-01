@@ -120,12 +120,23 @@ class SessionRepositoryImpl implements SessionRepository {
       'direction': direction,
       'source_text': sourceText,
       'translated_text': translatedText,
-      'sign_ids': signIds,
+      // Local LSFB ids ("lsfb:…") are not UUIDs — omit them for PostgREST.
+      'sign_ids': _uuidSignIds(signIds),
       'confidence_score': confidence,
       'inference_time_ms': inferenceTimeMs,
       'model_version': modelVersion,
     });
     return session;
+  }
+
+  static final _uuidRe = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  List<String>? _uuidSignIds(List<String>? ids) {
+    if (ids == null) return null;
+    final kept = [for (final id in ids) if (_uuidRe.hasMatch(id)) id];
+    return kept.isEmpty ? null : kept;
   }
 
   @override

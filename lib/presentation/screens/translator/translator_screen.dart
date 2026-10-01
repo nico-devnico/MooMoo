@@ -7,11 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../core/constants/character_constants.dart';
 import '../../../core/layout/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -27,15 +25,12 @@ import '../../../data/services/api_client.dart';
 import '../../../data/services/spell_frame_prep.dart';
 import '../../../domain/providers/auth_provider.dart';
 import '../../../domain/providers/camera_provider.dart';
-import '../../../domain/providers/character_provider.dart';
-import '../../../domain/providers/error_text.dart';
 import '../../../domain/providers/ml_model_provider.dart';
 import '../../../domain/providers/profile_provider.dart';
 import '../../../domain/providers/session_provider.dart';
 import '../../../domain/providers/sign_provider.dart';
 import '../../../domain/providers/sign_view_provider.dart';
 import '../../../domain/providers/stt_provider.dart';
-import '../../../domain/providers/three_d_settings_provider.dart';
 import '../../../domain/providers/translator_provider.dart';
 import '../../../domain/providers/tts_provider.dart';
 import '../../../domain/translator/spelling_buffer.dart';
@@ -43,6 +38,7 @@ import '../../../domain/translator/text_to_sign_composer.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../widgets/app_panel.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/avatar/rigged_sign_avatar.dart';
 import '../../widgets/camera/camera_view.dart';
 import '../../widgets/landmark_viewer/landmark_viewer.dart';
 import '../../widgets/sign_media.dart';
@@ -1369,11 +1365,7 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       _composeError = null;
       _composeResult = null;
     });
-    // Phrase landmarks are the primary text→sign output.
-    unawaited(
-      ref.read(signViewModeProvider.notifier).setMode(SignViewModeEnum.landmarks),
-    );
-
+    // Keep the user's view mode (video / landmarks / 3D); do not force landmarks.
     try {
       final languageId = await _preferredLanguageId();
       if (!mounted || run != _composeRun) return;
@@ -1541,11 +1533,14 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       lookup: lookup,
       searching: searching || _composing,
       searchingLabel: _composing ? l10n.translComposing : null,
-      failed: failed || (_composeError != null && !composedOk && !_composing),
-      failedTitle: _composeError,
+      // Compose errors must not blank the stage: keep dictionary landmarks / video / 3D.
+      failed: failed,
+      failedTitle: null,
       sign: displaySign,
       detailLoading: detailAsync?.isLoading ?? false,
       composedLandmarks: composedOk ? composed.landmarks : null,
+      rigPayload: composedOk ? composed.toRigPayload() : null,
+      composeNote: _composeError,
     );
 
     final description = displaySign?.description?.trim() ?? '';
@@ -1751,7 +1746,11 @@ class _Composer extends StatelessWidget {
                   IconButton.filled(
                     tooltip: l10n.translate,
                     onPressed: onSubmit,
-                    icon: const Icon(PhosphorIconsRegular.arrowRight),
+                    style: IconButton.styleFrom(
+                      foregroundColor: scheme.onPrimary,
+                      backgroundColor: scheme.primary,
+                    ),
+                    icon: const Icon(AppIcons.translate, size: 22),
                   ),
                 ],
               ),
@@ -1893,6 +1892,8 @@ class _SignStage extends StatelessWidget {
     this.searchingLabel,
     this.failedTitle,
     this.composedLandmarks,
+    this.rigPayload,
+    this.composeNote,
   });
 
   final SignViewModeEnum viewMode;
@@ -1904,6 +1905,8 @@ class _SignStage extends StatelessWidget {
   final Sign? sign;
   final bool detailLoading;
   final SignLandmarks? composedLandmarks;
+  final Map<String, dynamic>? rigPayload;
+  final String? composeNote;
 
   @override
   Widget build(BuildContext context) {
@@ -1916,14 +1919,19 @@ class _SignStage extends StatelessWidget {
 
     final Widget content;
     if (viewMode == SignViewModeEnum.model3d) {
+      final hasRig = rigPayload != null &&
+          (rigPayload!['frames'] is List) &&
+          (rigPayload!['frames'] as List).isNotEmpty;
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Expanded(child: _AvatarView()),
+          Expanded(
+            child: RiggedSignAvatar(rigPayload: rigPayload),
+          ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.m),
             child: Text(
-              l10n.translAvatarNote,
+              hasRig ? l10n.translAvatarPlaying : l10n.translAvatarNote,
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary(context),
               ),
@@ -1962,6 +1970,33 @@ class _SignStage extends StatelessWidget {
       );
     }
 
+    final note = composeNote?.trim();
+    final staged = note == null || note.isEmpty
+        ? content
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: content),
+              Material(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.m,
+                    AppSpacing.s,
+                    AppSpacing.m,
+                    AppSpacing.m,
+                  ),
+                  child: Text(
+                    note,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+
     return Semantics(
       container: true,
       label: composed != null && !composed.isEmpty
@@ -1971,14 +2006,14 @@ class _SignStage extends StatelessWidget {
         padding: EdgeInsets.zero,
         child: AnimatedSwitcher(
           duration: _motion(context),
-          // The 3D avatar ignores the text: keep it mounted while typing.
+          // Keep the 3D avatar mounted while typing so the WebView stays warm.
           child: KeyedSubtree(
             key: ValueKey(
               viewMode == SignViewModeEnum.model3d
                   ? viewMode
                   : '$viewMode-${composed?.frames.length ?? current?.id ?? lookup}-$searching-$failed',
             ),
-            child: content,
+            child: staged,
           ),
         ),
       ),
@@ -2032,62 +2067,5 @@ class _StagePlaceholder extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _AvatarView extends ConsumerWidget {
-  const _AvatarView();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    const loading = Skeleton(
-      child: SkeletonBlock(height: double.infinity, radius: AppRadius.l),
-    );
-    Widget failure(Object e) => _StagePlaceholder(
-          icon: AppIcons.error,
-          title: l10n.translLoadError,
-          message: ref.userErrorText(e, l10n),
-        );
-
-    return ref.watch(threeDSettingsProvider).when(
-          loading: () => loading,
-          error: (e, _) => failure(e),
-          data: (settings) {
-            final characterId = settings['selectedCharacterId'] as String? ??
-                CharacterConstants.defaultCharacterId;
-            return ref.watch(characterByIdProvider(characterId)).when(
-                  loading: () => loading,
-                  error: (e, _) => failure(e),
-                  data: (character) {
-                    if (character == null) {
-                      return _StagePlaceholder(
-                        icon: AppIcons.warning,
-                        title: l10n.translCharacterNotFound,
-                      );
-                    }
-                    return ModelViewer(
-                      key: ValueKey(
-                        'model_viewer_${settings['cameraControlsEnabled']}_${settings['zoomEnabled']}_${character.id}',
-                      ),
-                      src: character.modelPath,
-                      alt: l10n.translModelAlt,
-                      ar: true,
-                      autoRotate: false,
-                      cameraControls: settings['cameraControlsEnabled'] ?? true,
-                      interactionPrompt: InteractionPrompt.none,
-                      backgroundColor: Colors.transparent,
-                      disableZoom: !(settings['zoomEnabled'] ?? true),
-                      cameraOrbit: '0deg 75deg 2.5m',
-                      cameraTarget: '0m 1.2m 0m',
-                      fieldOfView: '30deg',
-                      // Vertical axis locked at 75°: the avatar stays facing.
-                      minCameraOrbit: 'auto 75deg auto',
-                      maxCameraOrbit: 'auto 75deg auto',
-                    );
-                  },
-                );
-          },
-        );
   }
 }

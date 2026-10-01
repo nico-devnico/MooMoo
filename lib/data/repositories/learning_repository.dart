@@ -119,6 +119,19 @@ class LearningRepository {
     return LessonResult.fromJson((json as Map).cast<String, dynamic>());
   }
 
+  /// Dictionary practice: credits a small XP amount when [success] is true.
+  Future<LessonResult> awardSignPracticeXp({
+    required String signId,
+    required bool success,
+  }) async {
+    final json = await _supabase.rpc('award_sign_practice_xp', params: {
+      'p_sign_id': signId,
+      'p_success': success,
+      'p_utc_offset_minutes': _utcOffsetMinutes,
+    });
+    return LessonResult.fromJson((json as Map).cast<String, dynamic>());
+  }
+
   Future<void> setDailyGoal(int goal) async {
     await _supabase.rpc('set_daily_goal', params: {'p_goal': goal});
   }

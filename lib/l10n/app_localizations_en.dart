@@ -1158,6 +1158,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dictPractice => 'Practice';
 
   @override
+  String practiceSignHint(String word) {
+    return 'Perform the sign \"$word\" in front of the camera.';
+  }
+
+  @override
+  String practiceXpEarned(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String get practiceSuccessNoXp => 'Nice! Sync to earn XP.';
+
+  @override
   String dictDifficulty(String level) {
     return 'Difficulty: $level';
   }
@@ -2004,7 +2017,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translAvatarNote =>
-      'The 3D avatar does not perform signs yet: choose Video or Landmarks to see the gesture.';
+      'Translate a word or phrase to animate the 3D avatar.';
+
+  @override
+  String get translAvatarPlaying => 'Playing the sign on the 3D avatar.';
 
   @override
   String get translCameraIdleTitle => 'Camera on standby';

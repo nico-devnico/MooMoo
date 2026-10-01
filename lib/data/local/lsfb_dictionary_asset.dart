@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
+import '../../domain/translator/phrase_glosser.dart';
 import '../models/sign.dart';
 import '../models/sign_language.dart';
 
@@ -110,19 +111,12 @@ class LsfbDictionaryAsset {
     int offset = 0,
   }) async {
     final all = await load(languageId: languageId);
-    final q = query?.trim().toLowerCase();
-    Iterable<Sign> filtered = all;
-    if (q != null && q.isNotEmpty) {
-      filtered = all.where((s) {
-        if (s.word.toLowerCase().contains(q)) return true;
-        final tags = s.tags ?? const <String>[];
-        for (final t in tags) {
-          if (t.toLowerCase().contains(q)) return true;
-        }
-        final d = s.description?.toLowerCase() ?? '';
-        return d.contains(q);
-      });
+    final q = query?.trim() ?? '';
+    if (q.isEmpty) {
+      return all.skip(offset).take(limit).toList(growable: false);
     }
-    return filtered.skip(offset).take(limit).toList(growable: false);
+    // Exact / synonym / prefix — never mid-word contains ("je" ↛ "déjeuner").
+    final ranked = filterDictionaryMatches(all, q, limit: offset + limit);
+    return ranked.skip(offset).take(limit).toList(growable: false);
   }
 }

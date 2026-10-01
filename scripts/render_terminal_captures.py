@@ -57,6 +57,11 @@ def main() -> None:
         ("07_dart_analyze_pass.txt", "07_dart_analyze_pass.png", "dart analyze — fond noir"),
         ("08_e2e_auth_translate.txt", "08_e2e_auth_translate.png", "E2E auth→traduction — fond noir"),
         ("09_api_smoke.txt", "09_api_smoke.png", "API smoke — fond noir"),
+        ("10_train_start.txt", "10_train_start.png", "réentraînement fingerspell — démarrage"),
+        ("11_train_log.txt", "11_train_progress.png", "réentraînement fingerspell — progression"),
+        ("12_train_done.txt", "12_train_done.png", "réentraînement fingerspell — terminé"),
+        ("13_text_to_sign_3d_tests.txt", "13_text_to_sign_3d_tests.png", "tests mode 3D texte→signe"),
+        ("14_dart_analyze_3d.txt", "14_dart_analyze_3d.png", "dart analyze — pipeline 3D"),
     ]
     for txt_name, png_name, title in mapping:
         txt = CAPTURES / txt_name

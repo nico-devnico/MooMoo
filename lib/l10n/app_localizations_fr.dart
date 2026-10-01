@@ -1166,6 +1166,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dictPractice => 'S\'entraîner';
 
   @override
+  String practiceSignHint(String word) {
+    return 'Reproduisez le signe « $word » devant la caméra.';
+  }
+
+  @override
+  String practiceXpEarned(int xp) {
+    return '+$xp XP';
+  }
+
+  @override
+  String get practiceSuccessNoXp =>
+      'Bien joué ! Synchronisez pour gagner de l\'XP.';
+
+  @override
   String dictDifficulty(String level) {
     return 'Difficulté : $level';
   }
@@ -2021,7 +2035,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get translAvatarNote =>
-      'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.';
+      'Traduisez un mot ou une phrase pour animer l\'avatar 3D.';
+
+  @override
+  String get translAvatarPlaying => 'Animation du signe sur l\'avatar 3D.';
 
   @override
   String get translCameraIdleTitle => 'Caméra en veille';

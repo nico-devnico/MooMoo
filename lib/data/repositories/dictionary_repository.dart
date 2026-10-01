@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/translator/phrase_glosser.dart';
 import '../local/lsfb_dictionary_asset.dart';
 import '../models/sign.dart';
 import '../models/sign_category.dart';
@@ -135,7 +136,14 @@ class DictionaryRepositoryImpl implements DictionaryRepository {
 
       final trimmed = query?.trim();
       if (trimmed != null && trimmed.isNotEmpty) {
-        request = request.ilike('word', '%$trimmed%');
+        // Exact (case-insensitive) or prefix — never `%q%` mid-word contains.
+        if (trimmed.length < 3) {
+          request = request.ilike('word', trimmed);
+        } else {
+          request = request.or(
+            'word.ilike.${_orValue(trimmed)},word.ilike.${_orValue('$trimmed%')}',
+          );
+        }
       }
       if (languageId != null) {
         request = request.eq('sign_language_id', languageId);
@@ -147,12 +155,19 @@ class DictionaryRepositoryImpl implements DictionaryRepository {
         request = request.eq('difficulty_level', difficultyLevel);
       }
 
+      // Over-fetch then rank client-side (exact before prefix).
+      final fetchLimit = (offset + limit).clamp(1, 100);
       final response =
-          await request.order('word').range(offset, offset + limit - 1);
+          await request.order('word').limit(fetchLimit);
 
-      return (response as List)
-          .map((json) => Sign.fromJson(json as Map<String, dynamic>))
-          .toList(growable: false);
+      final ranked = filterDictionaryMatches(
+        (response as List)
+            .map((json) => Sign.fromJson(json as Map<String, dynamic>))
+            .toList(growable: false),
+        trimmed ?? '',
+        limit: offset + limit,
+      );
+      return ranked.skip(offset).take(limit).toList(growable: false);
     } catch (_) {
       // Repli : catalogue local si la base ne répond pas.
       if (languageId == null || await _isLsfbLanguage(languageId)) {
@@ -166,6 +181,12 @@ class DictionaryRepositoryImpl implements DictionaryRepository {
       }
       return const [];
     }
+  }
+
+  /// Quotes a PostgREST `or` filter value safely.
+  static String _orValue(String value) {
+    final escaped = value.replaceAll('"', r'\"');
+    return '"$escaped"';
   }
 
   @override

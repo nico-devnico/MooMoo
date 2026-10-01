@@ -291,7 +291,10 @@ class _SignInfoState extends ConsumerState<_SignInfo> {
               label: l10n.dictPractice,
               icon: AppIcons.learning,
               fullWidth: false,
-              onPressed: () => context.goNamed(AppRoutes.learningName),
+              onPressed: () => context.pushNamed(
+                AppRoutes.signPracticeName,
+                pathParameters: {'id': sign.id},
+              ),
             ),
             AppButton(
               label: isFavorite ? l10n.dictRemoveFavorite : l10n.dictAddFavorite,

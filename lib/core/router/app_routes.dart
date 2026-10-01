@@ -47,6 +47,7 @@ class AppRoutes {
   static const String profileName = 'profile';
   
   static const String signDetailName = 'signDetail';
+  static const String signPracticeName = 'signPractice';
   static const String categoryName = 'category';
   static const String favoritesName = 'favorites';
   static const String lessonName = 'lesson';

@@ -2270,6 +2270,24 @@ abstract class AppLocalizations {
   /// **'S\'entraîner'**
   String get dictPractice;
 
+  /// No description provided for @practiceSignHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reproduisez le signe « {word} » devant la caméra.'**
+  String practiceSignHint(String word);
+
+  /// No description provided for @practiceXpEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{xp} XP'**
+  String practiceXpEarned(int xp);
+
+  /// No description provided for @practiceSuccessNoXp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bien joué ! Synchronisez pour gagner de l\'XP.'**
+  String get practiceSuccessNoXp;
+
   /// No description provided for @dictDifficulty.
   ///
   /// In fr, this message translates to:
@@ -3641,8 +3659,14 @@ abstract class AppLocalizations {
   /// No description provided for @translAvatarNote.
   ///
   /// In fr, this message translates to:
-  /// **'L\'avatar 3D ne reproduit pas encore les signes : choisissez Vidéo ou Landmarks pour voir le geste.'**
+  /// **'Traduisez un mot ou une phrase pour animer l\'avatar 3D.'**
   String get translAvatarNote;
+
+  /// No description provided for @translAvatarPlaying.
+  ///
+  /// In fr, this message translates to:
+  /// **'Animation du signe sur l\'avatar 3D.'**
+  String get translAvatarPlaying;
 
   /// No description provided for @translCameraIdleTitle.
   ///

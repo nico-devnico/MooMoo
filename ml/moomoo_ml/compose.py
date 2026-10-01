@@ -200,6 +200,14 @@ def compose_landmarks(
     include_face: bool = True,
 ) -> dict:
     """Download → extract → align → blend → concatenate."""
+    try:
+        import mediapipe  # noqa: F401
+    except ImportError as exc:
+        raise RuntimeError(
+            "MediaPipe est requis pour compose-landmarks. "
+            "Dans ml/.venv : pip install mediapipe==0.10.21"
+        ) from exc
+
     clips = _as_clips(payload)
     layout = Layout(include_face=bool(include_face))
     extractor = HolisticExtractor(layout)

@@ -4,8 +4,9 @@ import '../../data/models/sign.dart';
 import '../../data/models/sign_landmarks.dart';
 import '../../data/repositories/dictionary_repository.dart';
 import '../../data/repositories/ml_model_repository.dart';
+import 'phrase_glosser.dart';
 
-/// Splits a typed phrase into lookup tokens (order preserved, punctuation stripped).
+/// Legacy helper kept for UI word chips (single tokens).
 List<String> tokenizePhrase(String text) {
   return text
       .trim()
@@ -16,21 +17,12 @@ List<String> tokenizePhrase(String text) {
 }
 
 Sign? pickBestSign(List<Sign> signs, String lookup) {
-  if (signs.isEmpty) return null;
-  final target = lookup.toLowerCase();
-  for (final sign in signs) {
-    if (sign.word.toLowerCase() == target) return sign;
-  }
-  for (final sign in signs) {
-    final w = sign.word.toLowerCase();
-    if (w.startsWith(target) || target.startsWith(w)) return sign;
-  }
-  return signs.first;
+  final ranked = filterDictionaryMatches(signs, lookup, limit: signs.length);
+  return ranked.isEmpty ? null : ranked.first;
 }
 
-/// Resolves each word in [text] against the dictionary, asks the ML service to
-/// download the medias temporarily, extract Holistic landmarks and concatenate
-/// them into one sequence playable by [LandmarkViewer].
+/// Resolves a phrase into glosses (compound-aware), verifies each gloss exists
+/// in the dictionary, then asks the ML service to compose landmark video.
 class TextToSignComposer {
   TextToSignComposer({
     required DictionaryRepository dictionary,
@@ -45,47 +37,40 @@ class TextToSignComposer {
     String text, {
     int? languageId,
   }) async {
-    final words = tokenizePhrase(text);
-    if (words.isEmpty) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return LandmarkComposeResult.unavailable('Aucun mot à traduire.');
+    }
+
+    final lexiconSigns = await _loadLexicon(languageId);
+    final lexicon = buildLexicon(lexiconSigns);
+    final glossed = glossifyPhrase(trimmed, lexicon);
+
+    if (glossed.segments.isEmpty) {
       return LandmarkComposeResult.unavailable('Aucun mot à traduire.');
     }
 
     final resolved = <_ResolvedWord>[];
-    final unresolved = <LandmarkMissing>[];
+    final unresolved = <LandmarkMissing>[
+      for (final s in glossed.missing)
+        LandmarkMissing(word: s.surface, reason: 'introuvable (${s.gloss})'),
+    ];
 
-    for (final word in words) {
-      var matches = await _dictionary.searchSigns(
-        query: word,
-        languageId: languageId,
-        limit: 8,
-      );
-      var sign = pickBestSign(matches, word);
-      // Catalogue LSFB embarqué : repli si la langue préférée n'a rien (ou pas de média).
-      if (sign == null || (sign.videoUrl ?? '').trim().isEmpty) {
-        final lsfb = await _dictionary.searchSigns(
-          query: word,
-          languageId: LsfbDictionaryAsset.lsfbLanguageId,
-          limit: 8,
-        );
-        final lsfbSign = pickBestSign(lsfb, word);
-        if (lsfbSign != null &&
-            ((lsfbSign.videoUrl ?? '').trim().isNotEmpty || sign == null)) {
-          sign = lsfbSign;
-        }
-      }
-      if (sign == null) {
-        unresolved.add(LandmarkMissing(word: word, reason: 'introuvable'));
-        continue;
-      }
+    for (final segment in glossed.found) {
+      final sign = segment.sign!;
       final detail = await _dictionary.getSignById(sign.id) ?? sign;
-      resolved.add(_ResolvedWord(query: word, sign: detail));
+      resolved.add(_ResolvedWord(
+        query: segment.surface,
+        gloss: segment.gloss,
+        sign: detail,
+      ));
     }
 
     final clips = <TextToSignClip>[
       for (final r in resolved)
         if ((r.sign.videoUrl ?? '').trim().isNotEmpty)
           TextToSignClip(
-            word: r.query,
+            word: r.gloss,
             url: r.sign.videoUrl!.trim(),
             signId: r.sign.id,
             matchedWord: r.sign.word,
@@ -98,7 +83,7 @@ class TextToSignComposer {
         for (final r in resolved)
           if ((r.sign.videoUrl ?? '').trim().isEmpty)
             LandmarkMissing(
-              word: r.query,
+              word: '${r.query} (${r.gloss})',
               signId: r.sign.id,
               reason: 'pas de vidéo',
             ),
@@ -106,14 +91,21 @@ class TextToSignComposer {
       return LandmarkComposeResult(
         ok: result.ok,
         landmarks: result.landmarks,
-        segments: result.segments,
+        segments: [
+          for (final s in result.segments)
+            LandmarkSegment(
+              word: s.word,
+              startFrame: s.startFrame,
+              frames: s.frames,
+              signId: s.signId,
+            ),
+        ],
         missing: [...unresolved, ...missingUrls, ...result.missing],
         errorCode: result.errorCode,
         errorMessage: result.errorMessage,
       );
     }
 
-    // No media URLs: stitch landmark_data already stored on the signs.
     final local = _composeFromStored(resolved);
     if (local != null) {
       return LandmarkComposeResult(
@@ -128,9 +120,32 @@ class TextToSignComposer {
       ok: false,
       landmarks: SignLandmarks.empty,
       missing: unresolved,
-      errorCode: 'no_media',
-      errorMessage: 'Aucun média trouvé dans le dictionnaire pour cette phrase.',
+      errorCode: unresolved.isNotEmpty ? 'unknown_glosses' : 'no_media',
+      errorMessage: unresolved.isNotEmpty
+          ? 'Glosses introuvables : ${unresolved.map((m) => m.word).join(', ')}'
+          : 'Aucun média trouvé dans le dictionnaire pour cette phrase.',
     );
+  }
+
+  Future<List<Sign>> _loadLexicon(int? languageId) async {
+    // Prefer LSFB catalogue (has compounds + glosses); merge preferred language.
+    final lsfb = await _dictionary.searchSigns(
+      languageId: LsfbDictionaryAsset.lsfbLanguageId,
+      limit: 5000,
+    );
+    if (languageId == null ||
+        languageId == LsfbDictionaryAsset.lsfbLanguageId) {
+      return lsfb;
+    }
+    final preferred = await _dictionary.searchSigns(
+      languageId: languageId,
+      limit: 2000,
+    );
+    final byId = <String, Sign>{
+      for (final s in lsfb) s.id: s,
+      for (final s in preferred) s.id: s,
+    };
+    return byId.values.toList(growable: false);
   }
 
   ({
@@ -150,7 +165,7 @@ class TextToSignComposer {
       final lm = SignLandmarks.parse(r.sign.landmarkData);
       if (lm.isEmpty) {
         missing.add(LandmarkMissing(
-          word: r.query,
+          word: '${r.query} (${r.gloss})',
           signId: r.sign.id,
           reason: 'pas de landmarks',
         ));
@@ -166,7 +181,7 @@ class TextToSignComposer {
       final start = frames.length;
       frames.addAll(lm.frames);
       segments.add(LandmarkSegment(
-        word: r.sign.word,
+        word: r.gloss,
         signId: r.sign.id,
         startFrame: start,
         frames: lm.frames.length,
@@ -183,8 +198,13 @@ class TextToSignComposer {
 }
 
 class _ResolvedWord {
-  const _ResolvedWord({required this.query, required this.sign});
+  const _ResolvedWord({
+    required this.query,
+    required this.gloss,
+    required this.sign,
+  });
 
   final String query;
+  final String gloss;
   final Sign sign;
 }

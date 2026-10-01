@@ -56,6 +56,17 @@ def _models():
     return _cache
 
 
+def _module_available(name: str) -> bool:
+    """True when [name] can actually be imported (find_spec lies for some wheels)."""
+    if importlib.util.find_spec(name) is not None:
+        return True
+    try:
+        importlib.import_module(name)
+        return True
+    except Exception:
+        return False
+
+
 def _unavailable(code: str, detail: str, status: int = 503, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"ok": False, "error": code, "detail": detail, **extra})
 
@@ -66,7 +77,7 @@ def health():
         "ok": True,
         "service": "moomoo-ml",
         "artifacts_dir": str(config.ARTIFACTS_DIR),
-        "runtimes": {name: importlib.util.find_spec(name) is not None
+        "runtimes": {name: _module_available(name)
                      for name in ("tensorflow", "mediapipe", "cv2")},
     }
     # Modèle d'épellation ASL (lettres → phrases), hors registre production.
@@ -219,6 +230,14 @@ async def compose_landmarks(payload: dict = Body(...)):
     Body: `{ "clips": [{"word": "bonjour", "url": "https://…"}, …], "fps"?, "gap_frames"? }`.
     Returns `{ frames, fps, segments, missing }` in the shape SignLandmarks.parse accepts.
     """
+    if not _module_available("mediapipe"):
+        return _unavailable(
+            "mediapipe_missing",
+            "MediaPipe n'est pas installé dans l'environnement ML. "
+            "Installez les deps (`pip install -r requirements.txt`) puis relancez uvicorn.",
+            503,
+        )
+
     from moomoo_ml.compose import compose_landmarks as _compose
 
     try:
@@ -228,7 +247,7 @@ async def compose_landmarks(payload: dict = Body(...)):
             gap_frames=int(payload["gap_frames"]) if payload.get("gap_frames") is not None else None,
             blend_frames=int(payload["blend_frames"]) if payload.get("blend_frames") is not None else None,
             max_frames_per_clip=int(payload.get("max_frames_per_clip") or 160),
-            include_face=bool(payload["include_face"]) if "include_face" in payload else True,
+            include_face=bool(payload["include_face"]) if "include_face" in payload else False,
         )
     except ValueError as exc:
         return _unavailable("invalid_request", str(exc), 422)

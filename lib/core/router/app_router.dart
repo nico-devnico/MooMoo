@@ -14,6 +14,7 @@ import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/translator/translator_screen.dart';
 import '../../presentation/screens/dictionary/dictionary_screen.dart';
 import '../../presentation/screens/dictionary/sign_detail_screen.dart';
+import '../../presentation/screens/dictionary/sign_practice_screen.dart';
 import '../../presentation/screens/dictionary/category_screen.dart';
 import '../../presentation/screens/learning/learning_screen.dart';
 import '../../presentation/screens/learning/lesson_screen.dart';
@@ -160,6 +161,15 @@ GoRouter appRouter(Ref ref) {
                     builder: (context, state) => SignDetailScreen(
                       id: state.pathParameters['id']!,
                     ),
+                    routes: [
+                      GoRoute(
+                        path: 'practice',
+                        name: AppRoutes.signPracticeName,
+                        builder: (context, state) => SignPracticeScreen(
+                          signId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'category/:id',

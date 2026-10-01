@@ -1,0 +1,5 @@
+=== compose-landmarks smoke ===
+ML mediapipe=True
+ml ok=True frames=24 dim=258
+api ok=True frames=24
+PASSED compose landmarks end-to-end

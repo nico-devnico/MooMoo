@@ -34,14 +34,12 @@ Future<ProviderContainer> _pump(
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
 
   final container = ProviderContainer(overrides: [
     cameraStateProvider.overrideWith(_NoCamera.new),
     signViewModeProvider.overrideWith(_VideoView.new),
     sessionRepositoryProvider.overrideWithValue(_NoHistory()),
   ]);
-  addTearDown(container.dispose);
   container.read(translationModeStateProvider.notifier).setMode(mode);
 
   await tester.pumpWidget(
@@ -56,10 +54,12 @@ Future<ProviderContainer> _pump(
     ),
   );
   await tester.pump(const Duration(milliseconds: 300));
+  addTearDown(tester.view.reset);
   addTearDown(() async {
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
+  addTearDown(container.dispose);
   return container;
 }
 
