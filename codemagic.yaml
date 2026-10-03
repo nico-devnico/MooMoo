@@ -1,0 +1,46 @@
+workflows:
+  ios-iphone:
+    name: iOS iPhone (Ad Hoc)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      vars:
+        BUNDLE_ID: com.moomoo.moomoo
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+      - name: Set up keychain
+        script: keychain initialize
+      - name: Ensure the App ID exists
+        script: |
+          if ! app-store-connect bundle-ids list --bundle-id-identifier "$BUNDLE_ID" --platform IOS | grep -q "$BUNDLE_ID"; then
+            app-store-connect bundle-ids create \
+              --bundle-id-identifier "$BUNDLE_ID" \
+              --name "MooMoo" \
+              --platform IOS
+          fi
+      - name: Fetch or create the Ad Hoc signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_ADHOC \
+            --create
+      - name: Add certificates to the keychain
+        script: keychain add-certificates
+      - name: Apply provisioning profiles
+        script: xcode-project use-profiles
+      - name: Build the iPhone IPA
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
