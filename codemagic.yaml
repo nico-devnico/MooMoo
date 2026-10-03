@@ -3,9 +3,9 @@ workflows:
     name: iOS iPhone (Ad Hoc)
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: codemagic
     environment:
+      groups:
+        - appstore_credentials
       vars:
         BUNDLE_ID: com.moomoo.moomoo
       flutter: stable
