@@ -67,7 +67,7 @@ def classify_frame(
 
     [hand_detected]=False → traite comme « space », une seule fois jusqu'à
     ce qu'une main soit à nouveau détectée.
-    [live]=True → hold allégé pour coller à l'import image (réponse rapide).
+    [live]=True → hold renforcé (stabilité ~2 s) pour moins de fausses lettres.
     """
     try:
         get_predictor()
@@ -84,9 +84,11 @@ def classify_frame(
         buf.gate.min_hold = 1
         buf.gate.cooldown_s = 0.0
     elif live:
-        # Même sensibilité que l'import, avec un léger cooldown anti-doublon.
-        buf.gate.min_hold = 1
-        buf.gate.cooldown_s = 0.35
+        # Accuracy over latency: hold ~5 frames + margin (~2 s de pose stable).
+        buf.gate.min_hold = 5
+        buf.gate.cooldown_s = 0.85
+        if threshold < 0.60:
+            threshold = 0.62
 
     # Pas de main → un seul espace (jamais deux, jamais une fausse lettre).
     if hand_detected is False:
@@ -156,7 +158,21 @@ def classify_frame(
             live=live,
         )
 
-    update = buf.update(pred["label"], confidence=pred["confidence"], threshold=threshold)
+    top = pred.get("top") or []
+    margin = None
+    if isinstance(top, list) and len(top) >= 2:
+        try:
+            margin = float(top[0]["confidence"]) - float(top[1]["confidence"])
+        except (KeyError, TypeError, ValueError):
+            margin = None
+
+    update = buf.update(
+        pred["label"],
+        confidence=pred["confidence"],
+        threshold=threshold,
+        margin=margin,
+        min_margin=0.12 if live else 0.08,
+    )
 
     display_text = update["text"]
     if (

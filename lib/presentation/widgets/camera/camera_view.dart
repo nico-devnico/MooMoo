@@ -53,6 +53,9 @@ class _CameraViewState extends ConsumerState<CameraView> {
 
   Future<void> _openIfNeeded() async {
     if (_opening || !mounted) return;
+    // Never reopen while the session is idle — that fights releaseCamera().
+    final isActive = widget.active ?? ref.read(translatorStateProvider) == true;
+    if (!isActive) return;
     final current = ref.read(cameraStateProvider).value;
     if (current != null && current.value.isInitialized) return;
     _opening = true;

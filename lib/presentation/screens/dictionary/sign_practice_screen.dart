@@ -80,42 +80,28 @@ class _SignPracticeScreenState extends ConsumerState<SignPracticeScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.l,
-                  AppSpacing.m,
-                  AppSpacing.l,
-                  AppSpacing.s,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sign.word, style: AppTextStyles.h2),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      l10n.practiceSignHint(sign.word),
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary(context),
-                      ),
+              if (_lastXp != null && _lastXp! > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.l,
+                    AppSpacing.s,
+                    AppSpacing.l,
+                    0,
+                  ),
+                  child: Text(
+                    l10n.practiceXpEarned(_lastXp!),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    if (_lastXp != null && _lastXp! > 0) ...[
-                      const SizedBox(height: AppSpacing.s),
-                      Text(
-                        l10n.practiceXpEarned(_lastXp!),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
               Expanded(
                 child: PracticeView(
                   step: PracticeStep(sign, number: 1, total: 1),
                   onResult: (ok) => _onResult(sign, ok),
                   onReset: () => setState(() => _lastXp = null),
+                  embedded: true,
                 ),
               ),
             ],

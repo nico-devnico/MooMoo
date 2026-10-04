@@ -93,13 +93,17 @@ class SpellingBuffer:
             self.chars.append(letter)
         return self.text
 
-    def update(self, label: str | None, *, confidence: float, threshold: float = 0.55) -> dict:
+    def update(self, label: str | None, *, confidence: float, threshold: float = 0.55,
+               margin: float | None = None, min_margin: float = 0.12) -> dict:
         """Pousse une prédiction frame : gate + tampon.
 
         Retourne `{text, committed, accepted}` où `committed` est la lettre
         réellement ajoutée (ou None).
+        [margin] = top1 - top2 ; si fourni et trop faible, on refuse.
         """
         accepted = bool(label) and confidence >= threshold and label.lower() != "nothing"
+        if accepted and margin is not None and margin < min_margin:
+            accepted = False
         committed = self.gate.push(label, accepted=accepted)
         if committed:
             self.apply_raw(committed, accepted=True)

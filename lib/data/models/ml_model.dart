@@ -150,6 +150,9 @@ class InferenceResult {
   /// Lettre / commande réellement ajoutée à la phrase (après stabilité).
   final String? committed;
 
+  /// True si la frame a passé le seuil (avant hold / cooldown).
+  final bool? accepted;
+
   /// Mode d'inférence : `fingerspell` ou null (signe en mouvement).
   final String? mode;
 
@@ -170,6 +173,7 @@ class InferenceResult {
     this.topLabels = const [],
     this.text,
     this.committed,
+    this.accepted,
     this.mode,
     this.sessionId,
     this.handDetected = true,
@@ -200,6 +204,7 @@ class InferenceResult {
       ],
       text: prediction?['text'] as String? ?? json['text'] as String?,
       committed: prediction?['committed'] as String?,
+      accepted: prediction?['accepted'] as bool? ?? json['accepted'] as bool?,
       mode: prediction?['mode'] as String? ?? json['mode'] as String?,
       sessionId: json['session_id'] as String?,
       handDetected: prediction?['hand_detected'] != false &&

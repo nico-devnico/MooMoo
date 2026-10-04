@@ -85,15 +85,28 @@ def _decode_image(path: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tens
 
 
 def _augment(img: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-    """Augmentation légère : ne pas retourner horizontalement (signe ≠ miroir)."""
-    img = tf.image.random_brightness(img, max_delta=25.0)
-    img = tf.image.random_contrast(img, lower=0.85, upper=1.15)
-    # Légère translation via crop/pad
-    if tf.random.uniform([]) < 0.5:
+    """Augmentation orientée caméra live (luminosité, bruit, JPEG, crop).
+
+    Pas de flip horizontal : un signe miroir n'est pas le même label.
+    """
+    img = tf.image.random_brightness(img, max_delta=40.0)
+    img = tf.image.random_contrast(img, lower=0.75, upper=1.25)
+    img = tf.image.random_saturation(img, lower=0.80, upper=1.20)
+    # Translation / zoom léger (main pas parfaitement centrée en live).
+    if tf.random.uniform([]) < 0.65:
+        pad = tf.random.uniform([], minval=4, maxval=14, dtype=tf.int32)
         img = tf.image.resize_with_crop_or_pad(
-            img, config.IMG_SIZE + 6, config.IMG_SIZE + 6
+            img, config.IMG_SIZE + pad, config.IMG_SIZE + pad
         )
         img = tf.image.random_crop(img, [config.IMG_SIZE, config.IMG_SIZE, config.CHANNELS])
+    # Simulation compression / downscale webcam (YUV→JPEG).
+    if tf.random.uniform([]) < 0.45:
+        small = tf.image.resize(img, [48, 48], method=tf.image.ResizeMethod.BILINEAR)
+        img = tf.image.resize(small, [config.IMG_SIZE, config.IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR)
+    # Bruit gaussien léger.
+    if tf.random.uniform([]) < 0.40:
+        noise = tf.random.normal(tf.shape(img), mean=0.0, stddev=8.0)
+        img = img + noise
     img = tf.clip_by_value(img, 0.0, 255.0)
     return img, label
 

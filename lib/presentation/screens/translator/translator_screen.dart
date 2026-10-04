@@ -287,13 +287,13 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       if (!ref.read(translatorStateProvider)) return;
       inferBusy = true;
       try {
-        // Même seuil / pipeline que l'import image ; live=true pour hold=1.
+        // Seuil + live hold plus stricts : moins de fausses lettres, ~1 s de pose.
         final result = await ref.read(mlModelRepositoryProvider).inferSpell(
               fileBytes: jpeg,
               filename: 'hand.jpg',
               sessionId: _spellSessionId,
               reset: resetSession,
-              threshold: 0.35,
+              threshold: 0.65,
               handDetected: handDetected,
               live: true,
             );
@@ -316,20 +316,14 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         }
         consecutiveFailures = 0;
         _spellSessionId = result.sessionId ?? _spellSessionId;
-        String phrase = result.text?.trim() ?? '';
-        if (phrase.isEmpty &&
-            result.label != null &&
-            result.confidence != null &&
-            result.label!.toLowerCase() != 'nothing' &&
-            result.label!.toLowerCase() != 'space') {
-          _spellBuffer.update(result.label, result.confidence!);
-          phrase = _spellBuffer.text;
-        }
+        // Server session is the source of truth — do not double-commit locally.
+        final phrase = result.text?.trim() ?? '';
         setState(() {
           _signStatus = _SignStatus.translating;
           _translationResult = phrase;
           _confidence = result.confidence;
-          _lastLetter = result.committed ?? result.label;
+          _lastLetter = result.committed ??
+              (result.accepted == true ? result.label : null);
           _errorMessage = null;
         });
       } finally {
@@ -398,9 +392,13 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   void _start() => ref.read(translatorStateProvider.notifier).start();
 
   void _stop() {
-    // Stop d'abord l'UI (plus de CameraPreview), puis libère le capteur.
+    // Stop UI first (unmount CameraPreview), then await sensor teardown so the
+    // OS privacy LED / camera indicator actually turns off (esp. Windows).
     ref.read(translatorStateProvider.notifier).stop();
-    unawaited(ref.read(cameraStateProvider.notifier).releaseCamera());
+    unawaited(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await ref.read(cameraStateProvider.notifier).releaseCamera();
+    }());
   }
 
   void _setMode(TranslationMode mode) {

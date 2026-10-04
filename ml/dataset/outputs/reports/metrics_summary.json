@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-30T02:37:19",
+  "timestamp": "2026-09-30T15:14:54",
   "architecture": "CNN-BiLSTM",
   "input_shape": [
     64,
@@ -7,25 +7,25 @@
     3
   ],
   "num_classes": 29,
-  "max_per_class": 1000,
-  "epochs_ran": 40,
-  "best_val_accuracy": 0.9993103742599487,
+  "max_per_class": 800,
+  "epochs_ran": 25,
+  "best_val_accuracy": 0.9951149225234985,
   "val": {
     "split": "val",
-    "accuracy": 0.9993103448275862,
+    "accuracy": 0.9951149425287357,
     "top3_accuracy": 1.0,
-    "failure_rate": 0.0006896551724138167,
-    "n_samples": 4350
+    "failure_rate": 0.004885057471264331,
+    "n_samples": 3480
   },
   "test": {
     "split": "test",
-    "accuracy": 0.9993103448275862,
+    "accuracy": 0.9956896551724138,
     "top3_accuracy": 1.0,
-    "failure_rate": 0.0006896551724138167,
-    "n_samples": 2900
+    "failure_rate": 0.004310344827586188,
+    "n_samples": 2320
   },
-  "model_keras": "D:\\Dataset\\dataset\\outputs\\models\\asl_lstm_final.keras",
-  "model_tflite": "D:\\Dataset\\dataset\\outputs\\models\\asl_lstm_mobile.tflite",
+  "model_keras": "D:\\projets\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_final.keras",
+  "model_tflite": "D:\\projets\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_mobile.tflite",
   "tflite_size_kb": 1243.6,
   "target_accuracy_met": true
 }

@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: image/gif
+Content-Length: 3094963
+Cache-Control: public, max-age=604800, immutable
+X-Media-Cache: HIT
+Date: Wed, 30 Sep 2026 08:51:02 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

@@ -24,6 +24,18 @@ ml/dataset/.venv/
 .shots/
 supabase/.temp/
 
+# Documentation locale (UML, etc.) — non versionnée
+/docs/
+
+# Cursor IDE
+.cursor/
+
+# Captures d'entraînement / dumps volumineux
+assets/captures/10_train_*
+assets/captures/11_train_*
+assets/captures/12_train_*
+assets/captures/04_gif_dictionnaire.gif
+
 
 # IntelliJ related
 *.iml
