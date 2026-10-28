@@ -83,7 +83,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return AuthLayout(
       title: l10n.registerHeadline,
       subtitle: l10n.registerSubtitle,
-      onBack: () => context.canPop() ? context.pop() : context.go(AppRoutes.login),
+      onBack: () => context.canPop() ? context.pop() : context.goNamed(AppRoutes.welcomeName),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

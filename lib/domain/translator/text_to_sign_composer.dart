@@ -4,6 +4,7 @@ import '../../data/models/sign.dart';
 import '../../data/models/sign_landmarks.dart';
 import '../../data/repositories/dictionary_repository.dart';
 import '../../data/repositories/ml_model_repository.dart';
+import '../../data/services/media_url.dart';
 import 'phrase_glosser.dart';
 
 /// Legacy helper kept for UI word chips (single tokens).
@@ -44,7 +45,29 @@ class TextToSignComposer {
 
     final lexiconSigns = await _loadLexicon(languageId);
     final lexicon = buildLexicon(lexiconSigns);
-    final glossed = glossifyPhrase(trimmed, lexicon);
+
+    // 1) Exact whole-phrase / expression hit in the dictionary.
+    // 2) Otherwise longest-match compounds + words; unknowns are reported.
+    final wholeKey = foldLookup(trimmed);
+    final wholeSign = wholeKey.isEmpty ? null : lexicon[wholeKey];
+    final GlossedPhrase glossed;
+    final bool wholePhraseMatched;
+    if (wholeSign != null) {
+      wholePhraseMatched = true;
+      glossed = GlossedPhrase(
+        segments: [
+          GlossSegment(
+            surface: wholeSign.word,
+            gloss: glossOf(wholeSign) ?? wholeKey.toUpperCase(),
+            sign: wholeSign,
+          ),
+        ],
+        rawText: trimmed,
+      );
+    } else {
+      wholePhraseMatched = false;
+      glossed = glossifyPhrase(trimmed, lexicon);
+    }
 
     if (glossed.segments.isEmpty) {
       return LandmarkComposeResult.unavailable('Aucun mot à traduire.');
@@ -66,12 +89,14 @@ class TextToSignComposer {
       ));
     }
 
+    // Route LSFB GIFs through the Express media proxy (disk cache). FastAPI
+    // often cannot reach corpus-lsfb.be directly; the proxy already can.
     final clips = <TextToSignClip>[
       for (final r in resolved)
         if ((r.sign.videoUrl ?? '').trim().isNotEmpty)
           TextToSignClip(
             word: r.gloss,
-            url: r.sign.videoUrl!.trim(),
+            url: resolveSignMediaUrl(r.sign.videoUrl!.trim()),
             signId: r.sign.id,
             matchedWord: r.sign.word,
           ),
@@ -103,6 +128,7 @@ class TextToSignComposer {
         missing: [...unresolved, ...missingUrls, ...result.missing],
         errorCode: result.errorCode,
         errorMessage: result.errorMessage,
+        wholePhraseMatched: wholePhraseMatched,
       );
     }
 
@@ -113,17 +139,37 @@ class TextToSignComposer {
         landmarks: local.landmarks,
         segments: local.segments,
         missing: [...unresolved, ...local.missing],
+        wholePhraseMatched: wholePhraseMatched,
       );
     }
 
+    final withoutVideo = [
+      for (final r in resolved)
+        if ((r.sign.videoUrl ?? '').trim().isEmpty) r.query,
+    ];
+    final unknownNames = unresolved.map((m) => m.word).where((w) => w.isNotEmpty);
     return LandmarkComposeResult(
       ok: false,
       landmarks: SignLandmarks.empty,
-      missing: unresolved,
-      errorCode: unresolved.isNotEmpty ? 'unknown_glosses' : 'no_media',
-      errorMessage: unresolved.isNotEmpty
-          ? 'Glosses introuvables : ${unresolved.map((m) => m.word).join(', ')}'
-          : 'Aucun média trouvé dans le dictionnaire pour cette phrase.',
+      missing: [
+        ...unresolved,
+        for (final r in resolved)
+          if ((r.sign.videoUrl ?? '').trim().isEmpty)
+            LandmarkMissing(
+              word: r.query,
+              signId: r.sign.id,
+              reason: 'pas de vidéo',
+            ),
+      ],
+      errorCode: withoutVideo.isNotEmpty
+          ? 'no_media'
+          : (unresolved.isNotEmpty ? 'unknown_glosses' : 'no_media'),
+      errorMessage: withoutVideo.isNotEmpty
+          ? "Aucune vidéo n'est disponible pour : ${withoutVideo.join(', ')}."
+          : (unknownNames.isNotEmpty
+              ? 'Mots non reconnus : ${unknownNames.join(', ')}'
+              : 'Aucun média trouvé dans le dictionnaire pour cette phrase.'),
+      wholePhraseMatched: wholePhraseMatched,
     );
   }
 

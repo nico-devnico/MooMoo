@@ -24,7 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeAndGo() async {
     await _prefs.setCompleted(true);
     if (!mounted) return;
-    context.goNamed(AppRoutes.loginName);
+    context.goNamed(AppRoutes.welcomeName);
   }
 
   @override

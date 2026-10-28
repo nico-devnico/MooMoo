@@ -60,7 +60,7 @@ class _CameraViewState extends ConsumerState<CameraView> {
     if (current != null && current.value.isInitialized) return;
     _opening = true;
     try {
-      await ref.read(cameraStateProvider.notifier).ensureCamera();
+      await ref.read(cameraStateProvider.notifier).ensureCamera(acquire: true);
     } finally {
       _opening = false;
     }

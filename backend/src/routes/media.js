@@ -29,6 +29,70 @@ function ensureCacheDir() {
   if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
 }
 
+function cachePaths(rawUrl) {
+  const key = cacheKey(rawUrl);
+  return {
+    key,
+    metaPath: join(CACHE_DIR, `${key}.json`),
+    binPath: join(CACHE_DIR, `${key}.bin`),
+  };
+}
+
+/**
+ * Make sure [rawUrl] is on disk under cache/media (same files as GET /proxy).
+ * Compose calls this before FastAPI so ML can download a local HIT instead of
+ * timing out on corpus-lsfb.be.
+ */
+export async function ensurePublicMediaCached(rawUrl) {
+  const text = String(rawUrl || '').trim();
+  if (!text) {
+    throw new MediaFetchError('missing_url', 'URL média manquante');
+  }
+  let parsed;
+  try {
+    parsed = new URL(text);
+  } catch {
+    throw new MediaFetchError('bad_url', 'URL invalide');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new MediaFetchError('bad_scheme', 'Seules les URL http(s) sont acceptées');
+  }
+
+  ensureCacheDir();
+  const { metaPath, binPath } = cachePaths(text);
+  if (existsSync(binPath) && existsSync(metaPath)) {
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+    const size = statSync(binPath).size;
+    if (size > 0) {
+      return {
+        cached: true,
+        hit: true,
+        contentType: meta.contentType || 'application/octet-stream',
+        bytes: size,
+      };
+    }
+  }
+
+  const media = await downloadPublicImage(text);
+  writeFileSync(binPath, media.buffer);
+  writeFileSync(
+    metaPath,
+    JSON.stringify({
+      url: text,
+      contentType: media.contentType,
+      cachedAt: new Date().toISOString(),
+      bytes: media.buffer.length,
+    }),
+    'utf8',
+  );
+  return {
+    cached: true,
+    hit: false,
+    contentType: media.contentType,
+    bytes: media.buffer.length,
+  };
+}
+
 async function assertPublicHost(url) {
   const host = url.hostname.replace(/^\[|\]$/g, '');
   const addresses = net.isIP(host)
@@ -121,50 +185,24 @@ mediaRouter.get('/proxy', async (req, res) => {
     });
   }
 
-  ensureCacheDir();
-  const key = cacheKey(raw);
-  const metaPath = join(CACHE_DIR, `${key}.json`);
-  const binPath = join(CACHE_DIR, `${key}.bin`);
-
   try {
-    if (existsSync(binPath) && existsSync(metaPath)) {
-      const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
-      const size = statSync(binPath).size;
-      const ctype = meta.contentType || 'application/octet-stream';
-      res.setHeader('Content-Type', ctype);
-      res.setHeader('Content-Length', String(size));
-      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-      // Nom de fichier avec extension pour les clients qui se basent sur l'URL.
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename="sign.${ctype.includes('gif') ? 'gif' : ctype.includes('webp') ? 'webp' : 'img'}"`,
-      );
-      res.setHeader('X-Media-Cache', 'HIT');
-      return createReadStream(binPath).pipe(res);
-    }
-
-    const media = await downloadPublicImage(raw);
-    writeFileSync(binPath, media.buffer);
-    writeFileSync(
-      metaPath,
-      JSON.stringify({
-        url: raw,
-        contentType: media.contentType,
-        cachedAt: new Date().toISOString(),
-        bytes: media.buffer.length,
-      }),
-      'utf8',
-    );
-
-    res.setHeader('Content-Type', media.contentType);
-    res.setHeader('Content-Length', String(media.buffer.length));
+    const ensured = await ensurePublicMediaCached(raw);
+    const { metaPath, binPath } = cachePaths(raw);
+    const meta = existsSync(metaPath)
+      ? JSON.parse(readFileSync(metaPath, 'utf8'))
+      : { contentType: ensured.contentType };
+    const ctype = meta.contentType || ensured.contentType || 'application/octet-stream';
+    const size = existsSync(binPath) ? statSync(binPath).size : ensured.bytes;
+    res.setHeader('Content-Type', ctype);
+    res.setHeader('Content-Length', String(size));
     res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    // Nom de fichier avec extension pour les clients qui se basent sur l'URL.
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="sign.${media.contentType.includes('gif') ? 'gif' : media.contentType.includes('webp') ? 'webp' : 'img'}"`,
+      `inline; filename="sign.${ctype.includes('gif') ? 'gif' : ctype.includes('webp') ? 'webp' : 'img'}"`,
     );
-    res.setHeader('X-Media-Cache', 'MISS');
-    return res.send(media.buffer);
+    res.setHeader('X-Media-Cache', ensured.hit ? 'HIT' : 'MISS');
+    return createReadStream(binPath).pipe(res);
   } catch (e) {
     const status = e instanceof MediaFetchError
       ? (e.code === 'forbidden' ? 403 : e.code === 'too_large' ? 413 : 422)

@@ -3608,6 +3608,12 @@ abstract class AppLocalizations {
   /// **'Impossible de composer la séquence de signes.'**
   String get translComposeFailed;
 
+  /// No description provided for @translMissingVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune vidéo n\'est disponible pour : {words}'**
+  String translMissingVideo(String words);
+
   /// No description provided for @translComposePartial.
   ///
   /// In fr, this message translates to:

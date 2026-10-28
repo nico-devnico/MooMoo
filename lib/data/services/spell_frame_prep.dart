@@ -23,8 +23,9 @@ class HandCropResult {
 /// Si aucune main n'est détectée, [detected] vaut false (le client enverra « space »).
 HandCropResult prepareHandSpellFrame(
   List<int> raw, {
-  int outSize = 256,
-  int jpegQuality = 90,
+  // 224 : assez grand pour le crop serveur « closeup », JPEG plus léger → live plus rapide.
+  int outSize = 224,
+  int jpegQuality = 88,
   bool mirrorHorizontal = false,
 }) {
   var decoded = img.decodeImage(Uint8List.fromList(raw));

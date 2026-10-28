@@ -12,6 +12,9 @@ from sklearn.model_selection import train_test_split
 
 import config
 
+# ±10° approx. (factor of 2π) — poignet légèrement incliné en live.
+_ROTATE = tf.keras.layers.RandomRotation(factor=0.03, fill_mode="nearest")
+
 
 def collect_filepaths(
     train_dir: Path = config.TRAIN_DIR,
@@ -85,28 +88,66 @@ def _decode_image(path: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tens
 
 
 def _augment(img: tf.Tensor, label: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-    """Augmentation orientée caméra live (luminosité, bruit, JPEG, crop).
+    """Augmentation orientée caméra live (fermeture du gap import ↔ webcam).
 
+    Les images importées sont des crops nets type dataset ; le live a
+    luminosité irrégulière, flou, JPEG, main légèrement décentrée.
     Pas de flip horizontal : un signe miroir n'est pas le même label.
     """
-    img = tf.image.random_brightness(img, max_delta=40.0)
-    img = tf.image.random_contrast(img, lower=0.75, upper=1.25)
-    img = tf.image.random_saturation(img, lower=0.80, upper=1.20)
-    # Translation / zoom léger (main pas parfaitement centrée en live).
-    if tf.random.uniform([]) < 0.65:
-        pad = tf.random.uniform([], minval=4, maxval=14, dtype=tf.int32)
+    # Photométrie large (webcam / pièce / neon).
+    img = tf.image.random_brightness(img, max_delta=55.0)
+    img = tf.image.random_contrast(img, lower=0.65, upper=1.40)
+    img = tf.image.random_saturation(img, lower=0.70, upper=1.35)
+    img = tf.image.random_hue(img, max_delta=0.04)
+    # Gamma soft (ombres / sur-exposition).
+    if tf.random.uniform([]) < 0.50:
+        gamma = tf.random.uniform([], 0.70, 1.35)
+        img01 = tf.clip_by_value(img / 255.0, 0.0, 1.0)
+        img = tf.pow(img01, gamma) * 255.0
+
+    # Petite rotation : poignet pas toujours droit face caméra.
+    if tf.random.uniform([]) < 0.55:
+        img = _ROTATE(img)
+
+    # Translation / zoom (main pas parfaitement cadrée après crop peau).
+    if tf.random.uniform([]) < 0.80:
+        pad = tf.random.uniform([], minval=3, maxval=18, dtype=tf.int32)
         img = tf.image.resize_with_crop_or_pad(
             img, config.IMG_SIZE + pad, config.IMG_SIZE + pad
         )
         img = tf.image.random_crop(img, [config.IMG_SIZE, config.IMG_SIZE, config.CHANNELS])
-    # Simulation compression / downscale webcam (YUV→JPEG).
-    if tf.random.uniform([]) < 0.45:
-        small = tf.image.resize(img, [48, 48], method=tf.image.ResizeMethod.BILINEAR)
-        img = tf.image.resize(small, [config.IMG_SIZE, config.IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR)
-    # Bruit gaussien léger.
+
+    # Flou / compression webcam (YUV → JPEG → resize 256 → 64).
+    if tf.random.uniform([]) < 0.55:
+        side = tf.random.uniform([], minval=28, maxval=52, dtype=tf.int32)
+        small = tf.image.resize(img, [side, side], method=tf.image.ResizeMethod.BILINEAR)
+        img = tf.image.resize(
+            small, [config.IMG_SIZE, config.IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR
+        )
+    if tf.random.uniform([]) < 0.35:
+        # Flou boîte 3×3 approximé par average pool.
+        x = img[None, ...]
+        x = tf.nn.avg_pool2d(x, ksize=3, strides=1, padding="SAME")
+        img = x[0]
+
+    # Ombre / vignette partielle (éclairage latéral).
     if tf.random.uniform([]) < 0.40:
-        noise = tf.random.normal(tf.shape(img), mean=0.0, stddev=8.0)
+        yy, xx = tf.meshgrid(
+            tf.linspace(-1.0, 1.0, config.IMG_SIZE),
+            tf.linspace(-1.0, 1.0, config.IMG_SIZE),
+            indexing="ij",
+        )
+        cx = tf.random.uniform([], -0.45, 0.45)
+        cy = tf.random.uniform([], -0.45, 0.45)
+        rad = tf.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+        shade = tf.clip_by_value(1.15 - 0.55 * rad, 0.55, 1.15)
+        img = img * shade[..., None]
+
+    # Bruit capteur.
+    if tf.random.uniform([]) < 0.55:
+        noise = tf.random.normal(tf.shape(img), mean=0.0, stddev=12.0)
         img = img + noise
+
     img = tf.clip_by_value(img, 0.0, 255.0)
     return img, label
 

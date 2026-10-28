@@ -3,6 +3,7 @@ class AppRoutes {
 
   static const String splash = '/';
   static const String onboarding = '/onboarding';
+  static const String welcome = '/welcome';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -37,6 +38,7 @@ class AppRoutes {
   // Route Names (For pushNamed)
   static const String splashName = 'splash';
   static const String onboardingName = 'onboarding';
+  static const String welcomeName = 'welcome';
   static const String loginName = 'login';
   static const String registerName = 'register';
   static const String forgotPasswordName = 'forgotPassword';

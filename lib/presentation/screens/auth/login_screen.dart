@@ -152,6 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AuthLayout(
       title: l10n.loginHeadline,
       subtitle: l10n.loginSubtitle,
+      onBack: () => context.goNamed(AppRoutes.welcomeName),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

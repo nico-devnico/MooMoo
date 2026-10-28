@@ -19,6 +19,8 @@ class CameraState extends _$CameraState {
   bool _streaming = false;
   bool _frameBusy = false;
   bool _releasing = false;
+  /// When false, [ensureCamera] must not reopen the sensor (fixes LED stuck on).
+  bool _sessionWanted = false;
   int _epoch = 0;
   Completer<CameraController?>? _ensureInFlight;
   Completer<void>? _releaseInFlight;
@@ -27,8 +29,8 @@ class CameraState extends _$CameraState {
   void Function()? _closeKeepAlive;
 
   /// Intervalle min entre deux envois ML (latence réseau + inférence).
-  /// Un peu plus long = frames plus stables pour l'épellation.
-  static const frameInterval = Duration(milliseconds: 420);
+  /// ~320 ms : assez stable pour le hold serveur (3 frames) sans ralentir.
+  static const frameInterval = Duration(milliseconds: 320);
 
   /// Lazy: no camera until [ensureCamera] (text→sign must never open it).
   @override
@@ -52,13 +54,18 @@ class CameraState extends _$CameraState {
   }
 
   /// Opens the front camera if needed. Safe to call repeatedly (mutex).
-  Future<CameraController?> ensureCamera() async {
+  ///
+  /// Pass [acquire]: true when the UI / spell loop explicitly wants the sensor.
+  /// After [releaseCamera], calls without [acquire] never reopen (OS LED).
+  Future<CameraController?> ensureCamera({bool acquire = false}) async {
     // Wait for an in-flight release so we don't orphan a new controller.
     final releasing = _releaseInFlight;
     if (releasing != null) {
       await releasing.future;
     }
-    if (_releasing) return null;
+    // Re-assert after release: releaseCamera clears [_sessionWanted].
+    if (acquire) _sessionWanted = true;
+    if (_releasing || !_sessionWanted) return null;
     final existing = _active;
     if (existing != null && existing.value.isInitialized) {
       return existing;
@@ -72,8 +79,12 @@ class CameraState extends _$CameraState {
     _ensureInFlight = gate;
     state = const AsyncLoading();
     try {
+      if (!_sessionWanted || _releasing) {
+        gate.complete(null);
+        return null;
+      }
       final cameras = await availableCameras();
-      if (_epoch != epoch || _releasing) {
+      if (_epoch != epoch || _releasing || !_sessionWanted) {
         gate.complete(null);
         return null;
       }
@@ -90,7 +101,7 @@ class CameraState extends _$CameraState {
 
       Future<CameraController> open(CameraController c) async {
         await c.initialize();
-        if (_epoch != epoch || _releasing) {
+        if (_epoch != epoch || _releasing || !_sessionWanted) {
           try {
             await c.dispose();
           } catch (_) {}
@@ -126,7 +137,7 @@ class CameraState extends _$CameraState {
         );
       }
 
-      if (_epoch != epoch || _releasing) {
+      if (_epoch != epoch || _releasing || !_sessionWanted) {
         try {
           await controller.dispose();
         } catch (_) {}
@@ -236,7 +247,7 @@ class CameraState extends _$CameraState {
   Future<bool> startHandFrameStream(
     void Function(Uint8List handJpeg, {required bool handDetected}) onFrame,
   ) async {
-    final controller = await ensureCamera();
+    final controller = await ensureCamera(acquire: true);
     if (controller == null || !controller.value.isInitialized) return false;
     if (_streaming) {
       _onHandFrame = onFrame;
@@ -278,10 +289,13 @@ class CameraState extends _$CameraState {
 
   /// Arrête le flux et dispose le [CameraController] (LED Windows / indicateur OS).
   Future<void> releaseCamera() async {
+    // Block reopen immediately — before awaiting stream stop / dispose.
+    _sessionWanted = false;
     await _disposeActive(reason: 'release');
   }
 
   Future<void> _disposeActive({required String reason}) async {
+    _sessionWanted = false;
     if (_releaseInFlight != null) {
       await _releaseInFlight!.future;
       return;
@@ -289,6 +303,9 @@ class CameraState extends _$CameraState {
     if (_active == null && !_streaming) {
       _releasing = false;
       _releaseKeepAlive();
+      if (state.hasValue || state.isLoading) {
+        state = const AsyncData(null);
+      }
       return;
     }
     final gate = Completer<void>();
@@ -307,9 +324,14 @@ class CameraState extends _$CameraState {
       try {
         await SchedulerBinding.instance.endOfFrame;
       } catch (_) {}
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await Future<void>.delayed(const Duration(milliseconds: 120));
       if (controller != null) {
         try {
+          if (controller.value.isStreamingImages) {
+            try {
+              await controller.stopImageStream();
+            } catch (_) {}
+          }
           await controller.dispose();
           debugPrint('[camera] disposed ($reason)');
         } catch (e) {
@@ -320,6 +342,7 @@ class CameraState extends _$CameraState {
       if (_epoch == epoch) {
         _releaseKeepAlive();
         _releasing = false;
+        _sessionWanted = false;
       }
       if (identical(_releaseInFlight, gate)) {
         _releaseInFlight = null;
@@ -335,14 +358,14 @@ class CameraState extends _$CameraState {
     _frameBusy = true;
     _lastFrameAt = now;
     try {
-      final jpeg = await cameraImageToJpeg(image, quality: 90);
+      final jpeg = await cameraImageToJpeg(image, quality: 88);
       if (jpeg == null || _onHandFrame == null) return;
       final mirror = (_active ?? state.value)?.description.lensDirection ==
           CameraLensDirection.front;
       final hand = prepareHandSpellFrame(
         jpeg,
-        outSize: 256,
-        jpegQuality: 90,
+        outSize: 224,
+        jpegQuality: 88,
         mirrorHorizontal: mirror,
       );
       _onHandFrame!(hand.jpeg, handDetected: hand.detected);
@@ -353,17 +376,19 @@ class CameraState extends _$CameraState {
 
   /// Capture one-shot JPEG (même qualité qu'un import) → crop main.
   Future<({Uint8List jpeg, bool handDetected})?> captureHandStill() async {
-    final controller = await ensureCamera();
-    if (controller == null) return null;
+    if (!_sessionWanted || _releasing) return null;
+    final controller = await ensureCamera(acquire: true);
+    if (controller == null || !_sessionWanted || _releasing) return null;
     final file = await takePicture();
-    if (file == null) return null;
+    if (file == null || !_sessionWanted || _releasing) return null;
     final bytes = await file.readAsBytes();
+    if (!_sessionWanted || _releasing) return null;
     final mirror =
         controller.description.lensDirection == CameraLensDirection.front;
     final hand = prepareHandSpellFrame(
       bytes,
-      outSize: 256,
-      jpegQuality: 90,
+      outSize: 224,
+      jpegQuality: 88,
       mirrorHorizontal: mirror,
     );
     return (jpeg: hand.jpeg, handDetected: hand.detected);

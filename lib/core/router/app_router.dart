@@ -7,6 +7,7 @@ import '../layout/responsive.dart';
 import '../../domain/providers/auth_provider.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
 import '../../presentation/screens/onboarding/onboarding_screen.dart';
+import '../../presentation/screens/visitor/visitor_home_screen.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/auth/register_screen.dart';
 import '../../presentation/screens/auth/forgot_password_screen.dart';
@@ -73,17 +74,18 @@ GoRouter appRouter(Ref ref) {
       final isLoggedIn = session != null;
       final isGoingToAuth = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register ||
+          state.matchedLocation == AppRoutes.welcome ||
           state.matchedLocation == AppRoutes.onboarding ||
           state.matchedLocation == AppRoutes.splash ||
           state.matchedLocation == AppRoutes.forgotPassword;
 
       // Skip onboarding on Web
       if (kIsWeb && state.matchedLocation == AppRoutes.onboarding) {
-        return isLoggedIn ? AppRoutes.home : AppRoutes.login;
+        return isLoggedIn ? AppRoutes.home : AppRoutes.welcome;
       }
 
       if (!isLoggedIn && !isGoingToAuth) {
-        return AppRoutes.login;
+        return AppRoutes.welcome;
       }
 
       if (isLoggedIn && isGoingToAuth && state.matchedLocation != AppRoutes.splash) {
@@ -97,6 +99,11 @@ GoRouter appRouter(Ref ref) {
         path: AppRoutes.splash,
         name: AppRoutes.splashName,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.welcome,
+        name: AppRoutes.welcomeName,
+        builder: (context, state) => const VisitorHomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.onboarding,

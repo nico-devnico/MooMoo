@@ -34,6 +34,7 @@ class LandmarkComposeResult {
     this.errorMessage,
     this.rawFrames,
     this.fps = 15,
+    this.wholePhraseMatched = false,
   });
 
   final bool ok;
@@ -42,6 +43,9 @@ class LandmarkComposeResult {
   final List<LandmarkMissing> missing;
   final String? errorCode;
   final String? errorMessage;
+
+  /// True when the full typed phrase matched one dictionary entry.
+  final bool wholePhraseMatched;
 
   /// Flat Holistic vectors `[pose33×4 | left21×3 | right21×3 | face?]`, kept for
   /// 3D retargeting (XYZ). Null when only 2D landmark JSON was available.
@@ -133,6 +137,7 @@ class LandmarkComposeResult {
       landmarks: landmarks,
       rawFrames: raw,
       fps: fps,
+      wholePhraseMatched: json['whole_phrase'] == true,
       segments: [
         for (final item in (json['segments'] as List? ?? const []))
           if (item is Map)

@@ -2002,6 +2002,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de composer la séquence de signes.';
 
   @override
+  String translMissingVideo(String words) {
+    return 'Aucune vidéo n\'est disponible pour : $words';
+  }
+
+  @override
   String translComposePartial(String words) {
     return 'Certains mots n\'ont pas pu être inclus : $words';
   }

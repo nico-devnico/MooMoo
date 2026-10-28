@@ -77,6 +77,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   double? _confidence;
   String? _errorMessage;
 
+  /// Accumulated translated words/letters from successive image imports.
+  /// Allows the user to build a phrase by importing multiple images one by one.
+  final List<String> _accumulatedPhraseTokens = [];
+
   /// Bumped on every start or stop: a late answer must not overwrite the
   /// current state.
   int _inferenceRun = 0;
@@ -228,22 +232,30 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     setState(() {
       if (ok) {
         _signStatus = _SignStatus.done;
-        _translationResult = phrase;
+        // Keep prior image translations and append this one (phrase builder).
+        _accumulatedPhraseTokens.add(phrase!);
+        _translationResult = _joinImportedPhrase(_accumulatedPhraseTokens);
         _confidence = result.confidence;
         _lastLetter = result.committed ?? result.label;
         _spellSessionId = result.sessionId;
+        _errorMessage = null;
       } else {
         _signStatus = _SignStatus.unavailable;
-        _translationResult = null;
+        // Keep the already-accumulated phrase visible even if this image failed.
+        _translationResult = _accumulatedPhraseTokens.isEmpty
+            ? null
+            : _joinImportedPhrase(_accumulatedPhraseTokens);
         _confidence = null;
         _errorMessage =
             result.errorMessage ?? l10n.inferenceUnavailableMessage;
       }
     });
+    // Free the "Translate" button for the next image without wiping the phrase.
+    ref.read(translatorStateProvider.notifier).stop();
     if (ok) {
       _record(
         direction: 'sign_to_text',
-        translatedText: phrase,
+        translatedText: _joinImportedPhrase(_accumulatedPhraseTokens),
         confidence: result.confidence,
         inferenceTimeMs: result.latencyMs?.round(),
         modelVersion: result.model?.version,
@@ -251,7 +263,16 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     }
   }
 
-  /// Flux caméra live : détecte la main, envoie uniquement le crop au ML.
+  /// Letters from successive images concatenate; multi-letter tokens stay spaced.
+  static String _joinImportedPhrase(List<String> tokens) {
+    if (tokens.isEmpty) return '';
+    final trimmed = [for (final t in tokens) t.trim()].where((t) => t.isNotEmpty);
+    if (trimmed.isEmpty) return '';
+    if (trimmed.every((t) => t.length == 1)) return trimmed.join();
+    return trimmed.join(' ');
+  }
+
+  /// Flux caméra live : détecte la main → crop → envoi ML uniquement du crop.
   Future<void> _runSpellLoop() async {
     final l10n = AppLocalizations.of(context)!;
     final run = ++_inferenceRun;
@@ -267,24 +288,37 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       _lastLetter = null;
     });
 
+    final cam = ref.read(cameraStateProvider.notifier);
     final deadline = DateTime.now().add(const Duration(seconds: 12));
-    while (mounted && DateTime.now().isBefore(deadline)) {
+    while (mounted &&
+        run == _inferenceRun &&
+        ref.read(translatorStateProvider) &&
+        DateTime.now().isBefore(deadline)) {
       try {
-        final c = await ref.read(cameraStateProvider.notifier).ensureCamera();
+        final c = await cam.ensureCamera(acquire: true);
         if (c != null && c.value.isInitialized) break;
       } catch (_) {}
       await Future<void>.delayed(const Duration(milliseconds: 200));
     }
-    if (!mounted || run != _inferenceRun) return;
+    if (!mounted || run != _inferenceRun || !ref.read(translatorStateProvider)) {
+      try {
+        await cam.releaseCamera();
+      } catch (_) {}
+      return;
+    }
 
     var resetSession = true;
     var consecutiveFailures = 0;
     var inferBusy = false;
-    final cam = ref.read(cameraStateProvider.notifier);
+    var sawHand = false;
 
     Future<void> handleHandJpeg(Uint8List jpeg, {required bool handDetected}) async {
       if (!mounted || run != _inferenceRun || inferBusy) return;
       if (!ref.read(translatorStateProvider)) return;
+      // Wait for a real hand before the first ML call; after that, no-hand
+      // frames become "space" so words can be separated.
+      if (!handDetected && !sawHand) return;
+      if (handDetected) sawHand = true;
       inferBusy = true;
       try {
         // Seuil + live hold plus stricts : moins de fausses lettres, ~1 s de pose.
@@ -293,7 +327,8 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
               filename: 'hand.jpg',
               sessionId: _spellSessionId,
               reset: resetSession,
-              threshold: 0.65,
+              // Aligné sur le modèle fine-tuné live (moins de faux « rien »).
+              threshold: 0.58,
               handDetected: handDetected,
               live: true,
             );
@@ -337,7 +372,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
     while (mounted && run == _inferenceRun && ref.read(translatorStateProvider)) {
       if (useStream) break;
       final still = await cam.captureHandStill();
-      if (!mounted || run != _inferenceRun) break;
+      if (!mounted || run != _inferenceRun || !ref.read(translatorStateProvider)) {
+        break;
+      }
       if (still == null) {
         consecutiveFailures++;
         if (consecutiveFailures >= 3) {
@@ -349,6 +386,7 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
         continue;
       }
       consecutiveFailures = 0;
+      // Hand already cropped in captureHandStill → only that JPEG goes to ML.
       await handleHandJpeg(still.jpeg, handDetected: still.handDetected);
       await Future<void>.delayed(CameraState.frameInterval);
     }
@@ -371,15 +409,20 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       }
     }
 
-    await cam.releaseCamera();
+    // Always release the camera here so the OS privacy LED turns off,
+    // regardless of whether the run was cancelled externally.
+    try {
+      await cam.releaseCamera();
+    } catch (_) {}
 
-    if (!mounted || run != _inferenceRun) return;
+    if (!mounted) return;
     final finalText = (_translationResult ?? '').trim();
+    // Even if this run was cancelled, leave a finished phrase visible.
     setState(() {
       _signStatus = finalText.isEmpty ? _SignStatus.idle : _SignStatus.done;
       _translationResult = finalText.isEmpty ? null : finalText;
     });
-    if (finalText.isNotEmpty) {
+    if (finalText.isNotEmpty && run == _inferenceRun) {
       _record(
         direction: 'sign_to_text',
         translatedText: finalText,
@@ -392,13 +435,9 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
   void _start() => ref.read(translatorStateProvider.notifier).start();
 
   void _stop() {
-    // Stop UI first (unmount CameraPreview), then await sensor teardown so the
-    // OS privacy LED / camera indicator actually turns off (esp. Windows).
+    // Stop UI + block sensor reopen immediately (no delay) so Windows LED dies.
     ref.read(translatorStateProvider.notifier).stop();
-    unawaited(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 80));
-      await ref.read(cameraStateProvider.notifier).releaseCamera();
-    }());
+    unawaited(ref.read(cameraStateProvider.notifier).releaseCamera());
   }
 
   void _setMode(TranslationMode mode) {
@@ -422,6 +461,10 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       _isImage = !isVideo;
       _videoController = null;
       _chewieController = null;
+      // Reset only the error state — keep _accumulatedPhraseTokens so
+      // the user can keep building their phrase image by image.
+      _signStatus = _SignStatus.idle;
+      _errorMessage = null;
     });
     if (isVideo) _initVideo(file);
   }
@@ -451,6 +494,16 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
       _selectedFile = null;
       _videoController = null;
       _chewieController = null;
+    });
+  }
+
+  /// Clear the accumulated phrase (reset the image-import phrase builder).
+  void _clearAccumulatedPhrase() {
+    setState(() {
+      _accumulatedPhraseTokens.clear();
+      _translationResult = null;
+      _signStatus = _SignStatus.idle;
+      _errorMessage = null;
     });
   }
 
@@ -507,9 +560,11 @@ class _TranslatorScreenState extends ConsumerState<TranslatorScreen> {
                         errorMessage: _errorMessage,
                         selectedFile: _selectedFile,
                         isImage: _isImage,
+                        hasAccumulatedPhrase: _accumulatedPhraseTokens.isNotEmpty,
                         chewieController: _chewieController,
                         onPickFile: _pickFile,
                         onClearFile: _clearFile,
+                        onClearPhrase: _clearAccumulatedPhrase,
                         onStart: _start,
                         onStop: _stop,
                         onRestart: _runInference,
@@ -670,9 +725,11 @@ class _SignToTextView extends StatelessWidget {
     required this.errorMessage,
     required this.selectedFile,
     required this.isImage,
+    required this.hasAccumulatedPhrase,
     required this.chewieController,
     required this.onPickFile,
     required this.onClearFile,
+    required this.onClearPhrase,
     required this.onStart,
     required this.onStop,
     required this.onRestart,
@@ -686,9 +743,11 @@ class _SignToTextView extends StatelessWidget {
   final String? errorMessage;
   final XFile? selectedFile;
   final bool isImage;
+  final bool hasAccumulatedPhrase;
   final ChewieController? chewieController;
   final ValueChanged<bool> onPickFile;
   final VoidCallback onClearFile;
+  final VoidCallback onClearPhrase;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final VoidCallback onRestart;
@@ -710,6 +769,8 @@ class _SignToTextView extends StatelessWidget {
       spelling: status == _SignStatus.translating && selectedFile == null,
       unavailable: status == _SignStatus.unavailable,
       errorMessage: errorMessage,
+      hasAccumulatedPhrase: hasAccumulatedPhrase,
+      onClearPhrase: onClearPhrase,
     );
     final action = _TranslateAction(
       isTranslating: isTranslating,
@@ -1067,6 +1128,8 @@ class _ResultCard extends ConsumerWidget {
     required this.spelling,
     required this.unavailable,
     required this.errorMessage,
+    this.hasAccumulatedPhrase = false,
+    this.onClearPhrase,
   });
 
   final String? result;
@@ -1075,11 +1138,15 @@ class _ResultCard extends ConsumerWidget {
   final bool spelling;
   final bool unavailable;
   final String? errorMessage;
+  /// True when the user is building a phrase by importing images one by one.
+  final bool hasAccumulatedPhrase;
+  final VoidCallback? onClearPhrase;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final secondary = AppColors.textSecondary(context);
+    final scheme = Theme.of(context).colorScheme;
     final text = (result == null || result!.isEmpty) ? null : result;
 
     return AppPanel(
@@ -1124,6 +1191,46 @@ class _ResultCard extends ConsumerWidget {
               ),
             ],
           ),
+          // Phrase-builder banner: visible when accumulating translations from
+          // successive image imports. Shows a chip to clear and start fresh.
+          if (hasAccumulatedPhrase) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.m,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: AppRadius.radiusM,
+              ),
+              child: Row(
+                children: [
+                  Icon(AppIcons.signLanguage, size: 15, color: AppColors.primary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Phrase en cours — importez une autre image pour continuer',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: scheme.error,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    onPressed: onClearPhrase,
+                    icon: const Icon(AppIcons.close, size: 15),
+                    label: const Text('Effacer'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s),
+          ],
           if (spelling) ...[
             Text(
               l10n.translSpellingHint,
@@ -1295,12 +1402,25 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
   String? _composeError;
   int _composeRun = 0;
 
+  /// Whether the whole phrase was found as a single dictionary entry.
+  /// When true, we skip the word-by-word picker and show the direct result.
+  bool _wholePhraseFound = false;
+
+  /// Words from the phrase that were not found in the dictionary.
+  List<String> _unknownWords = [];
+
+  /// Signs found in the dictionary but without a playable video.
+  List<String> _missingVideoWords = [];
+
   void _setQuery(String value) {
     setState(() {
       _activeWord = null;
       _selectedSignId = null;
       _composeResult = null;
       _composeError = null;
+      _wholePhraseFound = false;
+      _unknownWords = [];
+      _missingVideoWords = [];
     });
     widget.onQueryChanged(value);
   }
@@ -1362,6 +1482,9 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       _composing = true;
       _composeError = null;
       _composeResult = null;
+      _wholePhraseFound = false;
+      _unknownWords = [];
+      _missingVideoWords = [];
     });
     // Keep the user's view mode (video / landmarks / 3D); do not force landmarks.
     try {
@@ -1373,12 +1496,49 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       );
       final result = await composer.compose(trimmed, languageId: languageId);
       if (!mounted || run != _composeRun) return;
+
+      // Prefer the composer flag (exact full-phrase dictionary hit); fall back
+      // to a single composed segment when ML only returned one sign.
+      final wholePhraseMatch = result.wholePhraseMatched ||
+          (result.segments.length == 1 &&
+              result.segments.first.word.isNotEmpty &&
+              result.missing.every((m) {
+                final r = (m.reason ?? '').toLowerCase();
+                return r.contains('vidéo') || r.contains('video');
+              }));
+
+      final unknowns = <String>[];
+      final missingVideos = <String>[];
+      for (final m in result.missing) {
+        if (m.word.isEmpty) continue;
+        final reason = (m.reason ?? '').toLowerCase();
+        if (reason.contains('vidéo') || reason.contains('video')) {
+          missingVideos.add(m.word);
+        } else if (reason.contains('introuvable') ||
+            reason.contains('dictionnaire') ||
+            reason.contains('non reconnus') ||
+            reason.contains('unknown')) {
+          unknowns.add(m.word);
+        } else if (!reason.contains('landmark')) {
+          // Default: treat remaining missing entries as unrecognized words.
+          unknowns.add(m.word);
+        }
+      }
+      final l10n = AppLocalizations.of(context)!;
+      final videoNote = missingVideos.isEmpty
+          ? null
+          : l10n.translMissingVideo(missingVideos.join(', '));
+
       setState(() {
         _composing = false;
-        _composeResult = result.ok ? result : null;
+        // Keep a partial compose so found words still play while unknowns show.
+        _composeResult = result.ok || result.segments.isNotEmpty ? result : null;
+        _wholePhraseFound = wholePhraseMatch && unknowns.isEmpty;
+        _unknownWords = unknowns;
+        _missingVideoWords = missingVideos;
         _composeError = result.ok
             ? null
-            : (result.errorMessage ?? AppLocalizations.of(context)!.translComposeFailed);
+            : (result.errorMessage ?? videoNote ?? l10n.translComposeFailed);
       });
       if (result.ok && _recordPending) {
         _recordPending = false;
@@ -1417,14 +1577,19 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
 
     final trimmed = widget.query.trim();
     final words = tokenizePhrase(trimmed);
-    // A phrase is translated word by word when browsing videos; compose covers
-    // the full phrase as landmarks.
-    final lookup = words.length > 1
-        ? (words.contains(_activeWord) ? _activeWord! : words.first)
-        : trimmed;
+    // Phrase-first logic:
+    // - If the whole phrase was found as one dictionary entry, keep lookup
+    //   on the full phrase (no word-by-word navigation).
+    // - Otherwise, let the user navigate word by word.
+    final lookup = _wholePhraseFound || words.length <= 1
+        ? trimmed
+        : (words.contains(_activeWord) ? _activeWord! : words.first);
 
+    // When the phrase has a whole-phrase match or compose result,
+    // skip per-word search to avoid redundant network calls.
+    final skipWordSearch = _wholePhraseFound && _composeResult != null;
     final resultsAsync =
-        lookup.isEmpty ? null : ref.watch(signSearchProvider(query: lookup));
+        lookup.isEmpty || skipWordSearch ? null : ref.watch(signSearchProvider(query: lookup));
     final signs = resultsAsync?.value ?? const <Sign>[];
     final selected = _pickSign(signs, lookup);
     final detailAsync =
@@ -1457,7 +1622,8 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
       onToggleSpeech: _toggleSpeech,
     );
 
-    final wordPicker = words.length > 1
+    // Word picker: only show when there are multiple words AND no single phrase match.
+    final wordPicker = words.length > 1 && !_wholePhraseFound
         ? _ChipGroup(
             label: l10n.translPickWord,
             options: [for (final w in words) (w, w)],
@@ -1490,16 +1656,38 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
           )
         : null;
 
-    final missingNote = composed != null && composed.missing.isNotEmpty
-        ? Text(
-            l10n.translComposePartial(
-              composed.missing.map((m) => m.word).join(', '),
-            ),
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary(context),
-            ),
-          )
-        : null;
+    final missingChildren = <Widget>[
+      if (_missingVideoWords.isNotEmpty)
+        Text(
+          l10n.translMissingVideo(_missingVideoWords.join(', ')),
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
+        ),
+      if (_unknownWords.isNotEmpty)
+        _UnrecognizedWordsNote(unknownWords: _unknownWords),
+      if (_missingVideoWords.isEmpty &&
+          _unknownWords.isEmpty &&
+          composed != null &&
+          composed.missing.isNotEmpty)
+        Text(
+          l10n.translComposePartial(
+            composed.missing.map((m) => m.word).join(', '),
+          ),
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary(context),
+          ),
+        ),
+    ];
+    final Widget? missingNote = missingChildren.isEmpty
+        ? null
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < missingChildren.length; i++) ...[
+                if (i > 0) const SizedBox(height: AppSpacing.s),
+                missingChildren[i],
+              ],
+            ],
+          );
 
     final header = Row(
       children: [
@@ -1509,10 +1697,12 @@ class _TextToSignViewState extends ConsumerState<_TextToSignView> {
             child: Text(
               composedOk
                   ? _composeTitle(composed, trimmed)
-                  : (displaySign?.word ?? l10n.translViewModeLabel),
+                  : _wholePhraseFound
+                      ? trimmed
+                      : (displaySign?.word ?? l10n.translViewModeLabel),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: (!composedOk && displaySign == null)
+              style: (!composedOk && displaySign == null && !_wholePhraseFound)
                   ? AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w600,
@@ -2063,6 +2253,78 @@ class _StagePlaceholder extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Displays a warning about words that could not be matched in the sign dictionary.
+class _UnrecognizedWordsNote extends StatelessWidget {
+  const _UnrecognizedWordsNote({required this.unknownWords});
+
+  final List<String> unknownWords;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.10),
+        borderRadius: AppRadius.radiusM,
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(AppIcons.warning, size: 18, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(
+                child: Text(
+                  'Mots non reconnus dans le dictionnaire :',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final word in unknownWords)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppRadius.circular),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+                  ),
+                  child: Text(
+                    word,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Ces mots seront ignorés dans la traduction.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+        ],
       ),
     );
   }

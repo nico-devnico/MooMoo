@@ -66,6 +66,32 @@ void main() {
     expect(pose.first, [0.2, 0.3, 0.0]);
   });
 
+  test('fromJson does not report a successful compose without landmarks', () {
+    final empty = LandmarkComposeResult.fromJson({
+      'ok': true,
+      'frames': <dynamic>[],
+      'fps': 15,
+      'message': 'Aucun landmark',
+    });
+    expect(empty.ok, isFalse);
+    expect(empty.landmarks.frames, isEmpty);
+
+    final failed = LandmarkComposeResult.fromJson({
+      'ok': false,
+      'error': 'unknown_word',
+      'message': "Aucune vidéo n'est disponible pour : bonjour.",
+      'frames': <dynamic>[],
+    });
+    expect(failed.ok, isFalse);
+    expect(failed.errorMessage, contains('vidéo'));
+  });
+
+  test('French copy explains a missing sign video', () {
+    final fr = lookupAppLocalizations(const Locale('fr'));
+    expect(fr.translMissingVideo('bonjour'), contains('vidéo'));
+    expect(fr.translMissingVideo('bonjour'), contains('bonjour'));
+  });
+
   test('French avatar copy no longer says signs are unavailable', () {
     final fr = lookupAppLocalizations(const Locale('fr'));
     expect(fr.translAvatarNote, isNot(contains('ne reproduit')));

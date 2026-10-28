@@ -84,11 +84,12 @@ def classify_frame(
         buf.gate.min_hold = 1
         buf.gate.cooldown_s = 0.0
     elif live:
-        # Accuracy over latency: hold ~5 frames + margin (~2 s de pose stable).
-        buf.gate.min_hold = 5
-        buf.gate.cooldown_s = 0.85
-        if threshold < 0.60:
-            threshold = 0.62
+        # Hold court : 3 frames stables (~1 s avec frameInterval client).
+        # Le modèle fine-tuné live + crop main permettent un seuil un peu plus bas.
+        buf.gate.min_hold = 3
+        buf.gate.cooldown_s = 0.48
+        if threshold < 0.55:
+            threshold = 0.58
 
     # Pas de main → un seul espace (jamais deux, jamais une fausse lettre).
     if hand_detected is False:

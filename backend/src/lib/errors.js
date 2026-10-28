@@ -42,6 +42,14 @@ export function upstreamError(error, status = 400, code) {
 
 /** Final Express error handler. */
 export function errorHandler(err, req, res, _next) {
+  if (err?.type === 'entity.parse.failed' && String(req.originalUrl || '').includes('/compose-landmarks')) {
+    return res.status(422).json({
+      ok: false,
+      error: 'invalid_request',
+      field: 'body',
+      message: 'JSON mal formé. Envoyez un objet { "clips": [{ "word", "url" }] } ou { "text": "..." }.',
+    });
+  }
   const status = Number(err.status) || 500;
   console.error(`[api] ${req.method} ${req.originalUrl} → ${status}`, err.stack || err.message);
   const body = {

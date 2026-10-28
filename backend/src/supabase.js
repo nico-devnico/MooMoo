@@ -6,7 +6,20 @@ export const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ||
   'sb_publishable_QwdkQxxJWh9MpnXdvADCGA_BLS5lHY8';
 export const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-export const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+
+/**
+ * Root of the FastAPI process. Routes live at `/infer`, `/compose-landmarks`
+ * and `/fingerspell`, not under Express's `/api/infer` mount.
+ * A base that already ends with `/api/infer` is normalized so neither the
+ * prefix nor the rest of the host is dropped by accident.
+ */
+export function mlServiceBase(raw = process.env.ML_SERVICE_URL) {
+  const fallback = 'http://127.0.0.1:8000';
+  const trimmed = String(raw || fallback).trim().replace(/\/+$/, '');
+  return trimmed.replace(/\/api\/infer$/, '') || fallback;
+}
+
+export const ML_SERVICE_URL = mlServiceBase();
 
 export const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },

@@ -12,12 +12,15 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Body, FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from contextlib import asynccontextmanager
 
 from moomoo_ml import config, db
+from moomoo_ml.compose_request import ComposeLandmarksRequest
 from moomoo_ml.datasets.discovery import media_kind
 
 
@@ -68,7 +71,40 @@ def _module_available(name: str) -> bool:
 
 
 def _unavailable(code: str, detail: str, status: int = 503, **extra) -> JSONResponse:
-    return JSONResponse(status_code=status, content={"ok": False, "error": code, "detail": detail, **extra})
+    body = {"ok": False, "error": code, "detail": detail, "message": detail, **extra}
+    return JSONResponse(status_code=status, content=body)
+
+
+@app.exception_handler(RequestValidationError)
+async def _compose_validation(request: Request, exc: RequestValidationError):
+    """Keep FastAPI's default 422 for every route except composition."""
+    if request.url.path.rstrip("/") != "/compose-landmarks":
+        return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
+    parts: list[str] = []
+    for err in exc.errors():
+        loc = [
+            str(item)
+            for item in err.get("loc", [])
+            if item != "body" and not isinstance(item, int)
+        ]
+        parts.append(".".join(loc) if loc else "body")
+    field = parts[0] if parts else "body"
+    detail = (
+        "JSON invalide ou incomplet. Envoyez un objet avec clips "
+        "(liste de {word, url}) ou text (phrase du dictionnaire)."
+    )
+    return _unavailable("invalid_request", detail, 422, field=field)
+
+
+@app.get("/")
+def root():
+    """Avoid noisy 404s when a browser opens the ML port."""
+    return RedirectResponse(url="/docs", status_code=307)
+
+
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
 
 
 @app.get("/health")
@@ -223,13 +259,46 @@ def fingerspell_train(
     return result
 
 
-@app.post("/compose-landmarks")
-async def compose_landmarks(payload: dict = Body(...)):
-    """Text→sign: download dictionary clips, extract Holistic landmarks, concatenate.
+_COMPOSE_STATUS = {
+    "invalid_request": 422,
+    "invalid_url": 422,
+    "invalid_clip": 422,
+    "unsupported_media": 422,
+    "no_landmarks": 422,
+    "unknown_word": 404,
+    "not_found": 404,
+    "download_failed": 502,
+    "compose_failed": 500,
+}
 
-    Body: `{ "clips": [{"word": "bonjour", "url": "https://…"}, …], "fps"?, "gap_frames"? }`.
-    Returns `{ frames, fps, segments, missing }` in the shape SignLandmarks.parse accepts.
+
+@app.post("/compose-landmarks")
+async def compose_landmarks(payload: ComposeLandmarksRequest):
+    """Text→sign: dictionary clips → Holistic landmarks → one sequence.
+
+    Accepts `clips` (also `media` / `urls`), each item being `{word, url}` or
+    an http(s) string. `url` may also be sent as `video_url` or `media_url`.
+    `text` or `word` without a URL is resolved against the LSFB catalogue
+    (`assets/dictionnaire/dataset_gifs_links.json`) then `public.signs`.
+
+    `include_face` accepts a real boolean. The string `"false"` stays false.
+    Returns `{frames, fps, segments, missing}` for `SignLandmarks.parse`.
     """
+    from moomoo_ml.compose import compose_landmarks as _compose
+    from moomoo_ml.compose_request import ComposeInputError, resolve_compose_request
+
+    raw = payload.model_dump()
+    try:
+        job = resolve_compose_request(raw)
+    except ComposeInputError as exc:
+        return _unavailable(
+            exc.code,
+            exc.detail,
+            exc.status,
+            field=exc.field,
+            missing=exc.missing,
+        )
+
     if not _module_available("mediapipe"):
         return _unavailable(
             "mediapipe_missing",
@@ -238,23 +307,32 @@ async def compose_landmarks(payload: dict = Body(...)):
             503,
         )
 
-    from moomoo_ml.compose import compose_landmarks as _compose
-
+    print(
+        f"[compose] clips={len(job['clips'])} fps={job['fps']} "
+        f"include_face={job['include_face']} unresolved={len(job['unresolved'])}"
+    )
     try:
         result = _compose(
-            payload,
-            fps=float(payload.get("fps") or 15),
-            gap_frames=int(payload["gap_frames"]) if payload.get("gap_frames") is not None else None,
-            blend_frames=int(payload["blend_frames"]) if payload.get("blend_frames") is not None else None,
-            max_frames_per_clip=int(payload.get("max_frames_per_clip") or 160),
-            include_face=bool(payload["include_face"]) if "include_face" in payload else False,
+            {"clips": job["clips"]},
+            fps=job["fps"],
+            gap_frames=job["gap_frames"],
+            blend_frames=job["blend_frames"],
+            max_frames_per_clip=job["max_frames_per_clip"],
+            include_face=job["include_face"],
         )
     except ValueError as exc:
         return _unavailable("invalid_request", str(exc), 422)
     except Exception as exc:
-        return _unavailable("compose_failed", str(exc), 500)
+        print(f"[compose] internal error: {type(exc).__name__}: {exc}")
+        return _unavailable("compose_failed", "La composition des landmarks a échoué.", 500)
+
+    if job["unresolved"]:
+        result.setdefault("missing", []).extend(job["unresolved"])
     if not result.get("ok"):
-        return JSONResponse(status_code=422, content=result)
+        status = _COMPOSE_STATUS.get(result.get("error") or "", 422)
+        result.setdefault("message", result.get("detail") or "Impossible de composer la séquence.")
+        print(f"[compose] failed error={result.get('error')} status={status}")
+        return JSONResponse(status_code=status, content=result)
     return result
 
 

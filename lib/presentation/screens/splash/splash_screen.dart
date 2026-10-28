@@ -35,14 +35,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }
 
     if (kIsWeb) {
-      context.goNamed(AppRoutes.loginName);
+      context.goNamed(AppRoutes.welcomeName);
       return;
     }
 
     final completed = await OnboardingPreferences().isCompleted();
     if (!mounted) return;
     if (completed) {
-      context.goNamed(AppRoutes.loginName);
+      context.goNamed(AppRoutes.welcomeName);
     } else {
       context.goNamed(AppRoutes.onboardingName);
     }

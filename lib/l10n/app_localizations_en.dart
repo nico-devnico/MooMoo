@@ -1985,6 +1985,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get translComposeFailed => 'Could not compose the sign sequence.';
 
   @override
+  String translMissingVideo(String words) {
+    return 'No sign video is available for: $words';
+  }
+
+  @override
   String translComposePartial(String words) {
     return 'Some words could not be included: $words';
   }

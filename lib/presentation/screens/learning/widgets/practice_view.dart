@@ -165,7 +165,8 @@ class _PracticeViewState extends ConsumerState<PracticeView> {
 
   Future<void> _record(int run) async {
     try {
-      final controller = await ref.read(cameraStateProvider.notifier).ensureCamera();
+      final controller =
+          await ref.read(cameraStateProvider.notifier).ensureCamera(acquire: true);
       if (!mounted || run != _run) return;
       if (controller == null || !controller.value.isInitialized) {
         _openSelfCheck(unavailable: true);

@@ -682,6 +682,8 @@
   "translSearching": "Looking up the sign…",
   "translComposing": "Downloading videos and extracting landmarks…",
   "translComposeFailed": "Could not compose the sign sequence.",
+  "translMissingVideo": "No sign video is available for: {words}",
+  "@translMissingVideo": { "placeholders": { "words": { "type": "String" } } },
   "translComposePartial": "Some words could not be included: {words}",
   "@translComposePartial": { "placeholders": { "words": { "type": "String" } } },
   "translEmptyPrompt": "Type a word or a sentence to see the matching sign.",

@@ -1,31 +1,34 @@
 {
-  "timestamp": "2026-09-30T15:14:54",
+  "timestamp": "2026-10-28T12:01:29",
   "architecture": "CNN-BiLSTM",
+  "mode": "finetune_live_domain",
   "input_shape": [
     64,
     64,
     3
   ],
   "num_classes": 29,
-  "max_per_class": 800,
-  "epochs_ran": 25,
-  "best_val_accuracy": 0.9951149225234985,
+  "max_per_class": 1200,
+  "epochs_ran": 16,
+  "best_val_accuracy": 0.9986590147018433,
   "val": {
     "split": "val",
-    "accuracy": 0.9951149425287357,
+    "accuracy": 0.9986590038314176,
     "top3_accuracy": 1.0,
-    "failure_rate": 0.004885057471264331,
-    "n_samples": 3480
+    "failure_rate": 0.001340996168582409,
+    "n_samples": 5220
   },
   "test": {
     "split": "test",
-    "accuracy": 0.9956896551724138,
+    "accuracy": 0.9977011494252873,
     "top3_accuracy": 1.0,
-    "failure_rate": 0.004310344827586188,
-    "n_samples": 2320
+    "failure_rate": 0.0022988505747126853,
+    "n_samples": 3480
   },
-  "model_keras": "D:\\projets\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_final.keras",
-  "model_tflite": "D:\\projets\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_mobile.tflite",
+  "model_keras": "C:\\Users\\Hp\\Documents\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_final.keras",
+  "model_tflite": "C:\\Users\\Hp\\Documents\\MooMoo\\ml\\dataset\\outputs\\models\\asl_lstm_mobile.tflite",
   "tflite_size_kb": 1243.6,
-  "target_accuracy_met": true
+  "target_accuracy_met": true,
+  "base_weights": "C:\\Users\\Hp\\Documents\\MooMoo\\ml\\dataset\\outputs\\models\\best_asl_lstm.keras",
+  "learning_rate": 0.00025
 }

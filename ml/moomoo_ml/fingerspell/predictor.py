@@ -53,12 +53,13 @@ class FingerspellPredictor:
             try:
                 import tensorflow as tf
 
-                self.interpreter = tf.lite.Interpreter(model_path=str(tflite), num_threads=2)
+                # 4 threads : latence live CPU plus basse sans saturer la machine.
+                self.interpreter = tf.lite.Interpreter(model_path=str(tflite), num_threads=4)
                 self._tf = tf
             except ImportError:
                 from tflite_runtime.interpreter import Interpreter
 
-                self.interpreter = Interpreter(model_path=str(tflite), num_threads=2)
+                self.interpreter = Interpreter(model_path=str(tflite), num_threads=4)
                 self._tf = None
             self.interpreter.allocate_tensors()
             self._inp = self.interpreter.get_input_details()[0]

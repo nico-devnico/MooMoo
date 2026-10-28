@@ -682,6 +682,8 @@
   "translSearching": "Recherche du signe…",
   "translComposing": "Téléchargement des vidéos et extraction des landmarks…",
   "translComposeFailed": "Impossible de composer la séquence de signes.",
+  "translMissingVideo": "Aucune vidéo n'est disponible pour : {words}",
+  "@translMissingVideo": { "placeholders": { "words": { "type": "String" } } },
   "translComposePartial": "Certains mots n'ont pas pu être inclus : {words}",
   "@translComposePartial": { "placeholders": { "words": { "type": "String" } } },
   "translEmptyPrompt": "Écrivez un mot ou une phrase pour voir le signe correspondant.",

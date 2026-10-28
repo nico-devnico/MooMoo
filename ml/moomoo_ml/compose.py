@@ -7,10 +7,11 @@ signs so the LandmarkViewer plays one continuous gesture.
 
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 import numpy as np
 
@@ -37,13 +38,21 @@ _USER_AGENT = "MooMoo-ML/1.0 (+text-to-sign compose)"
 _TARGET_ANCHOR = np.array([0.50, 0.42], dtype=np.float32)
 
 
+_MEDIA_SUFFIXES = {
+    ".gif", ".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v",
+    ".png", ".jpg", ".jpeg", ".webp",
+}
+
+
 def _suffix_from_url(url: str, content_type: str | None) -> str:
-    path = Path(urlparse(url).path)
-    if path.suffix.lower() in {
-        ".gif", ".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v",
-        ".png", ".jpg", ".jpeg", ".webp",
-    }:
-        return path.suffix.lower()
+    parsed = urlparse(url)
+    candidates = [Path(parsed.path)]
+    nested = (parse_qs(parsed.query).get("url") or [None])[0]
+    if nested:
+        candidates.insert(0, Path(urlparse(nested).path))
+    for path in candidates:
+        if path.suffix.lower() in _MEDIA_SUFFIXES:
+            return path.suffix.lower()
     ct = (content_type or "").split(";")[0].strip().lower()
     return {
         "image/gif": ".gif",
@@ -56,26 +65,136 @@ def _suffix_from_url(url: str, content_type: str | None) -> str:
     }.get(ct, ".mp4")
 
 
-def download_temp(url: str, *, timeout_s: float = 45) -> Path:
-    """Download [url] to a NamedTemporaryFile; caller must delete it."""
+def _media_proxy_base() -> str:
+    return (
+        os.environ.get("MEDIA_PROXY_BASE")
+        or os.environ.get("PUBLIC_API_URL")
+        or "http://127.0.0.1:3001"
+    ).rstrip("/")
+
+
+def _should_use_media_proxy(url: str) -> bool:
+    if "/api/media/proxy" in url:
+        return False
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path.lower()
+    return "corpus-lsfb" in host or path.endswith((".gif", ".webp", ".apng"))
+
+
+def media_proxy_url(url: str) -> str | None:
+    """Express disk-cache proxy URL, or None when [url] is already proxied."""
+    if not url or "/api/media/proxy" in url:
+        return None
+    return f"{_media_proxy_base()}/api/media/proxy?url={quote(url, safe='')}"
+
+
+def _download_candidates(url: str) -> list[str]:
+    """Prefer the local media proxy for LSFB GIFs (cache HIT, no campus firewall)."""
+    ordered: list[str] = []
+    proxy = media_proxy_url(url)
+    if proxy and _should_use_media_proxy(url):
+        ordered.append(proxy)
+    ordered.append(url)
+    if proxy and proxy not in ordered:
+        ordered.append(proxy)
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in ordered:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+class ComposeMediaError(Exception):
+    """A single clip failed before it could contribute landmarks."""
+
+    def __init__(self, code: str, detail: str):
+        super().__init__(detail)
+        self.code = code
+
+
+def _download_once(url: str, *, timeout_s: float) -> Path:
+    """Download one URL to a NamedTemporaryFile; caller must delete it."""
+    import urllib.error
     import urllib.request
 
-    req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
-        content_type = resp.headers.get("Content-Type")
-        suffix = _suffix_from_url(url, content_type)
-        data = resp.read(_MAX_DOWNLOAD_BYTES + 1)
-    if len(data) > _MAX_DOWNLOAD_BYTES:
-        raise ValueError(f"média trop volumineux (>{_MAX_DOWNLOAD_BYTES // (1024 * 1024)} Mo)")
-    if not data:
-        raise ValueError("média vide")
-    tmp = tempfile.NamedTemporaryFile(prefix="moomoo_compose_", suffix=suffix, delete=False)
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ComposeMediaError("invalid_url", "URL média invalide : http ou https requis")
+
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": _USER_AGENT,
+            "Accept": "image/*,video/*,*/*",
+        },
+    )
     try:
-        tmp.write(data)
-        tmp.flush()
-    finally:
-        tmp.close()
-    return Path(tmp.name)
+        resp_cm = urllib.request.urlopen(req, timeout=timeout_s)
+    except urllib.error.HTTPError as exc:
+        code = "not_found" if exc.code == 404 else "download_failed"
+        raise ComposeMediaError(code, f"téléchargement refusé (HTTP {exc.code})") from exc
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", None) or exc
+        raise ComposeMediaError("download_failed", f"téléchargement impossible ({reason})") from exc
+
+    path: Path | None = None
+    try:
+        with resp_cm as resp:
+            content_type = resp.headers.get("Content-Type")
+            # Proxy errors are JSON with an application/json content-type.
+            if content_type and "application/json" in content_type.lower():
+                raise ComposeMediaError(
+                    "download_failed",
+                    "le proxy média a renvoyé une erreur JSON au lieu d'un fichier",
+                )
+            suffix = _suffix_from_url(url, content_type)
+            data = resp.read(_MAX_DOWNLOAD_BYTES + 1)
+        if len(data) > _MAX_DOWNLOAD_BYTES:
+            raise ComposeMediaError(
+                "download_failed",
+                f"média trop volumineux (>{_MAX_DOWNLOAD_BYTES // (1024 * 1024)} Mo)",
+            )
+        if not data:
+            raise ComposeMediaError("download_failed", "média vide")
+        if data[:1] == b"{" and b"\"error\"" in data[:200]:
+            raise ComposeMediaError(
+                "download_failed",
+                "le proxy média a renvoyé une erreur JSON au lieu d'un fichier",
+            )
+        tmp = tempfile.NamedTemporaryFile(prefix="moomoo_compose_", suffix=suffix, delete=False)
+        path = Path(tmp.name)
+        try:
+            tmp.write(data)
+            tmp.flush()
+        finally:
+            tmp.close()
+        return path
+    except ComposeMediaError:
+        if path is not None:
+            path.unlink(missing_ok=True)
+        raise
+    except Exception as exc:
+        if path is not None:
+            path.unlink(missing_ok=True)
+        raise ComposeMediaError("download_failed", f"téléchargement impossible ({exc})") from exc
+
+
+def download_temp(url: str, *, timeout_s: float = 45) -> Path:
+    """Download [url], trying the Express media proxy first for dictionary GIFs."""
+    errors: list[str] = []
+    for candidate in _download_candidates(url):
+        try:
+            # Local proxy is fast; keep a shorter timeout for the campus host.
+            per_try = timeout_s if "127.0.0.1" in candidate or "localhost" in candidate else min(timeout_s, 20)
+            return _download_once(candidate, timeout_s=per_try)
+        except ComposeMediaError as exc:
+            errors.append(f"{candidate[:80]} → {exc}")
+            continue
+    detail = errors[-1] if errors else "téléchargement impossible"
+    raise ComposeMediaError("download_failed", detail)
 
 
 def _as_clips(payload: Any) -> list[dict]:
@@ -190,6 +309,21 @@ def blend_transition(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
     return np.stack(frames)
 
 
+def _failure_summary(missing: list[dict]) -> tuple[str, str]:
+    codes = {item.get("code") or "compose_failed" for item in missing}
+    if codes and codes <= {"not_found"}:
+        return "not_found", "Média introuvable pour les signes demandés."
+    if codes and codes <= {"invalid_url"}:
+        return "invalid_url", "URL média invalide."
+    if codes and codes <= {"not_found", "download_failed", "invalid_url"}:
+        return "download_failed", "Impossible de télécharger les vidéos du dictionnaire."
+    if codes and codes <= {"no_landmarks"}:
+        return "no_landmarks", "La vidéo est accessible mais aucun landmark n'a été détecté."
+    if "no_landmarks" in codes:
+        return "no_landmarks", "Aucun landmark exploitable n'a été extrait."
+    return "compose_failed", "Aucun geste extrait depuis les médias du dictionnaire."
+
+
 def compose_landmarks(
     payload: dict | list,
     *,
@@ -208,8 +342,14 @@ def compose_landmarks(
             "Dans ml/.venv : pip install mediapipe==0.10.21"
         ) from exc
 
+    from .compose_request import coerce_include_face
+
     clips = _as_clips(payload)
-    layout = Layout(include_face=bool(include_face))
+    try:
+        face = coerce_include_face(include_face, default=True)
+    except Exception as exc:
+        raise ValueError(str(exc)) from exc
+    layout = Layout(include_face=face)
     extractor = HolisticExtractor(layout)
     # Prefer blend_frames; keep gap_frames as alias for older clients.
     n_blend = DEFAULT_BLEND_FRAMES
@@ -231,15 +371,18 @@ def compose_landmarks(
                 path = download_temp(url)
                 kind = media_kind(path)
                 if kind not in ("video", "gif", "image"):
-                    raise ValueError(f"type média non supporté ({path.suffix})")
+                    raise ComposeMediaError("unsupported_media", f"type média non supporté ({path.suffix or 'inconnu'})")
                 sample = Sample(rel=path.name, kind=kind, files=[path], label=word or None)
                 seq = extractor.extract(sample, max_frames=int(max_frames_per_clip))
                 if seq.ndim != 2 or seq.shape[0] == 0 or not np.any(seq):
-                    raise ValueError("aucun landmark détecté")
+                    raise ComposeMediaError(
+                        "no_landmarks",
+                        "vidéo accessible mais aucun landmark détecté",
+                    )
                 if kind != "image":
                     seq = trim_inactive(seq, layout)
                 if seq.shape[0] == 0:
-                    raise ValueError("aucun landmark après nettoyage")
+                    raise ComposeMediaError("no_landmarks", "aucun landmark après nettoyage")
                 seq = align_sequence(seq.astype(np.float32, copy=False), layout)
                 sequences.append(seq)
                 segments.append({
@@ -248,12 +391,21 @@ def compose_landmarks(
                     "url": url,
                     "frames": int(seq.shape[0]),
                 })
+            except ComposeMediaError as exc:
+                missing.append({
+                    "word": word,
+                    "sign_id": clip.get("sign_id"),
+                    "url": url,
+                    "reason": str(exc)[:240],
+                    "code": exc.code,
+                })
             except Exception as exc:
                 missing.append({
                     "word": word,
                     "sign_id": clip.get("sign_id"),
                     "url": url,
                     "reason": str(exc)[:240],
+                    "code": "compose_failed",
                 })
             finally:
                 if path is not None:
@@ -262,10 +414,12 @@ def compose_landmarks(
         extractor.close()
 
     if not sequences:
+        error, detail = _failure_summary(missing)
         return {
             "ok": False,
-            "error": "no_landmarks",
-            "detail": "Aucun geste extrait depuis les médias du dictionnaire.",
+            "error": error,
+            "detail": detail,
+            "message": detail,
             "fps": float(fps),
             "frames": [],
             "segments": [],
